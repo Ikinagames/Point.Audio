@@ -17,23 +17,15 @@
 #define DEBUG_MODE
 #endif
 
-using UnityEngine;
-using Point.Collections;
+using System;
 
-namespace Point.Audio
+namespace Point.Collections
 {
-    [AddComponentMenu("")]
-    public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
+    public struct AudioKey : IEquatable<AudioKey>
     {
-        static AudioManager() { }
+        private Hash m_Hash;
 
-        public override bool HideInInspector => true;
-
-
-    }
-
-    public sealed class AudioDatastore : StaticScriptableObject<AudioDatastore>
-    {
-
+        public bool Equals(AudioKey other) => m_Hash.Equals(other.m_Hash);
+        public override int GetHashCode() => m_Hash.GetHashCode();
     }
 }
