@@ -29,12 +29,40 @@ namespace Point.Audio
 
         public override void OnInitialze()
         {
-            AudioDatastore audioDatastore = AudioDatastore.Instance;
+            AudioData audioDatastore = AudioData.Instance;
         }
     }
 
-    public sealed class AudioDatastore : StaticScriptableObject<AudioDatastore>
+    public sealed class AudioData : StaticScriptableObject<AudioData>
     {
+        //private sealed class AudioDatastore : Datastore<AudioDataProvider>
+        //{
+        //    public AudioDatastore(AudioDataProvider provider) : base(provider)
+        //    {
+                    
+        //    }
+        //}
+        //private sealed class AudioDataProvider : DataProvider<AssetBundleStrategy>
+        //{
+        //    protected override void OnInitialize()
+        //    {
+        //        base.OnInitialize();
+        //    }
+        //}
 
+        //private AudioDataProvider m_DataProvider;
+        //private AudioDatastore m_Datastore;
+
+        //protected override void OnInitialize()
+        //{
+        //    m_DataProvider = new AudioDataProvider();
+        //    m_Datastore = new AudioDatastore(m_DataProvider);
+
+
+        //}
+        //public void CheckIntegrity()
+        //{
+
+        //}
     }
 }
