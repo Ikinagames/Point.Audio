@@ -25,11 +25,12 @@ namespace Point.Audio
     [AddComponentMenu("")]
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
     {
-        static AudioManager() { }
-
         public override bool HideInInspector => true;
 
-
+        public override void OnInitialze()
+        {
+            AudioDatastore audioDatastore = AudioDatastore.Instance;
+        }
     }
 
     public sealed class AudioDatastore : StaticScriptableObject<AudioDatastore>
