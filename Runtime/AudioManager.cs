@@ -19,6 +19,7 @@
 
 using UnityEngine;
 using Point.Collections;
+using Point.Collections.ResourceControl;
 
 namespace Point.Audio
 {
@@ -30,6 +31,7 @@ namespace Point.Audio
         public override void OnInitialze()
         {
             AudioData audioDatastore = AudioData.Instance;
+            ResourceAddresses addresses = ResourceAddresses.Instance;
         }
     }
 
