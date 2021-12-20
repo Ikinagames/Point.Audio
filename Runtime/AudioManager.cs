@@ -37,6 +37,9 @@ namespace Point.Audio
         protected override bool EnableLog => false;
         protected override bool HideInInspector => true;
 
+        private static int s_InstanceCount = 0;
+        private static Transform s_Folder = null;
+
 #if DEBUG_MODE
         private HashSet<AssetBundle> m_RegisteredAssetBundles;
 #endif
@@ -47,6 +50,7 @@ namespace Point.Audio
             m_GlobalJobHandle,
             m_UpdateTransformationJobHandle;
 
+        private ObjectPool<Transform> m_AudioTransformPool;
         private NativeArray<Audio> m_Audios;
         private Transform[] m_AudioTransforms;
 
@@ -76,7 +80,19 @@ namespace Point.Audio
 
             m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
+
+            GameObject audioFolder = new GameObject("Audio");
+            s_Folder = audioFolder.transform;
         }
+        private static Transform AudioTransformFactory()
+        {
+            GameObject obj = new GameObject($"Audio_{s_InstanceCount}");
+            s_InstanceCount++;
+            obj.AddComponent<AudioSource>();
+
+            return obj.transform;
+        }
+
         protected override void OnShutdown()
         {
             if (m_AudioBundles.IsCreated)
