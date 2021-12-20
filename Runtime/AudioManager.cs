@@ -20,51 +20,123 @@
 using UnityEngine;
 using Point.Collections;
 using Point.Collections.ResourceControl;
+using Unity.Collections;
+using System.Collections.Generic;
+using UnityEngine.Jobs;
+using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace Point.Audio
 {
     [AddComponentMenu("")]
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
     {
+        private const int c_InitialCount = 128;
+
+        public override bool EnableLog => false;
         public override bool HideInInspector => true;
+
+#if DEBUG_MODE
+        private HashSet<AssetBundle> m_RegisteredAssetBundles;
+#endif
+
+        private NativeList<AssetBundleInfo> m_AudioBundles;
+
+        private JobHandle 
+            m_GlobalJobHandle,
+            m_UpdateTransformationJobHandle;
+
+        private NativeArray<Audio> m_Audios;
+        private Transform[] m_AudioTransforms;
+
+        private struct Audio
+        {
+            public bool beingUsed;
+
+            public float3 translation;
+            public quaternion rotation;
+
+            public AssetInfo audioClip;
+        }
+        private struct UpdateTransformationJob : IJobParallelForTransform
+        {
+            [ReadOnly] public NativeArray<Audio> m_Audios;
+
+            public void Execute(int i, TransformAccess transform)
+            {
+                transform.position = m_Audios[i].translation;
+                transform.rotation = m_Audios[i].rotation;
+            }
+        }
 
         public override void OnInitialze()
         {
-            AudioData audioDatastore = AudioData.Instance;
-            ResourceAddresses addresses = ResourceAddresses.Instance;
+            m_RegisteredAssetBundles = new HashSet<AssetBundle>();
+
+            m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
+            m_AudioTransforms = new Transform[c_InitialCount];
         }
-    }
+        public override void OnShutdown()
+        {
+            if (m_AudioBundles.IsCreated)
+            {
+                for (int i = 0; i < m_AudioBundles.Length; i++)
+                {
+                    m_AudioBundles[i].Unload(true);
+                }
 
-    public sealed class AudioData : StaticScriptableObject<AudioData>
-    {
-        //private sealed class AudioDatastore : Datastore<AudioDataProvider>
-        //{
-        //    public AudioDatastore(AudioDataProvider provider) : base(provider)
-        //    {
-                    
-        //    }
-        //}
-        //private sealed class AudioDataProvider : DataProvider<AssetBundleStrategy>
-        //{
-        //    protected override void OnInitialize()
-        //    {
-        //        base.OnInitialize();
-        //    }
-        //}
+                m_AudioBundles.Dispose();
+            }
 
-        //private AudioDataProvider m_DataProvider;
-        //private AudioDatastore m_Datastore;
+            m_Audios.Dispose();
+            m_AudioTransforms = null;
+        }
 
-        //protected override void OnInitialize()
-        //{
-        //    m_DataProvider = new AudioDataProvider();
-        //    m_Datastore = new AudioDatastore(m_DataProvider);
+        private void FixedUpdate()
+        {
+            m_UpdateTransformationJobHandle.Complete();
 
+            {
+                UpdateTransformationJob updateTransformation
+                    = new UpdateTransformationJob()
+                    {
+                        m_Audios = m_Audios
+                    };
 
-        //}
-        //public void CheckIntegrity()
-        //{
+                JobHandle job = updateTransformation.Schedule(new TransformAccessArray(m_AudioTransforms));
+                m_UpdateTransformationJobHandle
+                    = JobHandle.CombineDependencies(m_UpdateTransformationJobHandle, job);
 
-        //}
+                m_GlobalJobHandle
+                    = JobHandle.CombineDependencies(m_GlobalJobHandle, m_UpdateTransformationJobHandle);
+            }
+            
+        }
+
+        public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
+        {
+            for (int i = 0; i < assetBundles.Length; i++)
+            {
+#if DEBUG_MODE
+                if (Instance.m_RegisteredAssetBundles.Contains(assetBundles[i]))
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"You\'re trying to register audio AssetBundle that already registered. " +
+                        $"This is not allowed.");
+                    continue;
+                }
+
+                Instance.m_RegisteredAssetBundles.Add(assetBundles[i]);
+#endif
+
+                AssetBundleInfo bundleInfo = ResourceManager.RegisterAssetBundle(assetBundles[i]);
+                Instance.m_AudioBundles.Add(bundleInfo);
+            }
+        }
+
+        public void Play()
+        {
+
+        }
     }
 }
