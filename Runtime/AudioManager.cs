@@ -31,10 +31,11 @@ namespace Point.Audio
     [AddComponentMenu("")]
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
     {
+#if !POINT_FMOD
         private const int c_InitialCount = 128;
 
-        public override bool EnableLog => false;
-        public override bool HideInInspector => true;
+        protected override bool EnableLog => false;
+        protected override bool HideInInspector => true;
 
 #if DEBUG_MODE
         private HashSet<AssetBundle> m_RegisteredAssetBundles;
@@ -69,14 +70,14 @@ namespace Point.Audio
             }
         }
 
-        public override void OnInitialze()
+        protected override void OnInitialze()
         {
             m_RegisteredAssetBundles = new HashSet<AssetBundle>();
 
             m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
         }
-        public override void OnShutdown()
+        protected override void OnShutdown()
         {
             if (m_AudioBundles.IsCreated)
             {
@@ -139,4 +140,5 @@ namespace Point.Audio
 
         }
     }
+#endif
 }
