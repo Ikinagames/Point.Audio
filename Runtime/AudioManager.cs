@@ -53,6 +53,7 @@ namespace Point.Audio
         private ObjectPool<Transform> m_AudioTransformPool;
         private NativeArray<Audio> m_Audios;
         private Transform[] m_AudioTransforms;
+        private TransformAccessArray m_TransformAccessArray;
 
         private struct Audio
         {
@@ -80,6 +81,7 @@ namespace Point.Audio
 
             m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
+            m_TransformAccessArray = new TransformAccessArray(m_AudioTransforms);
 
             GameObject audioFolder = new GameObject("Audio");
             s_Folder = audioFolder.transform;
@@ -105,11 +107,16 @@ namespace Point.Audio
                 m_AudioBundles.Dispose();
             }
 
+            m_TransformAccessArray.Dispose();
             m_Audios.Dispose();
             m_AudioTransforms = null;
         }
 
         private void FixedUpdate()
+        {
+            UpdateTransformations();
+        }
+        private void UpdateTransformations()
         {
             m_UpdateTransformationJobHandle.Complete();
 
@@ -120,14 +127,13 @@ namespace Point.Audio
                         m_Audios = m_Audios
                     };
 
-                JobHandle job = updateTransformation.Schedule(new TransformAccessArray(m_AudioTransforms));
+                JobHandle job = updateTransformation.Schedule(m_TransformAccessArray);
                 m_UpdateTransformationJobHandle
                     = JobHandle.CombineDependencies(m_UpdateTransformationJobHandle, job);
 
                 m_GlobalJobHandle
                     = JobHandle.CombineDependencies(m_GlobalJobHandle, m_UpdateTransformationJobHandle);
             }
-            
         }
 
         public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
