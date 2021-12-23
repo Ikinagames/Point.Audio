@@ -21,9 +21,9 @@ using UnityEngine;
 using Point.Collections;
 using Point.Audio.UnityFMOD;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using System.Linq;
 using Unity.Jobs;
+using Point.Audio.LowLevel;
 
 namespace Point.Audio
 {
@@ -36,8 +36,7 @@ namespace Point.Audio
         private bool m_IsFocusing;
 
         private JobHandle m_GlobalJobHandle;
-        private NativeArray<AudioHandler> m_Handlers;
-        private int m_HandlerLength;
+        private AudioHandlerContainer m_Handlers;
 
         private NativeHashMap<FixedString512Bytes, ParamReference> m_GlobalParameters;
 
@@ -45,8 +44,7 @@ namespace Point.Audio
         {
             m_IsFocusing = true;
 
-            m_Handlers = new NativeArray<AudioHandler>(128, Allocator.Persistent);
-            m_HandlerLength = 128;
+            m_Handlers = new AudioHandlerContainer(128);
 
             m_GlobalParameters = new NativeHashMap<FixedString512Bytes, ParamReference>(1024, AllocatorManager.Persistent);
         }
@@ -65,90 +63,13 @@ namespace Point.Audio
 #endif
             m_GlobalJobHandle.Complete();
 
-            TranslationUpdateJob trUpdateJob = new TranslationUpdateJob
-            {
-                handlers = m_Handlers.AsReadOnly()
-            };
-            AudioDisposeJob audioDisposeJob = new AudioDisposeJob
-            {
-                handlers = m_Handlers
-            };
-
-            {
-                JobHandle trUpdateJobHandle = trUpdateJob.Schedule(m_HandlerLength, 64, m_GlobalJobHandle);
-                m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, trUpdateJobHandle);
-            }
-            {
-                JobHandle disposeJob = audioDisposeJob.Schedule(m_HandlerLength, m_GlobalJobHandle);
-                m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, disposeJob);
-            }
-        }
-
-        private struct AudioDisposeJob : IJobFor
-        {
-            public NativeArray<AudioHandler> handlers;
-
-            public void Execute(int i)
-            {
-                handlers[i].instance.getPlaybackState(out var state);
-                if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED)
-                {
-                    handlers[i].instance.release();
-                    handlers[i].instance.clearHandle();
-                }
-            }
-        }
-        private struct TranslationUpdateJob : IJobParallelFor
-        {
-            [ReadOnly] public NativeArray<AudioHandler>.ReadOnly handlers;
-
-            public void Execute(int i)
-            {
-                if (handlers[i].IsEmpty()) return;
-
-                handlers[i].instance.set3DAttributes(handlers[i].Get3DAttributes());
-            }
+            JobHandle handlerJob = m_Handlers.ScheduleUpdate();
+            m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, handlerJob);
         }
 
         private void OnApplicationFocus(bool focus)
         {
             m_IsFocusing = focus;
-        }
-
-        #endregion
-
-        #region Handler
-
-        private unsafe AudioHandler* GetUnusedHandler()
-        {
-            AudioHandler* buffer = (AudioHandler*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(m_Handlers);
-            int index = GetUnusedHandlerIndex(buffer);
-
-            return buffer + index;
-
-            int GetUnusedHandlerIndex(AudioHandler* buffer)
-            {
-                for (int i = 0; i < m_HandlerLength; i++)
-                {
-                    if (buffer[i].IsEmpty()) return i;
-                }
-
-                IncrementHandlerArray();
-
-                return GetUnusedHandlerIndex(buffer);
-            }
-            void IncrementHandlerArray()
-            {
-                m_GlobalJobHandle.Complete();
-
-                m_HandlerLength *= 2;
-                NativeArray<AudioHandler> newArr
-                    = new NativeArray<AudioHandler>(m_HandlerLength, Allocator.Persistent);
-                m_Handlers.CopyTo(newArr);
-
-                m_Handlers.Dispose();
-                m_Handlers = newArr;
-            }
         }
 
         #endregion
@@ -242,7 +163,7 @@ namespace Point.Audio
 #endif
             unsafe
             {
-                AudioHandler* handler = Instance.GetUnusedHandler();
+                AudioHandler* handler = Instance.m_Handlers.GetUnusedHandler();
                 {
                     handler->translation = audio._translation;
                     handler->rotation = audio._rotation;
