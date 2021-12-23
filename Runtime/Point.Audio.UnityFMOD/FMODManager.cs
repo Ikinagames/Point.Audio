@@ -33,18 +33,27 @@ namespace Point.Audio
         internal static FMOD.Studio.System StudioSystem => FMODUnity.RuntimeManager.StudioSystem;
         internal static FMOD.System CoreSystem => FMODUnity.RuntimeManager.CoreSystem;
 
+        private bool m_IsFocusing;
+
         private JobHandle m_GlobalJobHandle;
         private NativeArray<AudioHandler> m_Handlers;
         private int m_HandlerLength;
 
+        private NativeHashMap<FixedString512Bytes, ParamReference> m_GlobalParameters;
+
         protected override void OnInitialze()
         {
+            m_IsFocusing = true;
+
             m_Handlers = new NativeArray<AudioHandler>(128, Allocator.Persistent);
             m_HandlerLength = 128;
+
+            m_GlobalParameters = new NativeHashMap<FixedString512Bytes, ParamReference>(1024, AllocatorManager.Persistent);
         }
         protected override void OnShutdown()
         {
             m_Handlers.Dispose();
+            m_GlobalParameters.Dispose();
         }
 
         #region Updates
@@ -55,17 +64,40 @@ namespace Point.Audio
             if (UnityEditor.EditorApplication.isPaused) return;
 #endif
             m_GlobalJobHandle.Complete();
-            {
-                TranslationUpdateJob trUpdateJob = new TranslationUpdateJob
-                {
-                    handlers = m_Handlers.AsReadOnly()
-                };
 
-                JobHandle trUpdateJobHandle = trUpdateJob.Schedule(m_Handlers.Length, 64);
+            TranslationUpdateJob trUpdateJob = new TranslationUpdateJob
+            {
+                handlers = m_Handlers.AsReadOnly()
+            };
+            AudioDisposeJob audioDisposeJob = new AudioDisposeJob
+            {
+                handlers = m_Handlers
+            };
+
+            {
+                JobHandle trUpdateJobHandle = trUpdateJob.Schedule(m_HandlerLength, 64, m_GlobalJobHandle);
                 m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, trUpdateJobHandle);
+            }
+            {
+                JobHandle disposeJob = audioDisposeJob.Schedule(m_HandlerLength, m_GlobalJobHandle);
+                m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, disposeJob);
             }
         }
 
+        private struct AudioDisposeJob : IJobFor
+        {
+            public NativeArray<AudioHandler> handlers;
+
+            public void Execute(int i)
+            {
+                handlers[i].instance.getPlaybackState(out var state);
+                if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED)
+                {
+                    handlers[i].instance.release();
+                    handlers[i].instance.clearHandle();
+                }
+            }
+        }
         private struct TranslationUpdateJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<AudioHandler>.ReadOnly handlers;
@@ -76,6 +108,11 @@ namespace Point.Audio
 
                 handlers[i].instance.set3DAttributes(handlers[i].Get3DAttributes());
             }
+        }
+
+        private void OnApplicationFocus(bool focus)
+        {
+            m_IsFocusing = focus;
         }
 
         #endregion
@@ -115,6 +152,58 @@ namespace Point.Audio
         }
 
         #endregion
+
+        public static ParamReference GetGlobalParameter(FixedString512Bytes name)
+        {
+            if (!Instance.m_GlobalParameters.TryGetValue(name, out var param))
+            {
+                param = new ParamReference(name.ToString());
+
+                StudioSystem.getParameterByID(param.id, out float value);
+                param.value = value;
+
+                Instance.m_GlobalParameters.Add(name, param);
+            }
+
+            return param;
+        }
+        public static void SetGlobalParameter(FixedString512Bytes name, float value)
+        {
+            if (!Instance.m_GlobalParameters.TryGetValue(name, out var param))
+            {
+                param = new ParamReference(name.ToString(), value);
+
+                Instance.m_GlobalParameters.Add(name, param);
+            }
+            else
+            {
+                param.value = value;
+                Instance.m_GlobalParameters[name] = param;
+            }
+
+            StudioSystem.setParameterByID(param.id, value);
+        }
+
+        public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
+        public static bool LoadBank(string name, bool loadSamples = false)
+        {
+            try
+            {
+                FMODUnity.RuntimeManager.LoadBank(name, loadSamples);
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+                return false;
+            }
+
+            FMODUnity.RuntimeManager.WaitForAllSampleLoading();
+            return true;
+        }
+        public static void UnloadBank(string name)
+        {
+            FMODUnity.RuntimeManager.UnloadBank(name);
+        }
 
         public static FMODAudio GetAudio(FMODUnity.EventReference eventRef)
         {
@@ -189,12 +278,11 @@ namespace Point.Audio
 #endif
             unsafe
             {
-                if (audio.audioHandler->instance.isValid())
-                {
-                    audio.audioHandler->instance.stop(audio.AllowFadeout ? FMOD.Studio.STOP_MODE.ALLOWFADEOUT : FMOD.Studio.STOP_MODE.IMMEDIATE);
-                    audio.audioHandler->instance.release();
-                    audio.audioHandler->instance.clearHandle();
-                }
+                //if (audio.audioHandler->instance.isValid())
+                //{
+                    
+                //}
+                audio.audioHandler->instance.stop(audio.AllowFadeout ? FMOD.Studio.STOP_MODE.ALLOWFADEOUT : FMOD.Studio.STOP_MODE.IMMEDIATE);
             }
         }
     }
