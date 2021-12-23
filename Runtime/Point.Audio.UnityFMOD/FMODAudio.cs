@@ -19,17 +19,21 @@
 
 using Point.Collections;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
 namespace Point.Audio.UnityFMOD
 {
+    [BurstCompatible]
     public struct FMODAudio : IValidation
     {
+        [NativeDisableUnsafePtrRestriction]
         internal unsafe UnityFMOD.AudioHandler* audioHandler;
         internal unsafe ref UnityFMOD.AudioHandler refHandler => ref *audioHandler;
 
         internal readonly FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;
+        internal bool playQueued;
 
         private bool allowFadeout;
         private bool overrideAttenuation;
@@ -122,14 +126,51 @@ namespace Point.Audio.UnityFMOD
             }
         }
 
+        public float volume
+        {
+            get
+            {
+#if DEBUG_MODE
+                if (!IsValid())
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"This audio has an invalid but trying access. " +
+                        $"This is not allowed.");
+
+                    return -1;
+                }
+#endif
+                refHandler.instance.getVolume(out float vol);
+                return vol;
+            }
+            set
+            {
+#if DEBUG_MODE
+                if (!IsValid())
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"This audio has an invalid but trying access. " +
+                        $"This is not allowed.");
+
+                    return;
+                }
+#endif
+                refHandler.instance.setVolume(value);
+            }
+        }
+
         #endregion
 
+        #region Constructors
+
+        [BurstCompatible]
         internal unsafe FMODAudio(FMOD.Studio.EventDescription desc)
         {
             audioHandler = null;
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
+            playQueued = false;
 
             allowFadeout = true;
             overrideAttenuation = false;
@@ -139,9 +180,22 @@ namespace Point.Audio.UnityFMOD
             _translation = 0;
             _rotation = quaternion.identity;
         }
+        [BurstCompatible]
+        public FMODAudio(FMODUnity.EventReference eventRef)
+        {
+            this = FMODManager.GetAudio(eventRef);
+        }
+        [NotBurstCompatible]
+        public FMODAudio(string eventPath)
+        {
+            this = FMODManager.GetAudio(eventPath);
+        }
+
+        #endregion
 
         #region Parameter
 
+        [NotBurstCompatible]
         public bool HasParameter(string name)
         {
             ParamReference temp = new ParamReference(name);
@@ -152,20 +206,103 @@ namespace Point.Audio.UnityFMOD
 
             return false;
         }
-        public void AddParameter(string name, float value)
+        public bool HasParameter(ParamReference parameter)
+        {
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].Equals(parameter))
+                {
+                    if (parameters[i].value == parameter.value &&
+                        parameters[i].ignoreSeekSpeed == parameter.ignoreSeekSpeed)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+
+            return false;
+        }
+        [NotBurstCompatible]
+        public void SetParameter(string name, float value)
         {
 #if DEBUG_MODE
-            if (HasParameter(name))
+            if (!IsValid())
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                    $"Parameter({name}) already added in this audio.");
+                    $"This audio has an invalid but trying access. " +
+                    $"This is not allowed.");
 
                 return;
             }
 #endif
-            ParamReference param = new ParamReference(name, value);
-            parameters.Add(param);
+            int index = -1;
+
+            ParamReference parameter = new ParamReference(name, value);
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].Equals(parameter))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index < 0)
+            {
+                parameters.Add(parameter);
+            }
+            else
+            {
+                ref ParamReference temp = ref parameters.ElementAt(index);
+                temp = parameter;
+            }
+
+            if (IsValid())
+            {
+                refHandler.instance.setParameterByID(parameter.id, parameter.value, parameter.ignoreSeekSpeed);
+            }
         }
+        public void SetParameter(ParamReference parameter)
+        {
+#if DEBUG_MODE
+            if (!IsValid())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid but trying access. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            int index = -1;
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].Equals(parameter))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index < 0)
+            {
+                parameters.Add(parameter);
+            }
+            else
+            {
+                ref ParamReference temp = ref parameters.ElementAt(index);
+                temp = parameter;
+            }
+
+            if (IsValid())
+            {
+                refHandler.instance.setParameterByID(parameter.id, parameter.value, parameter.ignoreSeekSpeed);
+            }
+        }
+        [NotBurstCompatible]
         public void RemoveParameter(string name)
         {
             ParamReference temp = new ParamReference(name);
@@ -178,26 +315,16 @@ namespace Point.Audio.UnityFMOD
                 }
             }
         }
-        public ref ParamReference GetParameter(string name)
+        public void RemoveParameter(ParamReference parameter)
         {
-            int index = -1;
-
-            ParamReference temp = new ParamReference(name);
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (parameters[i].Equals(temp))
+                if (parameters[i].Equals(parameter))
                 {
-                    index = i;
-                    break;
+                    parameters.RemoveAt(i);
+                    return;
                 }
             }
-#if DEBUG_MODE
-            if (index < 0)
-            {
-                throw new System.Exception();
-            }
-#endif
-            return ref parameters.ElementAt(index);
         }
 
         #endregion
@@ -207,9 +334,6 @@ namespace Point.Audio.UnityFMOD
         /// <summary>
         /// 유효한 ID 를 가진 이벤트인지 반환합니다.
         /// </summary>
-        /// <remarks>
-        /// <seealso cref="FMODManager.GetAudio(FMODUnity.EventReference)"/> 로 받아올 수 있습니다.
-        /// </remarks>
         /// <returns></returns>
         public bool IsValidID() => eventDescription.isValid();
         public bool IsValid()
@@ -221,5 +345,34 @@ namespace Point.Audio.UnityFMOD
         }
 
         #endregion
+
+        public void Play()
+        {
+#if DEBUG_MODE
+            if (!IsValidID())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid FMOD id but trying to play. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            FMODManager.Play(ref this);
+        }
+        public void Stop()
+        {
+#if DEBUG_MODE
+            if (!IsValid())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid but trying to play. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            FMODManager.Stop(ref this);
+        }
     }
 }

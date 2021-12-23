@@ -5,8 +5,7 @@
         "Point.Collections",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst",
-        "FMODUnity"
+        "Unity.Burst"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

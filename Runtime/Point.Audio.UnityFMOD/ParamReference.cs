@@ -18,9 +18,11 @@
 #endif
 
 using System;
+using Unity.Collections;
 
 namespace Point.Audio.UnityFMOD
 {
+    [BurstCompatible]
     public struct ParamReference : IEquatable<ParamReference>, IEquatable<FMOD.Studio.PARAMETER_ID>
     {
         // = 13 bytes
@@ -30,6 +32,15 @@ namespace Point.Audio.UnityFMOD
         public float value;
         // 1 bytes
         public bool ignoreSeekSpeed;
+
+        public FMOD.Studio.PARAMETER_DESCRIPTION description
+        {
+            get
+            {
+                FMODManager.StudioSystem.getParameterDescriptionByID(id, out var description);
+                return description;
+            }
+        }
 
         public ParamReference(string name)
         {
@@ -45,6 +56,8 @@ namespace Point.Audio.UnityFMOD
             this.value = value;
             ignoreSeekSpeed = false;
         }
+
+
 
         public bool Equals(ParamReference other) => id.data1.Equals(other.id.data1) && id.data2.Equals(other.id.data2);
         public bool Equals(FMOD.Studio.PARAMETER_ID other) => id.data1.Equals(other.data1) && id.data2.Equals(other.data2);

@@ -30,5 +30,34 @@ namespace Point.Audio.UnityFMOD
         public quaternion rotation;
 
         public bool IsEmpty() => !instance.isValid();
+        public FMOD.ATTRIBUTES_3D Get3DAttributes()
+        {
+            FMOD.ATTRIBUTES_3D att = new FMOD.ATTRIBUTES_3D();
+
+            float3
+                forward = math.mul(rotation, math.forward()),
+                up = math.mul(rotation, math.up());
+
+            att.forward = new FMOD.VECTOR
+            {
+                x = forward.x,
+                y = forward.y,
+                z = forward.z
+            };
+            att.up = new FMOD.VECTOR
+            {
+                x = up.x,
+                y = up.y,
+                z = up.z
+            };
+            att.position = new FMOD.VECTOR
+            {
+                x = translation.x,
+                y = translation.y,
+                z = translation.z
+            };
+
+            return att;
+        }
     }
 }
