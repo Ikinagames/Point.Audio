@@ -30,6 +30,9 @@ namespace Point.Audio
     [AddComponentMenu("")]
     public sealed class FMODManager : StaticMonobehaviour<FMODManager>, IStaticInitializer
     {
+        protected override bool EnableLog => false;
+        protected override bool HideInInspector => true;
+
         internal static FMOD.Studio.System StudioSystem => FMODUnity.RuntimeManager.StudioSystem;
         internal static FMOD.System CoreSystem => FMODUnity.RuntimeManager.CoreSystem;
 
