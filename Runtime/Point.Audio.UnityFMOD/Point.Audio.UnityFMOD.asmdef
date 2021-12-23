@@ -1,12 +1,13 @@
 {
-    "name": "Point.Audio",
-    "rootNamespace": "Point.Audio",
+    "name": "Point.Audio.UnityFMOD",
+    "rootNamespace": "Point.Audio.UnityFMOD",
     "references": [
+        "FMODUnity",
+        "Point.Audio",
         "Point.Collections",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst",
-        "FMODUnity"
+        "Unity.Burst"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -14,7 +15,9 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "POINT_FMOD"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

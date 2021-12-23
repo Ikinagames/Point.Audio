@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if (UNITY_EDITOR || DEVELOPMENT_BUILD) && !POINT_DISABLE_CHECKS
 #define DEBUG_MODE
 #endif
 
@@ -23,14 +23,18 @@ using Point.Collections.ResourceControl;
 using Unity.Collections;
 using System.Collections.Generic;
 using UnityEngine.Jobs;
-using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
 
 namespace Point.Audio
 {
     [AddComponentMenu("")]
-    public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
+    public sealed class AudioManager : StaticMonobehaviour<AudioManager>
+#if !POINT_FMOD
+        , IStaticInitializer
+#endif
     {
+        #region Unity Audio
 #if !POINT_FMOD
         private const int c_InitialCount = 128;
 
@@ -55,14 +59,14 @@ namespace Point.Audio
         private Transform[] m_AudioTransforms;
         private TransformAccessArray m_TransformAccessArray;
 
-        private struct Audio
+        public struct Audio
         {
             public bool beingUsed;
 
             public float3 translation;
             public quaternion rotation;
 
-            public AssetInfo audioClip;
+            public AssetInfo audio;
         }
         private struct UpdateTransformationJob : IJobParallelForTransform
         {
@@ -82,7 +86,7 @@ namespace Point.Audio
             m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
             m_TransformAccessArray = new TransformAccessArray(m_AudioTransforms);
-
+            //FMODUnity.EventReference
             GameObject audioFolder = new GameObject("Audio");
             s_Folder = audioFolder.transform;
         }
@@ -161,6 +165,7 @@ namespace Point.Audio
         {
 
         }
-    }
 #endif
+        #endregion
+    }
 }
