@@ -20,7 +20,7 @@
 using Point.Collections;
 using Unity.Mathematics;
 
-namespace Point.Audio.UnityFMOD
+namespace Point.Audio.LowLevel
 {
     internal struct AudioHandler : IEmpty
     {

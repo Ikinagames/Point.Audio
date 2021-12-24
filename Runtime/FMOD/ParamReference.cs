@@ -20,8 +20,11 @@
 using System;
 using Unity.Collections;
 
-namespace Point.Audio.UnityFMOD
+namespace Point.Audio
 {
+    /// <summary>
+    /// FMOD 의 로컬 Event parameter, 혹은 global parameter 입니다.
+    /// </summary>
     [BurstCompatible]
     public struct ParamReference : IEquatable<ParamReference>, IEquatable<FMOD.Studio.PARAMETER_ID>
     {

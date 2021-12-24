@@ -22,14 +22,14 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
-namespace Point.Audio.UnityFMOD
+namespace Point.Audio
 {
     [BurstCompatible]
     public struct FMODAudio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
-        internal unsafe UnityFMOD.AudioHandler* audioHandler;
-        internal unsafe ref UnityFMOD.AudioHandler refHandler => ref *audioHandler;
+        internal unsafe LowLevel.AudioHandler* audioHandler;
+        internal unsafe ref LowLevel.AudioHandler refHandler => ref *audioHandler;
 
         internal readonly FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;

@@ -19,7 +19,6 @@
 
 using UnityEngine;
 using Point.Collections;
-using Point.Audio.UnityFMOD;
 using Unity.Collections;
 using System.Linq;
 using Unity.Jobs;
@@ -43,6 +42,8 @@ namespace Point.Audio
 
         private NativeHashMap<FixedString512Bytes, ParamReference> m_GlobalParameters;
 
+        #region Class Instruction
+
         protected override void OnInitialze()
         {
             m_IsFocusing = true;
@@ -56,6 +57,8 @@ namespace Point.Audio
             m_Handlers.Dispose();
             m_GlobalParameters.Dispose();
         }
+
+        #endregion
 
         #region Updates
 
@@ -154,6 +157,25 @@ namespace Point.Audio
             FMODAudio audio = new FMODAudio(ev);
 
             return audio;
+        }
+
+        public static FMOD.Studio.Bus GetBusByID(FMOD.GUID id)
+        {
+            if (StudioSystem.getBusByID(id, out var bus) != FMOD.RESULT.OK)
+            {
+                return default(FMOD.Studio.Bus);
+            }
+
+            return bus;
+        }
+        public static FMOD.Studio.VCA GetVCA(FMOD.GUID id)
+        {
+            if (StudioSystem.getVCAByID(id, out FMOD.Studio.VCA vca) != FMOD.RESULT.OK)
+            {
+                return default(FMOD.Studio.VCA);
+            }
+
+            return vca;
         }
 
         public static void Play(ref FMODAudio audio)

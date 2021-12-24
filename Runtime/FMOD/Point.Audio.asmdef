@@ -1,9 +1,8 @@
 {
-    "name": "Point.Audio.UnityFMOD",
-    "rootNamespace": "Point.Audio.UnityFMOD",
+    "name": "Point.Audio.FMOD",
+    "rootNamespace": "Point.Audio",
     "references": [
         "FMODUnity",
-        "Point.Audio",
         "Point.Collections",
         "Unity.Collections",
         "Unity.Mathematics",

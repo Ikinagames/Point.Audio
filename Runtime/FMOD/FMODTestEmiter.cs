@@ -20,7 +20,7 @@
 using FMODUnity;
 using UnityEngine;
 
-namespace Point.Audio.UnityFMOD
+namespace Point.Audio
 {
     public sealed class FMODTestEmiter : MonoBehaviour
     {

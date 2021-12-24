@@ -17,7 +17,6 @@
 #define DEBUG_MODE
 #endif
 
-using Point.Audio.UnityFMOD;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -149,8 +148,6 @@ namespace Point.Audio.LowLevel
                 {
                     handlers[i].instance.release();
                     handlers[i].instance.clearHandle();
-
-                    UnityEngine.Debug.Log($"dispose {i}");
                 }
             }
         }
