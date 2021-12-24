@@ -131,6 +131,8 @@ namespace Point.Audio
             return bank;
         }
 
+        // https://www.fmod.com/resources/documentation-api?version=2.02&page=studio-guide.html#dialogue-and-localization
+        // https://www.fmod.com/resources/documentation-api?version=2.02&page=studio-api-eventinstance.html#fmod_studio_event_callback_create_programmer_sound
         //public static void Test(string key)
         //{
         //    StudioSystem.getSoundInfo(key, out var info);
