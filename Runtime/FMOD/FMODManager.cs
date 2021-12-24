@@ -23,6 +23,7 @@ using Unity.Collections;
 using System.Linq;
 using Unity.Jobs;
 using Point.Audio.LowLevel;
+using FMOD.Studio;
 
 namespace Point.Audio
 {
@@ -40,8 +41,6 @@ namespace Point.Audio
         private JobHandle m_GlobalJobHandle;
         private AudioHandlerContainer m_Handlers;
 
-        private NativeHashMap<FixedString512Bytes, ParamReference> m_GlobalParameters;
-
         #region Class Instruction
 
         protected override void OnInitialze()
@@ -49,13 +48,10 @@ namespace Point.Audio
             m_IsFocusing = true;
 
             m_Handlers = new AudioHandlerContainer(128);
-
-            m_GlobalParameters = new NativeHashMap<FixedString512Bytes, ParamReference>(1024, AllocatorManager.Persistent);
         }
         protected override void OnShutdown()
         {
             m_Handlers.Dispose();
-            m_GlobalParameters.Dispose();
         }
 
         #endregion
@@ -80,35 +76,32 @@ namespace Point.Audio
 
         #endregion
 
-        public static ParamReference GetGlobalParameter(FixedString512Bytes name)
+        public static ParamReference GetGlobalParameter(string name)
         {
-            if (!Instance.m_GlobalParameters.TryGetValue(name, out var param))
-            {
-                param = new ParamReference(name.ToString());
-
-                StudioSystem.getParameterByID(param.id, out float value);
-                param.value = value;
-
-                Instance.m_GlobalParameters.Add(name, param);
-            }
+            StudioSystem.getParameterDescriptionByName(name, out var description);
+            StudioSystem.getParameterByID(description.id, out float value);
+            var param = new ParamReference(name, value);
 
             return param;
         }
-        public static void SetGlobalParameter(FixedString512Bytes name, float value)
+        public static void SetGlobalParameter(string name, float value)
         {
-            if (!Instance.m_GlobalParameters.TryGetValue(name, out var param))
+            StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
+            var result = StudioSystem.setParameterByID(description.id, value);
+            if (result != FMOD.RESULT.OK)
             {
-                param = new ParamReference(name.ToString(), value);
-
-                Instance.m_GlobalParameters.Add(name, param);
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Parameter({name}) is not present in the current FMOD.");
             }
-            else
+        }
+        public static void SetGlobalParameter(ParamReference parameter)
+        {
+            var result = StudioSystem.setParameterByID(parameter.id, parameter.value);
+            if (result != FMOD.RESULT.OK)
             {
-                param.value = value;
-                Instance.m_GlobalParameters[name] = param;
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Parameter({parameter.description.name}) is not present in the current FMOD.");
             }
-
-            StudioSystem.setParameterByID(param.id, value);
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
@@ -131,8 +124,21 @@ namespace Point.Audio
         {
             FMODUnity.RuntimeManager.UnloadBank(name);
         }
+        public static FMOD.Studio.Bank GetBank(string path)
+        {
+            StudioSystem.getBank(path, out var bank);
 
-        public static FMODAudio GetAudio(FMODUnity.EventReference eventRef)
+            return bank;
+        }
+
+        //public static void Test(string key)
+        //{
+        //    StudioSystem.getSoundInfo(key, out var info);
+        //    EventInstance asd;
+        //    //asd.setCallback();
+        //}
+
+        public static FMODAudio GetAudio(in FMODUnity.EventReference eventRef)
         {
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -145,7 +151,18 @@ namespace Point.Audio
 
             return audio;
         }
-        public static FMODAudio GetAudio(string eventPath)
+        public static void GetAudio(in FMODUnity.EventReference eventRef, ref FMODAudio audio)
+        {
+            var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
+#if DEBUG_MODE
+            if (result != FMOD.RESULT.OK)
+            {
+                throw new System.Exception();
+            }
+#endif
+            audio.SetEvent(ev);
+        }
+        public static FMODAudio GetAudio(in string eventPath)
         {
             var result = StudioSystem.getEvent(eventPath, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE

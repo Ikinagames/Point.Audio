@@ -18,26 +18,28 @@
 #endif
 
 using Point.Collections;
+using Sirenix.Utilities.Editor;
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
 namespace Point.Audio
 {
-    [BurstCompatible]
+    [BurstCompatible, Serializable]
     public struct FMODAudio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
         internal unsafe LowLevel.AudioHandler* audioHandler;
         internal unsafe ref LowLevel.AudioHandler refHandler => ref *audioHandler;
 
-        internal readonly FMOD.Studio.EventDescription eventDescription;
+        internal FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;
         internal bool playQueued;
 
-        private bool allowFadeout;
-        private bool overrideAttenuation;
-        private float overrideMinDistance, overrideMaxDistance;
+        [UnityEngine.SerializeField] private bool allowFadeout;
+        [UnityEngine.SerializeField] private bool overrideAttenuation;
+        [UnityEngine.SerializeField] private float overrideMinDistance, overrideMaxDistance;
 
         internal float3 _translation;
         internal quaternion _rotation;
@@ -189,6 +191,20 @@ namespace Point.Audio
         public FMODAudio(string eventPath)
         {
             this = FMODManager.GetAudio(eventPath);
+        }
+
+        internal unsafe void SetEvent(in FMOD.Studio.EventDescription desc)
+        {
+            if (audioHandler != null)
+            {
+                throw new Exception();
+            }
+
+            audioHandler = null;
+
+            eventDescription = desc;
+            parameters = new FixedList4096Bytes<ParamReference>();
+            playQueued = false;
         }
 
         #endregion

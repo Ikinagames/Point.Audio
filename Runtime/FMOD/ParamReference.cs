@@ -59,6 +59,13 @@ namespace Point.Audio
             this.value = value;
             ignoreSeekSpeed = false;
         }
+        public ParamReference(FMODUnity.ParamRef param)
+        {
+            FMODManager.StudioSystem.getParameterDescriptionByName(param.Name, out var description);
+            id = description.id;
+            this.value = param.Value;
+            ignoreSeekSpeed = false;
+        }
 
         public bool Equals(ParamReference other) => id.data1.Equals(other.id.data1) && id.data2.Equals(other.id.data2);
         public bool Equals(FMOD.Studio.PARAMETER_ID other) => id.data1.Equals(other.data1) && id.data2.Equals(other.data2);
