@@ -27,7 +27,7 @@ using Unity.Mathematics;
 namespace Point.Audio
 {
     [BurstCompatible, Serializable]
-    public struct FMODAudio : IValidation
+    public struct Audio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
         internal unsafe LowLevel.AudioHandler* audioHandler;
@@ -166,7 +166,7 @@ namespace Point.Audio
         #region Constructors
 
         [BurstCompatible]
-        internal unsafe FMODAudio(FMOD.Studio.EventDescription desc)
+        internal unsafe Audio(FMOD.Studio.EventDescription desc)
         {
             audioHandler = null;
 
@@ -183,12 +183,12 @@ namespace Point.Audio
             _rotation = quaternion.identity;
         }
         [BurstCompatible]
-        public FMODAudio(FMODUnity.EventReference eventRef)
+        public Audio(FMODUnity.EventReference eventRef)
         {
             this = FMODManager.GetAudio(eventRef);
         }
         [NotBurstCompatible]
-        public FMODAudio(string eventPath)
+        public Audio(string eventPath)
         {
             this = FMODManager.GetAudio(eventPath);
         }

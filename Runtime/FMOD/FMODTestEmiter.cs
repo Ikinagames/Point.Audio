@@ -28,7 +28,7 @@ namespace Point.Audio
 
         private void OnEnable()
         {
-            FMODAudio audio = new FMODAudio(EventReference);
+            Audio audio = new Audio(EventReference);
             audio.Play();
         }
     }

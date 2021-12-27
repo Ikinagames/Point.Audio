@@ -78,7 +78,15 @@ namespace Point.Audio
 
         public static ParamReference GetGlobalParameter(string name)
         {
-            StudioSystem.getParameterDescriptionByName(name, out var description);
+            var result = StudioSystem.getParameterDescriptionByName(name, out var description);
+            if (result != FMOD.RESULT.OK)
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Parameter({name}) is not present in the current FMOD.");
+
+                return default(ParamReference);
+            }
+
             StudioSystem.getParameterByID(description.id, out float value);
             var param = new ParamReference(name, value);
 
@@ -86,13 +94,16 @@ namespace Point.Audio
         }
         public static void SetGlobalParameter(string name, float value)
         {
-            StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
-            var result = StudioSystem.setParameterByID(description.id, value);
+            var result = StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
             if (result != FMOD.RESULT.OK)
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
+
+                return;
             }
+
+            StudioSystem.setParameterByID(description.id, value);
         }
         public static void SetGlobalParameter(ParamReference parameter)
         {
@@ -140,7 +151,7 @@ namespace Point.Audio
         //    //asd.setCallback();
         //}
 
-        public static FMODAudio GetAudio(in FMODUnity.EventReference eventRef)
+        public static Audio GetAudio(in FMODUnity.EventReference eventRef)
         {
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -149,11 +160,11 @@ namespace Point.Audio
                 throw new System.Exception();
             }
 #endif
-            FMODAudio audio = new FMODAudio(ev);
+            Audio audio = new Audio(ev);
 
             return audio;
         }
-        public static void GetAudio(in FMODUnity.EventReference eventRef, ref FMODAudio audio)
+        public static void GetAudio(in FMODUnity.EventReference eventRef, ref Audio audio)
         {
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -164,7 +175,7 @@ namespace Point.Audio
 #endif
             audio.SetEvent(ev);
         }
-        public static FMODAudio GetAudio(in string eventPath)
+        public static Audio GetAudio(in string eventPath)
         {
             var result = StudioSystem.getEvent(eventPath, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -173,7 +184,7 @@ namespace Point.Audio
                 throw new System.Exception();
             }
 #endif
-            FMODAudio audio = new FMODAudio(ev);
+            Audio audio = new Audio(ev);
 
             return audio;
         }
@@ -197,7 +208,7 @@ namespace Point.Audio
             return vca;
         }
 
-        public static void Play(ref FMODAudio audio)
+        public static void Play(ref Audio audio)
         {
 #if DEBUG_MODE
             if (!audio.IsValidID())
@@ -233,7 +244,7 @@ namespace Point.Audio
                 handler->instance.start();
             }
         }
-        public static void Stop(ref FMODAudio audio)
+        public static void Stop(ref Audio audio)
         {
 #if DEBUG_MODE
             if (!audio.IsValid())

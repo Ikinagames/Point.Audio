@@ -20,10 +20,10 @@ namespace Point.Audio.Arbor
         [SerializeField] private EventReference m_Event;
         [SerializeField] private ParamRef[] m_Parameters = Array.Empty<ParamRef>();
 
-        [SerializeField] FlexibleField<FMODAudio> m_AudioField;
+        [SerializeField] FlexibleField<Audio> m_AudioField;
 
         private ParamReference[] m_ParsedParameters;
-        private FMODAudio m_Audio;
+        private Audio m_Audio;
 
         protected override void OnCreated()
         {
