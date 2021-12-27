@@ -147,11 +147,11 @@ namespace Point.Audio
             if (result != FMOD.RESULT.OK)
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                    $"Parameter({parameter.description.name}) is not present in the current FMOD.");
+                    $"Parameter({(string)parameter.description.name}) is not present in the current FMOD.");
             }
 
             Collections.Point.Log(Collections.Point.LogChannel.Audio,
-                $"Global parameter({parameter.description.name}) has set to {parameter.value}.");
+                $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
