@@ -64,7 +64,7 @@ namespace Point.Audio
             AudioList audioList = AudioList.Instance;
             for (int i = 0; i < audioList.m_OnSceneLoadedParams.Length; i++)
             {
-                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0)) continue;
+                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0.name)) continue;
 
                 SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].ParamReference);
             }
