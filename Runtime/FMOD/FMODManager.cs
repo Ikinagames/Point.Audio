@@ -24,6 +24,8 @@ using System.Linq;
 using Unity.Jobs;
 using Point.Audio.LowLevel;
 using FMOD.Studio;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.SceneManagement;
 
 namespace Point.Audio
 {
@@ -39,6 +41,7 @@ namespace Point.Audio
         private bool m_IsFocusing;
 
         private JobHandle m_GlobalJobHandle;
+
         private AudioHandlerContainer m_Handlers;
 
         #region Class Instruction
@@ -47,11 +50,41 @@ namespace Point.Audio
         {
             m_IsFocusing = true;
 
-            m_Handlers = new AudioHandlerContainer(128);
+            unsafe
+            {
+                m_Handlers = new AudioHandlerContainer(128);
+            }
+
+            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
+
+        private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
+        {
+            AudioList audioList = AudioList.Instance;
+            for (int i = 0; i < audioList.m_OnSceneLoadedParams.Length; i++)
+            {
+                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0)) continue;
+
+                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].ParamReference);
+            }
+        }
+
         protected override void OnShutdown()
         {
+            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+
             m_Handlers.Dispose();
+        }
+
+        private void Start()
+        {
+            AudioList audioList = AudioList.Instance;
+            for (int i = 0; i < audioList.m_StartOnPlay.Length; i++)
+            {
+                Audio audio = audioList.m_StartOnPlay[i].Audio;
+                Play(ref audio);
+            }
         }
 
         #endregion
@@ -104,6 +137,9 @@ namespace Point.Audio
             }
 
             StudioSystem.setParameterByID(description.id, value);
+
+            Collections.Point.Log(Collections.Point.LogChannel.Audio,
+                $"Global parameter({name}) has set to {value}.");
         }
         public static void SetGlobalParameter(ParamReference parameter)
         {
@@ -113,6 +149,9 @@ namespace Point.Audio
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
                     $"Parameter({parameter.description.name}) is not present in the current FMOD.");
             }
+
+            Collections.Point.Log(Collections.Point.LogChannel.Audio,
+                $"Global parameter({parameter.description.name}) has set to {parameter.value}.");
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);

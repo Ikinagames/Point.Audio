@@ -29,7 +29,7 @@ namespace Point.Audio.LowLevel
     {
         [NativeDisableUnsafePtrRestriction]
         private AudioHandler* m_Buffer;
-        private UnsafeList<int> m_UnusedIndices;
+        //private UnsafeRingQueue<int>* m_UnusedIndices;
         private int m_Length;
 
         private JobHandle m_JobHandle;
@@ -40,15 +40,16 @@ namespace Point.Audio.LowLevel
                 UnsafeUtility.SizeOf<AudioHandler>() * length,
                 UnsafeUtility.AlignOf<AudioHandler>(),
                 Allocator.Persistent);
-            m_UnusedIndices = new UnsafeList<int>(length, AllocatorManager.Persistent, NativeArrayOptions.UninitializedMemory);
+            //m_UnusedIndices = unusedIndices;
             m_Length = length;
 
             m_JobHandle = default(JobHandle);
 
-            for (int i = 0; i < length; i++)
-            {
-                m_UnusedIndices.AddNoResize(i);
-            }
+            //for (int i = 0; i < length; i++)
+            //{
+            //    (*unusedIndices).Enqueue(i);
+            //    //m_UnusedIndices.AddNoResize(i);
+            //}
         }
 
         public AudioHandler* GetUnusedHandler()
@@ -96,7 +97,7 @@ namespace Point.Audio.LowLevel
             m_JobHandle.Complete();
 
             UnsafeUtility.Free(m_Buffer, Allocator.Persistent);
-            m_UnusedIndices.Dispose();
+            //(*unusedIndices).Enqueue(i);.Dispose();
         }
 
         public void CompleteAllJobs() => m_JobHandle.Complete();
