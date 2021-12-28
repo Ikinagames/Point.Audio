@@ -19,23 +19,26 @@ namespace Point.Audio.FMODEditor
                 c_IgnoreSeekSpeed = "m_IgnoreSeekSpeed",
 
                 c_EnableValueReflection = "m_EnableValueReflection",
+                c_ReferenceObject = "m_ReferenceObject",
                 c_ValueFieldName = "m_ValueFieldName";
 
             public static GUIContent
-                IsGlobalContent = new GUIContent("Is Global Parameter", 
-                    @"전역 Parameter 인지 설정합니다."),
-                NameContent = new GUIContent("Name", 
-                    @"Parameter 의 이름을 설정합니다. 
-                    이름은 FMOD 에서 설정된 Parameter 의 실제 이름입니다."),
-                ValueContent = new GUIContent("Value", 
-                    @"입력될 값을 설정합니다."),
-                IgnoreSeekSpeedContent = new GUIContent("Ignore Seek Speed", 
-                    @"FMOD 에서 설정된 Fade 가 무시될 지 설정합니다."),
-                
-                EnableValueReflectionContent = new GUIContent("Enable Value Reflection", 
-                    @"Value 값이 Reflection 으로 입력될 지 설정합니다."),
-                ValueFieldNameContent = new GUIContent("Field Name", 
-                    @"Reflection 을 할 Field, 혹은 Property 의 이름을 설정합니다.")
+                IsGlobalContent = new GUIContent("Is Global Parameter",
+                    "전역 Parameter 인지 설정합니다."),
+                NameContent = new GUIContent("Name",
+                    "Parameter 의 이름을 설정합니다. " +
+                    "이름은 FMOD 에서 설정된 Parameter 의 실제 이름입니다."),
+                ValueContent = new GUIContent("Value",
+                    "입력될 값을 설정합니다."),
+                IgnoreSeekSpeedContent = new GUIContent("Ignore Seek Speed",
+                    "FMOD 에서 설정된 Fade 가 무시될 지 설정합니다."),
+
+                EnableValueReflectionContent = new GUIContent("Enable Value Reflection",
+                    "Value 값이 Reflection 으로 입력될 지 설정합니다."),
+                ReferenceObjectContent = new GUIContent("Reference Object",
+                    ""),
+                ValueFieldNameContent = new GUIContent("Field Name",
+                    "Reflection 을 할 Field, 혹은 Property 의 이름을 설정합니다.")
                 ;
 
             public static SerializedProperty GetIsGlobalField(SerializedProperty property)
@@ -50,12 +53,16 @@ namespace Point.Audio.FMODEditor
 
             public static SerializedProperty GetEnableReflectionField(SerializedProperty property)
                 => property.FindPropertyRelative(c_EnableValueReflection);
+            public static SerializedProperty GetReferenceObjectField(SerializedProperty property)
+                => property.FindPropertyRelative(c_ReferenceObject);
             public static SerializedProperty GetValueFieldNameField(SerializedProperty property)
                 => property.FindPropertyRelative(c_ValueFieldName);
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (string.IsNullOrEmpty(label.text)) label = new GUIContent("Item");
+
             property.isExpanded = EditorGUI.Foldout(position, property.isExpanded, label);
             if (!property.isExpanded) return;
             EditorGUI.indentLevel++;
@@ -100,6 +107,9 @@ namespace Point.Audio.FMODEditor
                 if (enableReflection.boolValue)
                 {
                     EditorGUI.indentLevel++;
+
+                    var refObj = Helper.GetReferenceObjectField(property);
+                    EditorGUI.PropertyField(PropertyDrawerHelper.GetRect(position), refObj, Helper.ReferenceObjectContent);
 
                     var fieldname = Helper.GetValueFieldNameField(property);
                     fieldname.stringValue

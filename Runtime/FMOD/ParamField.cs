@@ -34,6 +34,7 @@ namespace Point.Audio
 
         [UnityEngine.Space]
         [UnityEngine.SerializeField] private bool m_EnableValueReflection = false;
+        [UnityEngine.SerializeField] private UnityEngine.Object m_ReferenceObject = null;
         [UnityEngine.SerializeField] private string m_ValueFieldName = string.Empty;
 
         [NonSerialized] private bool m_Parsed = false;
@@ -41,14 +42,14 @@ namespace Point.Audio
         [NonSerialized] private PropertyInfo m_PropertyInfo;
         [NonSerialized] private FieldInfo m_FieldInfo;
 
-        public ParamReference GetGlobalParamReference(object caller)
+        public ParamReference GetGlobalParamReference()
         {
             float targetValue;
-            if (m_EnableValueReflection && caller != null)
+            if (m_EnableValueReflection && m_ReferenceObject != null)
             {
-                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(caller.GetType());
+                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(m_ReferenceObject.GetType());
 
-                targetValue = GetReflectedValue(caller);
+                targetValue = GetReflectedValue(m_ReferenceObject);
             }
             else targetValue = m_Value;
 

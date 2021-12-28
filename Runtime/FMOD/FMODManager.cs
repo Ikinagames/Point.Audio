@@ -66,7 +66,7 @@ namespace Point.Audio
             {
                 if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0.name)) continue;
 
-                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference(null));
+                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference());
             }
         }
 
@@ -91,7 +91,7 @@ namespace Point.Audio
             {
                 if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(currentScene.name)) continue;
 
-                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference(null));
+                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference());
             }
         }
 
