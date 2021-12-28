@@ -61,6 +61,8 @@ namespace Point.Audio
             audio.rotation = transform.rotation;
 
             audio.Play();
+
+            audio.bindTransform = transform;
         }
 
         /// <summary>

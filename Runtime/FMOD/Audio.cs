@@ -138,6 +138,19 @@ namespace Point.Audio
                 if (HasInitialized) refHandler.rotation = value;
             }
         }
+        public UnityEngine.Transform bindTransform
+        {
+            set
+            {
+                if (!IsValid())
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"Not valid audio handler.");
+                    return;
+                }
+                FMODUnity.RuntimeManager.AttachInstanceToGameObject(refHandler.instance, value);
+            }
+        }
 
         public float volume
         {
