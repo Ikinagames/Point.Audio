@@ -61,7 +61,7 @@ namespace Point.Audio.FMODEditor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (string.IsNullOrEmpty(label.text)) label = new GUIContent("Item");
+            if (string.IsNullOrEmpty(label.text)) label = new GUIContent(property.displayName);
 
             property.isExpanded = EditorGUI.Foldout(position, property.isExpanded, label);
             if (!property.isExpanded) return;
