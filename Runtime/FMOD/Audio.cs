@@ -145,7 +145,8 @@ namespace Point.Audio
                 if (!IsValid())
                 {
                     Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                        $"Not valid audio handler.");
+                        $"This audio is invalid. " +
+                        $"Transform binding is not possible before Play() method executed.");
                     return;
                 }
                 FMODUnity.RuntimeManager.AttachInstanceToGameObject(refHandler.instance, value);
