@@ -17,6 +17,8 @@
 #define DEBUG_MODE
 #endif
 
+using System;
+using System.Reflection;
 
 namespace Point.Audio
 {
@@ -28,19 +30,46 @@ namespace Point.Audio
         [UnityEngine.SerializeField] private float m_Value;
         [UnityEngine.SerializeField] private bool m_IgnoreSeekSpeed = false;
 
-        public ParamReference ParamReference
-        {
-            get
-            {
-                FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out var desc);
+        [UnityEngine.Space]
+        [UnityEngine.SerializeField] private bool m_EnableValueReflection = false;
+        [UnityEngine.SerializeField] private string m_ValueFieldName = string.Empty;
 
-                return new ParamReference
-                {
-                    id = desc.id,
-                    value = m_Value,
-                    ignoreSeekSpeed = m_IgnoreSeekSpeed
-                };
+        [NonSerialized] private FieldInfo m_FieldInfo;
+
+        public ParamReference GetParamReference(object caller)
+        {
+            float targetValue;
+            if (m_EnableValueReflection && caller != null)
+            {
+                if (m_FieldInfo == null) Lookup(caller.GetType());
+
+                targetValue = (float)m_FieldInfo.GetValue(caller);
             }
+            else targetValue = m_Value;
+
+            FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out var desc);
+
+            return new ParamReference
+            {
+                id = desc.id,
+                value = targetValue,
+                ignoreSeekSpeed = m_IgnoreSeekSpeed
+            };
+        }
+
+        private void Lookup(Type type)
+        {
+#if DEBUG_MODE
+            if (string.IsNullOrEmpty(m_ValueFieldName))
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Field name is cannot be null or empty. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            m_FieldInfo = type.GetField(m_ValueFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         }
     }
 }

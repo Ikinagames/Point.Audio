@@ -29,11 +29,11 @@ namespace Point.Audio
     {
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
 
-        internal void AddToHashMap(ref Dictionary<Hash, Audio> hashMap)
+        internal void AddToHashMap(ref Dictionary<Hash, FMODAnimationEvent> hashMap)
         {
             for (int i = 0; i < m_Events.Length; i++)
             {
-                hashMap.Add(new Hash(m_Events[i].Name), m_Events[i].Audio);
+                hashMap.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }
     }

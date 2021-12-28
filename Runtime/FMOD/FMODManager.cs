@@ -66,7 +66,7 @@ namespace Point.Audio
             {
                 if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0.name)) continue;
 
-                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].ParamReference);
+                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference(null));
             }
         }
 
@@ -82,7 +82,7 @@ namespace Point.Audio
             AudioList audioList = AudioList.Instance;
             for (int i = 0; i < audioList.m_StartOnPlay.Length; i++)
             {
-                Audio audio = audioList.m_StartOnPlay[i].Audio;
+                Audio audio = audioList.m_StartOnPlay[i].GetAudio(audioList);
                 Play(ref audio);
             }
         }

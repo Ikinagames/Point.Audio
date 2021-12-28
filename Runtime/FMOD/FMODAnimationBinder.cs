@@ -29,16 +29,16 @@ namespace Point.Audio
         [SerializeField] private FMODAnimationBindReference m_BindReference;
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
 
-        private Dictionary<Hash, Audio> m_Parsed;
+        private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
 
         private void Awake()
         {
-            m_Parsed = new Dictionary<Hash, Audio>();
+            m_Parsed = new Dictionary<Hash, FMODAnimationEvent>();
 
             m_BindReference.AddToHashMap(ref m_Parsed);
             for (int i = 0; i < m_Events.Length; i++)
             {
-                m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i].Audio);
+                m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }
 
@@ -46,7 +46,9 @@ namespace Point.Audio
         {
             Hash hash = new Hash(ev.stringParameter);
 
-            if (!m_Parsed.TryGetValue(hash, out Audio audio)) return;
+            if (!m_Parsed.TryGetValue(hash, out FMODAnimationEvent animEv)) return;
+
+            Audio audio = animEv.GetAudio(this);
 
             audio.position = transform.position;
             audio.rotation = transform.rotation;

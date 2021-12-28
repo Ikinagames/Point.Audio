@@ -1,0 +1,22 @@
+{
+    "name": "Point.Audio.FMODEditor",
+    "rootNamespace": "Point.Audio.FMODEditor",
+    "references": [
+        "Point.Audio.FMOD",
+        "Point.Collections",
+        "Point.Collections.Editor",
+        "Unity.Collections",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
