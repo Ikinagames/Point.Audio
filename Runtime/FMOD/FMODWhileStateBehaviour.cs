@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    public sealed class FMODWhileStateBehaviour : StateMachineBehaviour
+    public class FMODWhileStateBehaviour : StateMachineBehaviour
     {
         [SerializeField] private AudioReference m_AudioReference;
 
@@ -30,8 +30,9 @@ namespace Point.Audio
         [SerializeField] private ParamField[] m_OnExitParameters = Array.Empty<ParamField>();
         [SerializeField] private bool m_StopAudioOnExit = false;
 
-        
         [NonSerialized] private Audio m_Audio;
+
+        protected Audio CurrentAudio => m_Audio;
 
         public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
