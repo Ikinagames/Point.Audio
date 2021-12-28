@@ -36,7 +36,6 @@ namespace Point.Audio
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
-        [SerializeField] private UnityEngine.Object m_ReferenceObject;
 
         // Parameter 가 많을 경우, 배열을 전체 탐색하기 보다는 Hashing 을 통해 속도 개선을 합니다.
         private Dictionary<Hash, AudioReference> m_Parsed;
@@ -72,7 +71,7 @@ namespace Point.Audio
 
             if (!m_Parsed.TryGetValue(hash, out AudioReference animEv)) return;
 
-            Audio audio = animEv.GetAudio(m_ReferenceObject, OnProcessParameter);
+            Audio audio = animEv.GetAudio(OnProcessParameter);
 
             audio.position = transform.position;
             audio.rotation = transform.rotation;

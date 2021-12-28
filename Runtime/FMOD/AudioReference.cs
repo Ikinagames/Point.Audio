@@ -35,29 +35,28 @@ namespace Point.Audio
             _rotation = quaternion.identity,
         };
 
-        public Audio GetAudio(object caller)
+        public Audio GetAudio()
         {
             Audio boxed = m_AudioSettings;
             FMODManager.GetAudio(m_Event, ref boxed);
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
-                var param = m_Parameters[i].GetParamReference(caller, boxed.eventDescription);
+                var param = m_Parameters[i].GetParamReference( boxed.eventDescription);
                 
                 boxed.SetParameter(param);
             }
 
             return boxed;
         }
-        public Audio GetAudio(object caller, 
-            Func<FMOD.Studio.PARAMETER_DESCRIPTION, float, float> onProcessParam)
+        public Audio GetAudio(Func<FMOD.Studio.PARAMETER_DESCRIPTION, float, float> onProcessParam)
         {
             Audio boxed = m_AudioSettings;
             FMODManager.GetAudio(m_Event, ref boxed);
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
-                var param = m_Parameters[i].GetParamReference(caller, boxed.eventDescription);
+                var param = m_Parameters[i].GetParamReference(boxed.eventDescription);
                 param.value = onProcessParam.Invoke(param.description, param.value);
 
                 boxed.SetParameter(param);

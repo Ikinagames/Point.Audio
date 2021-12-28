@@ -65,14 +65,14 @@ namespace Point.Audio
                 ignoreSeekSpeed = m_IgnoreSeekSpeed
             };
         }
-        public ParamReference GetParamReference(object caller, FMOD.Studio.EventDescription ev)
+        public ParamReference GetParamReference(FMOD.Studio.EventDescription ev)
         {
             float targetValue;
-            if (m_EnableValueReflection && caller != null)
+            if (m_EnableValueReflection && m_ReferenceObject != null)
             {
-                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(caller.GetType());
+                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(m_ReferenceObject.GetType());
 
-                targetValue = GetReflectedValue(caller);
+                targetValue = GetReflectedValue(m_ReferenceObject);
             }
             else targetValue = m_Value;
 

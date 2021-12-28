@@ -35,7 +35,7 @@ namespace Point.Audio.Arbor
                 m_ParsedParameters = new ParamReference[m_Parameters.Length];
                 for (int i = 0; i < m_Parameters.Length; i++)
                 {
-                    m_ParsedParameters[i] = m_Parameters[i].GetParamReference(this, m_Audio.eventDescription);
+                    m_ParsedParameters[i] = m_Parameters[i].GetParamReference(m_Audio.eventDescription);
                 }
             }
             else m_ParsedParameters = Array.Empty<ParamReference>();

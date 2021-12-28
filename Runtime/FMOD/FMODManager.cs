@@ -82,7 +82,7 @@ namespace Point.Audio
             AudioList audioList = AudioList.Instance;
             for (int i = 0; i < audioList.m_StartOnPlay.Length; i++)
             {
-                Audio audio = audioList.m_StartOnPlay[i].GetAudio(audioList);
+                Audio audio = audioList.m_StartOnPlay[i].GetAudio();
                 Play(ref audio);
             }
 
