@@ -29,6 +29,6 @@ namespace Point.Audio
         [SerializeField] private AudioReference m_AudioReference;
 
         public string Name => m_Name;
-        public Audio GetAudio(object caller) => m_AudioReference.GetAudio(caller);
+        public AudioReference AudioReference => m_AudioReference;
     }
 }

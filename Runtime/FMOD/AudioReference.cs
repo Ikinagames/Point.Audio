@@ -42,7 +42,25 @@ namespace Point.Audio
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
-                boxed.SetParameter(m_Parameters[i].GetParamReference(caller, boxed.eventDescription));
+                var param = m_Parameters[i].GetParamReference(caller, boxed.eventDescription);
+                
+                boxed.SetParameter(param);
+            }
+
+            return boxed;
+        }
+        public Audio GetAudio(object caller, 
+            Func<FMOD.Studio.EventDescription, float, float> onProcessParam)
+        {
+            Audio boxed = m_AudioSettings;
+            FMODManager.GetAudio(m_Event, ref boxed);
+
+            for (int i = 0; i < m_Parameters.Length; i++)
+            {
+                var param = m_Parameters[i].GetParamReference(caller, boxed.eventDescription);
+                param.value = onProcessParam.Invoke(boxed.eventDescription, param.value);
+
+                boxed.SetParameter(param);
             }
 
             return boxed;

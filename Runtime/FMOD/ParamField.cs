@@ -72,7 +72,6 @@ namespace Point.Audio
                 if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(caller.GetType());
 
                 targetValue = GetReflectedValue(caller);
-                $"retrived value {m_ValueFieldName}: {targetValue}".ToLog();
             }
             else targetValue = m_Value;
 
@@ -123,15 +122,22 @@ namespace Point.Audio
             {
                 m_PropertyInfo = type.GetProperty(m_ValueFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
             }
-
+#if DEBUG_MODE
             if (m_FieldInfo == null && m_PropertyInfo == null)
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                    $"Could not found field or property name of ({m_ValueFieldName}).");
+                    $"Could not found field or property name of ({m_ValueFieldName}) in {TypeHelper.ToString(type)}.");
             }
+#endif
         }
         private float GetReflectedValue(object caller)
         {
+#if DEBUG_MODE
+            if (m_FieldInfo == null && m_PropertyInfo == null)
+            {
+                return 0;
+            }
+#endif
             object value;
             if (m_FieldInfo == null)
             {
