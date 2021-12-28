@@ -24,14 +24,26 @@ using UnityEngine;
 
 namespace Point.Audio
 {
+    /// <summary>
+    /// <see cref="Animator"/> 에서 재생되고 있는 <see cref="AnimationClip"/> 의 
+    /// <see cref="AnimationEvent"/> 정보로 FMOD event 를 재생하는 컴포넌트입니다.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AnimationEvent"/> 의 FunctionName 은 TriggerAction 이어야 동작합니다.
+    /// </remarks>
+    [RequireComponent(typeof(Animator))]
     public class FMODAnimationBinder : MonoBehaviour
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
         [SerializeField] private UnityEngine.Object m_ReferenceObject;
 
+        // Parameter 가 많을 경우, 배열을 전체 탐색하기 보다는 Hashing 을 통해 속도 개선을 합니다.
         private Dictionary<Hash, AudioReference> m_Parsed;
 
+        /// <summary>
+        /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
+        /// </summary>
         protected IReadOnlyList<FMODAnimationEvent> Events => m_Events;
 
         private void Awake()
@@ -49,6 +61,11 @@ namespace Point.Audio
             }
         }
 
+        /// <summary>
+        /// 이 메소드는 <see cref="AnimationClip"/> 내 <see cref="AnimationEvent"/> 호출용 메소드입니다.
+        /// </summary>
+        /// <param name="ev"></param>
+        [Obsolete("Do not use. This method is intended to use only at AnimationClip events.", true)]
         public void TriggerAction(AnimationEvent ev)
         {
             Hash hash = new Hash(ev.stringParameter);
