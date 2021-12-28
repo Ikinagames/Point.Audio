@@ -67,12 +67,24 @@ namespace Point.Audio
         {
             StopAudio();
         }
-
         private void StopAudio()
         {
             if (!m_Audio.IsValid()) return;
 
             m_Audio.Stop();
+        }
+
+        protected ParamReference GetParamReference(string name)
+        {
+            if (!m_Audio.IsValidID())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio is invalid.");
+
+                return default(ParamReference);
+            }
+
+            return m_Audio.GetParameter(name);
         }
     }
 }

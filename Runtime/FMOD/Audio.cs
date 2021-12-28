@@ -340,7 +340,14 @@ namespace Point.Audio
 
             if (IsValid())
             {
-                refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+                var result = refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+
+                if (result != FMOD.RESULT.OK)
+                {
+                    eventDescription.getPath(out string evPath);
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"Set parameter({parameter.description.name} : {parameter.value}) faild with {result} at Audio({evPath}).");
+                }
             }
         }
         [NotBurstCompatible]
@@ -366,6 +373,20 @@ namespace Point.Audio
                     return;
                 }
             }
+        }
+
+        [NotBurstCompatible]
+        public ParamReference GetParameter(string name)
+        {
+            if (!IsValidID())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio is invalid.");
+
+                return default(ParamReference);
+            }
+
+            return new ParamReference(eventDescription, name);
         }
 
         #endregion
