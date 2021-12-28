@@ -85,6 +85,14 @@ namespace Point.Audio
                 Audio audio = audioList.m_StartOnPlay[i].GetAudio(audioList);
                 Play(ref audio);
             }
+
+            Scene currentScene = SceneManager.GetActiveScene();
+            for (int i = 0; i < audioList.m_OnSceneLoadedParams.Length; i++)
+            {
+                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(currentScene.name)) continue;
+
+                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference(null));
+            }
         }
 
         #endregion
@@ -209,7 +217,9 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
-                throw new System.Exception();
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Error has been raised while retriving event({eventRef.Path}) {result}.");
+                return;
             }
 #endif
             audio.SetEvent(ev);
@@ -267,7 +277,7 @@ namespace Point.Audio
 
                 audio.audioHandler = handler;
 
-                string paramsString = string.Empty;
+                //string paramsString = string.Empty;
                 for (int i = 0; i < audio.parameters.Length; i++)
                 {
                     var result = handler->instance.setParameterByID(
@@ -281,7 +291,7 @@ namespace Point.Audio
                             $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
                     }
 
-                    paramsString += audio.parameters[i].ToString() + " ";
+                    //paramsString += audio.parameters[i].ToString() + " ";
                 }
 
                 if (audio.Is3D && audio.OverrideAttenuation)
@@ -292,9 +302,9 @@ namespace Point.Audio
 
                 handler->instance.start();
 
-                audio.eventDescription.getPath(out string path);
-                Collections.Point.Log(Collections.Point.LogChannel.Audio,
-                    $"Play({path}) with {audio.parameters.Length} parameters(" + paramsString + ")");
+                //audio.eventDescription.getPath(out string path);
+                //Collections.Point.Log(Collections.Point.LogChannel.Audio,
+                //    $"Play({path}) with {audio.parameters.Length} parameters(" + paramsString + ")");
             }
         }
         public static void Stop(ref Audio audio)
