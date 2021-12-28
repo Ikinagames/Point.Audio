@@ -78,8 +78,8 @@ namespace Point.Audio.FMODEditor
                 }
                 else
                 {
-                    name.boolValue
-                        = EditorGUI.Toggle(PropertyDrawerHelper.GetRect(position), Helper.NameContent, name.boolValue);
+                    name.stringValue
+                        = EditorGUI.TextField(PropertyDrawerHelper.GetRect(position), Helper.NameContent, name.stringValue);
                 }
 
                 var value = Helper.GetValueField(property);
