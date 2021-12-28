@@ -70,6 +70,6 @@ namespace Point.Audio
         /// <param name="existingValue"></param>
         /// <returns>수정된 값을 반환하여 적용시킵니다.</returns>
         protected virtual float OnProcessParameter(
-            FMOD.Studio.EventDescription ev, float existingValue) => existingValue;
+            FMOD.Studio.PARAMETER_DESCRIPTION ev, float existingValue) => existingValue;
     }
 }

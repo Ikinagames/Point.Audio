@@ -50,7 +50,7 @@ namespace Point.Audio
             return boxed;
         }
         public Audio GetAudio(object caller, 
-            Func<FMOD.Studio.EventDescription, float, float> onProcessParam)
+            Func<FMOD.Studio.PARAMETER_DESCRIPTION, float, float> onProcessParam)
         {
             Audio boxed = m_AudioSettings;
             FMODManager.GetAudio(m_Event, ref boxed);
@@ -58,7 +58,7 @@ namespace Point.Audio
             for (int i = 0; i < m_Parameters.Length; i++)
             {
                 var param = m_Parameters[i].GetParamReference(caller, boxed.eventDescription);
-                param.value = onProcessParam.Invoke(boxed.eventDescription, param.value);
+                param.value = onProcessParam.Invoke(param.description, param.value);
 
                 boxed.SetParameter(param);
             }
