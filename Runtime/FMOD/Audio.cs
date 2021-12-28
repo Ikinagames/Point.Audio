@@ -225,7 +225,7 @@ namespace Point.Audio
         [NotBurstCompatible]
         public bool HasParameter(string name)
         {
-            ParamReference temp = new ParamReference(name);
+            ParamReference temp = new ParamReference(eventDescription, name);
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameters[i].Equals(temp)) return true;
@@ -255,7 +255,7 @@ namespace Point.Audio
         public void SetParameter(string name, float value)
         {
 #if DEBUG_MODE
-            if (!IsValid())
+            if (!IsValidID())
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
                     $"This audio has an invalid but trying access. " +
@@ -266,7 +266,7 @@ namespace Point.Audio
 #endif
             int index = -1;
 
-            ParamReference parameter = new ParamReference(name, value);
+            ParamReference parameter = new ParamReference(eventDescription, name, value);
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameters[i].Equals(parameter))
@@ -288,13 +288,13 @@ namespace Point.Audio
 
             if (IsValid())
             {
-                refHandler.instance.setParameterByID(parameter.id, parameter.value, parameter.ignoreSeekSpeed);
+                refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
             }
         }
         public void SetParameter(ParamReference parameter)
         {
 #if DEBUG_MODE
-            if (!IsValid())
+            if (!IsValidID())
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
                     $"This audio has an invalid but trying access. " +
@@ -326,16 +326,16 @@ namespace Point.Audio
 
             if (IsValid())
             {
-                refHandler.instance.setParameterByID(parameter.id, parameter.value, parameter.ignoreSeekSpeed);
+                refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
             }
         }
         [NotBurstCompatible]
         public void RemoveParameter(string name)
         {
-            ParamReference temp = new ParamReference(name);
+            //ParamReference temp = new ParamReference(eventDescription, name);
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (parameters[i].Equals(temp))
+                if (parameters[i].Equals(name))
                 {
                     parameters.RemoveAt(i);
                     return;

@@ -26,48 +26,76 @@ namespace Point.Audio
     /// FMOD 의 로컬 Event parameter, 혹은 global parameter 입니다.
     /// </summary>
     [BurstCompatible]
-    public struct ParamReference : IEquatable<ParamReference>, IEquatable<FMOD.Studio.PARAMETER_ID>
+    public struct ParamReference : 
+        IEquatable<ParamReference>, 
+        IEquatable<FMOD.Studio.PARAMETER_ID>,
+        IEquatable<string>
     {
         // = 13 bytes
         // 8 bytes
-        public FMOD.Studio.PARAMETER_ID id;
+        public FMOD.Studio.PARAMETER_DESCRIPTION description;
         // 4 bytes
         public float value;
         // 1 bytes
         public bool ignoreSeekSpeed;
+        public bool isGlobal;
 
-        public FMOD.Studio.PARAMETER_DESCRIPTION description
+        public ParamReference(FMOD.Studio.EventDescription ev, string name)
         {
-            get
-            {
-                FMODManager.StudioSystem.getParameterDescriptionByID(id, out var description);
-                return description;
-            }
+            ev.getParameterDescriptionByName(name, out var description);
+            this.description = description;
+            value = 0;
+            ignoreSeekSpeed = false;
+            isGlobal = false;
         }
-
+        /// <summary>
+        /// global parameter
+        /// </summary>
+        /// <param name="name"></param>
         public ParamReference(string name)
         {
             FMODManager.StudioSystem.getParameterDescriptionByName(name, out var description);
-            id = description.id;
+            this.description = description;
             value = 0;
             ignoreSeekSpeed = false;
+            isGlobal = true;
         }
+        public ParamReference(FMOD.Studio.EventDescription ev, string name, float value)
+        {
+            ev.getParameterDescriptionByName(name, out var description);
+            this.description = description;
+            this.value = value;
+            ignoreSeekSpeed = false;
+            isGlobal = false;
+        }
+        /// <summary>
+        /// global parameter
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
         public ParamReference(string name, float value)
         {
             FMODManager.StudioSystem.getParameterDescriptionByName(name, out var description);
-            id = description.id;
+            this.description = description;
             this.value = value;
             ignoreSeekSpeed = false;
-        }
-        public ParamReference(FMODUnity.ParamRef param)
-        {
-            FMODManager.StudioSystem.getParameterDescriptionByName(param.Name, out var description);
-            id = description.id;
-            this.value = param.Value;
-            ignoreSeekSpeed = false;
+            isGlobal = true;
         }
 
-        public bool Equals(ParamReference other) => id.data1.Equals(other.id.data1) && id.data2.Equals(other.id.data2);
-        public bool Equals(FMOD.Studio.PARAMETER_ID other) => id.data1.Equals(other.data1) && id.data2.Equals(other.data2);
+        public bool Equals(ParamReference other) => description.id.data1.Equals(other.description.id.data1) && description.id.data2.Equals(other.description.id.data2) && isGlobal == other.isGlobal;
+        public bool Equals(FMOD.Studio.PARAMETER_ID other) => description.id.data1.Equals(other.data1) && description.id.data2.Equals(other.data2);
+        [NotBurstCompatible]
+        public bool Equals(string parameterName)
+        {
+            string thisName = (string)description.name;
+            return parameterName.Equals(thisName);
+        }
+
+        [NotBurstCompatible]
+        public override string ToString()
+        {
+            const string c_Format = "{0}: {1}";
+            return string.Format(c_Format, (string)description.name, value);
+        }
     }
 }

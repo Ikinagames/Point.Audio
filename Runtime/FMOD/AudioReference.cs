@@ -35,14 +35,14 @@ namespace Point.Audio
             _rotation = quaternion.identity,
         };
 
-        public Audio GetAudio(object obj)
+        public Audio GetAudio(object caller)
         {
             Audio boxed = m_AudioSettings;
             FMODManager.GetAudio(m_Event, ref boxed);
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
-                boxed.SetParameter(m_Parameters[i].GetParamReference(obj));
+                boxed.SetParameter(m_Parameters[i].GetParamReference(caller, boxed.eventDescription));
             }
 
             return boxed;

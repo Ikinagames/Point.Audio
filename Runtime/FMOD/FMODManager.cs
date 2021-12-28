@@ -143,7 +143,7 @@ namespace Point.Audio
         }
         public static void SetGlobalParameter(ParamReference parameter)
         {
-            var result = StudioSystem.setParameterByID(parameter.id, parameter.value);
+            var result = StudioSystem.setParameterByID(parameter.description.id, parameter.value);
             if (result != FMOD.RESULT.OK)
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
@@ -263,15 +263,25 @@ namespace Point.Audio
                     handler->rotation = audio._rotation;
                 }
                 audio.eventDescription.createInstance(out handler->instance);
+                handler->instance.set3DAttributes(handler->Get3DAttributes());
 
                 audio.audioHandler = handler;
 
+                string paramsString = string.Empty;
                 for (int i = 0; i < audio.parameters.Length; i++)
                 {
-                    handler->instance.setParameterByID(
-                        audio.parameters[i].id,
+                    var result = handler->instance.setParameterByID(
+                        audio.parameters[i].description.id,
                         audio.parameters[i].value,
                         audio.parameters[i].ignoreSeekSpeed);
+
+                    if (result != FMOD.RESULT.OK)
+                    {
+                        Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                            $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
+                    }
+
+                    paramsString += audio.parameters[i].ToString() + " ";
                 }
 
                 if (audio.Is3D && audio.OverrideAttenuation)
@@ -281,6 +291,10 @@ namespace Point.Audio
                 }
 
                 handler->instance.start();
+
+                audio.eventDescription.getPath(out string path);
+                Collections.Point.Log(Collections.Point.LogChannel.Audio,
+                    $"Play({path}) with {audio.parameters.Length} parameters(" + paramsString + ")");
             }
         }
         public static void Stop(ref Audio audio)

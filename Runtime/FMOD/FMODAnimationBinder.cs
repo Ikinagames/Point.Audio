@@ -28,6 +28,7 @@ namespace Point.Audio
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
+        [SerializeField] private UnityEngine.Object m_ReferenceObject;
 
         private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
 
@@ -48,7 +49,7 @@ namespace Point.Audio
 
             if (!m_Parsed.TryGetValue(hash, out FMODAnimationEvent animEv)) return;
 
-            Audio audio = animEv.GetAudio(this);
+            Audio audio = animEv.GetAudio(m_ReferenceObject);
 
             audio.position = transform.position;
             audio.rotation = transform.rotation;

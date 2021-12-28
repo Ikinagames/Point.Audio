@@ -18,7 +18,7 @@ namespace Point.Audio.Arbor
     public sealed class PlayAudioBehaviour : StateBehaviour
     {
         [SerializeField] private EventReference m_Event;
-        [SerializeField] private ParamRef[] m_Parameters = Array.Empty<ParamRef>();
+        [SerializeField] private ParamField[] m_Parameters = Array.Empty<ParamField>();
 
         [SerializeField] FlexibleField<Audio> m_AudioField;
 
@@ -27,21 +27,21 @@ namespace Point.Audio.Arbor
 
         protected override void OnCreated()
         {
+            m_Audio = m_AudioField.value;
+            FMODManager.GetAudio(m_Event, ref m_Audio);
+
             if (m_Parameters.Length > 0)
             {
                 m_ParsedParameters = new ParamReference[m_Parameters.Length];
                 for (int i = 0; i < m_Parameters.Length; i++)
                 {
-                    m_ParsedParameters[i] = new ParamReference(m_Parameters[i]);
+                    m_ParsedParameters[i] = m_Parameters[i].GetParamReference(this, m_Audio.eventDescription);
                 }
             }
             else m_ParsedParameters = Array.Empty<ParamReference>();
         }
         public override void OnStateAwake()
         {
-            m_Audio = m_AudioField.value;
-            FMODManager.GetAudio(m_Event, ref m_Audio);
-
             for (int i = 0; i < m_ParsedParameters.Length; i++)
             {
                 m_Audio.SetParameter(m_ParsedParameters[i]);

@@ -32,7 +32,7 @@ namespace Point.Audio
             [SerializeField] private ParamField m_Parameter;
 
             public string TargetSceneName => m_SceneName;
-            public ParamReference GetParamReference(object caller) => m_Parameter.GetParamReference(caller);
+            public ParamReference GetParamReference(object caller) => m_Parameter.GetGlobalParamReference(caller);
         }
 
         [SerializeField] 

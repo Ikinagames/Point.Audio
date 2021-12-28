@@ -17,6 +17,7 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
 using System;
 using System.Reflection;
 
@@ -25,6 +26,7 @@ namespace Point.Audio
     [System.Serializable]
     public sealed class ParamField
     {
+        [UnityEngine.SerializeField] private bool m_IsGlobal = true;
         [FMODUnity.ParamRef]
         [UnityEngine.SerializeField] private string m_Name;
         [UnityEngine.SerializeField] private float m_Value;
@@ -34,24 +36,71 @@ namespace Point.Audio
         [UnityEngine.SerializeField] private bool m_EnableValueReflection = false;
         [UnityEngine.SerializeField] private string m_ValueFieldName = string.Empty;
 
+        [NonSerialized] private bool m_Parsed = false;
+        [NonSerialized] FMOD.Studio.PARAMETER_DESCRIPTION m_ParsedParameterDescription;
+        [NonSerialized] private PropertyInfo m_PropertyInfo;
         [NonSerialized] private FieldInfo m_FieldInfo;
 
-        public ParamReference GetParamReference(object caller)
+        public ParamReference GetGlobalParamReference(object caller)
         {
             float targetValue;
             if (m_EnableValueReflection && caller != null)
             {
-                if (m_FieldInfo == null) Lookup(caller.GetType());
+                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(caller.GetType());
 
-                targetValue = (float)m_FieldInfo.GetValue(caller);
+                targetValue = GetReflectedValue(caller);
             }
             else targetValue = m_Value;
 
-            FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out var desc);
+            if (!m_Parsed)
+            {
+                FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out m_ParsedParameterDescription);
+            }
 
             return new ParamReference
             {
-                id = desc.id,
+                description = m_ParsedParameterDescription,
+                value = targetValue,
+                ignoreSeekSpeed = m_IgnoreSeekSpeed
+            };
+        }
+        public ParamReference GetParamReference(object caller, FMOD.Studio.EventDescription ev)
+        {
+            float targetValue;
+            if (m_EnableValueReflection && caller != null)
+            {
+                if (m_FieldInfo == null || m_PropertyInfo == null) Lookup(caller.GetType());
+
+                targetValue = GetReflectedValue(caller);
+                $"retrived value {m_ValueFieldName}: {targetValue}".ToLog();
+            }
+            else targetValue = m_Value;
+
+            if (m_IsGlobal)
+            {
+                if (!m_Parsed)
+                {
+                    var result = FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out m_ParsedParameterDescription);
+                    if (result != FMOD.RESULT.OK)
+                    {
+                        Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                            $"Global parameter({m_Name}) could not be found.");
+                    }
+                }
+            }
+            else
+            {
+                var result = ev.getParameterDescriptionByName(m_Name, out m_ParsedParameterDescription);
+                if (result != FMOD.RESULT.OK)
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"Parameter({m_Name}) could not be found.");
+                }
+            }
+
+            return new ParamReference
+            {
+                description = m_ParsedParameterDescription,
                 value = targetValue,
                 ignoreSeekSpeed = m_IgnoreSeekSpeed
             };
@@ -69,7 +118,34 @@ namespace Point.Audio
                 return;
             }
 #endif
-            m_FieldInfo = type.GetField(m_ValueFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            m_FieldInfo = type.GetField(m_ValueFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            if (m_FieldInfo == null)
+            {
+                m_PropertyInfo = type.GetProperty(m_ValueFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            }
+
+            if (m_FieldInfo == null && m_PropertyInfo == null)
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"Could not found field or property name of ({m_ValueFieldName}).");
+            }
+        }
+        private float GetReflectedValue(object caller)
+        {
+            object value;
+            if (m_FieldInfo == null)
+            {
+                value = m_PropertyInfo.GetGetMethod().Invoke(caller, null);
+            }
+            else value = m_FieldInfo.GetValue(caller);
+
+            $"{value} {value.GetType()}".ToLog();
+
+            if (value is bool boolen)
+            {
+                return boolen ? 1 : 0;
+            }
+            return Convert.ToSingle(value);
         }
     }
 }
