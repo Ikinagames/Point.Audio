@@ -18,7 +18,6 @@
 #endif
 
 using Point.Collections;
-using Sirenix.Utilities.Editor;
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -117,6 +116,12 @@ namespace Point.Audio
 
                 return _translation;
             }
+            set
+            {
+                _translation = value;
+
+                if (HasInitialized) refHandler.translation = value;
+            }
         }
         public quaternion rotation
         {
@@ -125,6 +130,12 @@ namespace Point.Audio
                 if (HasInitialized) return refHandler.rotation;
 
                 return _rotation;
+            }
+            set
+            {
+                _rotation = value;
+
+                if (HasInitialized) refHandler.rotation = value;
             }
         }
 
