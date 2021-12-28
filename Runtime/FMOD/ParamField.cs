@@ -126,7 +126,7 @@ namespace Point.Audio
             if (m_FieldInfo == null && m_PropertyInfo == null)
             {
                 Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                    $"Could not found field or property name of ({m_ValueFieldName}) in {TypeHelper.ToString(type)}.");
+                    $"Could not found field or property name of ({m_ValueFieldName}) in {type.FullName}.");
             }
 #endif
         }

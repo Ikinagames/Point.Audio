@@ -38,7 +38,11 @@ namespace Point.Audio
         {
             m_Parsed = new Dictionary<Hash, AudioReference>();
 
-            m_BindReference.AddToHashMap(ref m_Parsed);
+            if (m_BindReference != null)
+            {
+                m_BindReference.AddToHashMap(ref m_Parsed);
+            }
+            
             for (int i = 0; i < m_Events.Length; i++)
             {
                 m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i].AudioReference);
