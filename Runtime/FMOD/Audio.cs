@@ -414,12 +414,28 @@ namespace Point.Audio
             {
                 return eventDescription.isValid() && 
                     audioHandler != null &&
-                    hash.Equals(audioHandler->hash);
+                    hash.Equals(audioHandler->instanceHash);
             }
         }
 
         #endregion
 
+        /// <inheritdoc cref="FMODManager.CreateInstance(ref Audio)"/>
+        public void CreateInstance()
+        {
+#if DEBUG_MODE
+            if (!IsValidID())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid FMOD id but trying to play. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            FMODManager.CreateInstance(ref this);
+        }
+        /// <inheritdoc cref="FMODManager.Play(ref Audio)"/>
         public void Play()
         {
 #if DEBUG_MODE
@@ -434,6 +450,7 @@ namespace Point.Audio
 #endif
             FMODManager.Play(ref this);
         }
+        /// <inheritdoc cref="FMODManager.Stop(ref Audio)"/>
         public void Stop()
         {
 #if DEBUG_MODE

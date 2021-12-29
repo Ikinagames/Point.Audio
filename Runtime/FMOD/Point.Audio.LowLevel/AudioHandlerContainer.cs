@@ -30,7 +30,6 @@ namespace Point.Audio.LowLevel
     {
         [NativeDisableUnsafePtrRestriction]
         private AudioHandler* m_Buffer;
-        //private UnsafeRingQueue<int>* m_UnusedIndices;
         private int m_Length;
 
         private JobHandle m_JobHandle;
@@ -41,19 +40,30 @@ namespace Point.Audio.LowLevel
                 UnsafeUtility.SizeOf<AudioHandler>() * length,
                 UnsafeUtility.AlignOf<AudioHandler>(),
                 Allocator.Persistent);
-            //m_UnusedIndices = unusedIndices;
+            for (int i = 0; i < length; i++)
+            {
+                *(m_Buffer + i) = new AudioHandler(Hash.NewHash());
+            }
+
             m_Length = length;
 
             m_JobHandle = default(JobHandle);
-
-            //for (int i = 0; i < length; i++)
-            //{
-            //    (*unusedIndices).Enqueue(i);
-            //    //m_UnusedIndices.AddNoResize(i);
-            //}
         }
 
-        public AudioHandler* GetUnusedHandler()
+        public AudioHandler* Insert(ref Audio audio)
+        {
+            AudioHandler* handler = GetUnusedHandler();
+
+            handler->instanceHash = audio.hash;
+            handler->translation = audio._translation;
+            handler->rotation = audio._rotation;
+            handler->generation = unchecked(handler->generation + 1);
+
+            audio.audioHandler = handler;
+
+            return handler;
+        }
+        private AudioHandler* GetUnusedHandler()
         {
             int index = GetUnusedHandlerIndex();
 
@@ -98,7 +108,6 @@ namespace Point.Audio.LowLevel
             m_JobHandle.Complete();
 
             UnsafeUtility.Free(m_Buffer, Allocator.Persistent);
-            //(*unusedIndices).Enqueue(i);.Dispose();
         }
 
         public void CompleteAllJobs() => m_JobHandle.Complete();
@@ -133,7 +142,7 @@ namespace Point.Audio.LowLevel
             {
                 if (handlers[i].IsEmpty()) return;
 
-                handlers[i].instance.set3DAttributes(handlers[i].Get3DAttributes());
+                (handlers + i)->Set3DAttributes();
             }
         }
         private struct AudioCheckJob : IJobParallelFor
@@ -145,12 +154,9 @@ namespace Point.Audio.LowLevel
             {
                 if (handlers[i].IsEmpty()) return;
 
-                handlers[i].instance.getPlaybackState(out var state);
-                if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED)
+                if (handlers[i].playbackState == FMOD.Studio.PLAYBACK_STATE.STOPPED)
                 {
-                    (handlers + i)->instance.release();
-                    (handlers + i)->instance.clearHandle();
-                    (handlers + i)->hash = Hash.Empty;
+                    (handlers + i)->Clear();
                 }
             }
         }

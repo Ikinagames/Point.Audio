@@ -77,6 +77,10 @@ namespace Point.Audio
             m_Handlers.Dispose();
         }
 
+        #endregion
+
+        #region Monobehaviour Messages
+
         private void Start()
         {
             AudioList audioList = AudioList.Instance;
@@ -94,11 +98,6 @@ namespace Point.Audio
                 SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference());
             }
         }
-
-        #endregion
-
-        #region Updates
-
         private void FixedUpdate()
         {
 #if UNITY_EDITOR
@@ -257,72 +256,83 @@ namespace Point.Audio
             return vca;
         }
 
+        /// <summary>
+        /// 오디오의 인스턴스 객체를 생성합니다.
+        /// </summary>
+        /// <remarks>
+        /// 모든 FMOD 오디오는 인스턴스 객체가 존재하여야 재생될 수 있습니다. 
+        /// <seealso cref="Play(ref Audio)"/> 메소드는 인스턴스가 실행되지 않은 오디오일 경우, 
+        /// 이 메소드를 통해 인스턴스를 생성하고 재생합니다.
+        /// </remarks>
+        /// <param name="audio"></param>
+        public static void CreateInstance(ref Audio audio)
+        {
+#if DEBUG_MODE
+            if (!audio.IsValidID())
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid FMOD id but trying to play. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+
+            unsafe
+            {
+                AudioHandler* handler = Instance.m_Handlers.Insert(ref audio);
+                handler->CreateInstance(ref audio);
+            }
+        }
+        /// <summary>
+        /// 오디오를 재생합니다.
+        /// </summary>
+        /// <remarks>
+        /// 인스턴스가 생성되지 않았다면, 즉시 생성 후 재생합니다.
+        /// </remarks>
+        /// <param name="audio"></param>
         public static void Play(ref Audio audio)
         {
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                throw new System.Exception();
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio has an invalid FMOD id but trying to play. " +
+                    $"This is not allowed.");
+
+                return;
             }
 #endif
+            if (!audio.IsValid())
+            {
+                CreateInstance(ref audio);
+            }
+
             unsafe
             {
-                AudioHandler* handler = Instance.m_Handlers.GetUnusedHandler();
-                {
-                    handler->hash = audio.hash;
-                    handler->translation = audio._translation;
-                    handler->rotation = audio._rotation;
-                }
-                audio.eventDescription.createInstance(out handler->instance);
-                handler->instance.set3DAttributes(handler->Get3DAttributes());
+                audio.audioHandler->Set3DAttributes();
+                audio.audioHandler->SetParameters(ref audio);
 
-                audio.audioHandler = handler;
-
-                //string paramsString = string.Empty;
-                for (int i = 0; i < audio.parameters.Length; i++)
-                {
-                    var result = handler->instance.setParameterByID(
-                        audio.parameters[i].description.id,
-                        audio.parameters[i].value,
-                        audio.parameters[i].ignoreSeekSpeed);
-
-                    if (result != FMOD.RESULT.OK)
-                    {
-                        Collections.Point.LogError(Collections.Point.LogChannel.Audio,
-                            $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
-                    }
-
-                    //paramsString += audio.parameters[i].ToString() + " ";
-                }
-
-                if (audio.Is3D && audio.OverrideAttenuation)
-                {
-                    handler->instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MINIMUM_DISTANCE, audio.OverrideMinDistance);
-                    handler->instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MAXIMUM_DISTANCE, audio.OverrideMaxDistance);
-                }
-
-                handler->instance.start();
-
-                //audio.eventDescription.getPath(out string path);
-                //Collections.Point.Log(Collections.Point.LogChannel.Audio,
-                //    $"Play({path}) with {audio.parameters.Length} parameters(" + paramsString + ")");
+                audio.audioHandler->StartInstance();
             }
         }
+        /// <summary>
+        /// 오디오를 정지합니다.
+        /// </summary>
+        /// <param name="audio"></param>
         public static void Stop(ref Audio audio)
         {
 #if DEBUG_MODE
             if (!audio.IsValid())
             {
-                throw new System.Exception();
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This audio is invalid but trying to stop. " +
+                    $"This is not allowed.");
             }
 #endif
             unsafe
             {
-                //if (audio.audioHandler->instance.isValid())
-                //{
-                    
-                //}
-                audio.audioHandler->instance.stop(audio.AllowFadeout ? FMOD.Studio.STOP_MODE.ALLOWFADEOUT : FMOD.Studio.STOP_MODE.IMMEDIATE);
+                audio.audioHandler->StopInstance(audio.AllowFadeout);
             }
         }
     }

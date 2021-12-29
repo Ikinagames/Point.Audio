@@ -17,20 +17,94 @@
 #define DEBUG_MODE
 #endif
 
+using FMOD.Studio;
 using Point.Collections;
+using System;
 using Unity.Mathematics;
 
 namespace Point.Audio.LowLevel
 {
-    internal struct AudioHandler : IEmpty
+    internal unsafe struct AudioHandler : IEmpty, IEquatable<AudioHandler>
     {
+        public readonly Hash hash;
+
         public FMOD.Studio.EventInstance instance;
-        public Hash hash;
+        public uint generation;
+        /// <summary>
+        /// 재생시 연결된 <see cref="Audio.hash"/> 과 동일한 값
+        /// </summary>
+        public Hash instanceHash;
 
         public float3 translation;
         public quaternion rotation;
 
+        public PLAYBACK_STATE playbackState
+        {
+            get
+            {
+                instance.getPlaybackState(out var state);
+                return state;
+            }
+        }
+
+        public AudioHandler(Hash hash)
+        {
+            this = default(AudioHandler);
+
+            this.hash = hash;
+            instanceHash = Hash.Empty;
+            rotation = quaternion.identity;
+        }
+
         public bool IsEmpty() => !instance.isValid();
+        public void Clear()
+        {
+            instance.release();
+            instance.clearHandle();
+
+            instanceHash = Hash.Empty;
+        }
+
+        public void CreateInstance(ref Audio audio)
+        {
+            audio.eventDescription.createInstance(out instance);
+
+            if (audio.Is3D && audio.OverrideAttenuation)
+            {
+                instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MINIMUM_DISTANCE, audio.OverrideMinDistance);
+                instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MAXIMUM_DISTANCE, audio.OverrideMaxDistance);
+            }
+
+            SetParameters(ref audio);
+        }
+        public void SetParameters(ref Audio audio)
+        {
+            for (int i = 0; i < audio.parameters.Length; i++)
+            {
+                var result = instance.setParameterByID(
+                    audio.parameters[i].description.id,
+                    audio.parameters[i].value,
+                    audio.parameters[i].ignoreSeekSpeed);
+
+                if (result != FMOD.RESULT.OK)
+                {
+                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
+                }
+
+                //paramsString += audio.parameters[i].ToString() + " ";
+            }
+
+            if (audio.Is3D && audio.OverrideAttenuation)
+            {
+                instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MINIMUM_DISTANCE, audio.OverrideMinDistance);
+                instance.setProperty(FMOD.Studio.EVENT_PROPERTY.MAXIMUM_DISTANCE, audio.OverrideMaxDistance);
+            }
+        }
+        public void Set3DAttributes()
+        {
+            instance.set3DAttributes(Get3DAttributes());
+        }
         public FMOD.ATTRIBUTES_3D Get3DAttributes()
         {
             FMOD.ATTRIBUTES_3D att = new FMOD.ATTRIBUTES_3D();
@@ -60,5 +134,16 @@ namespace Point.Audio.LowLevel
 
             return att;
         }
+
+        public void StartInstance()
+        {
+            instance.start();
+        }
+        public void StopInstance(bool allowFadeOut)
+        {
+            instance.stop(allowFadeOut ? STOP_MODE.ALLOWFADEOUT : STOP_MODE.IMMEDIATE);
+        }
+
+        public bool Equals(AudioHandler other) => hash.Equals(other.hash);
     }
 }
