@@ -22,10 +22,11 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using System;
 using Point.Collections;
+using Unity.Burst;
 
 namespace Point.Audio.LowLevel
 {
-    [NativeContainer]
+    [NativeContainer, BurstCompatible]
     internal unsafe struct AudioHandlerContainer : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
@@ -133,6 +134,7 @@ namespace Point.Audio.LowLevel
             return m_JobHandle;
         }
 
+        [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true)]
         private struct TranslationUpdateJob : IJobParallelFor
         {
             [NativeDisableUnsafePtrRestriction]
@@ -145,6 +147,7 @@ namespace Point.Audio.LowLevel
                 (handlers + i)->Set3DAttributes();
             }
         }
+        [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true)]
         private struct AudioCheckJob : IJobParallelFor
         {
             [NativeDisableUnsafePtrRestriction]

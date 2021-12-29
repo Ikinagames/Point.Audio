@@ -20,10 +20,12 @@
 using FMOD.Studio;
 using Point.Collections;
 using System;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Point.Audio.LowLevel
 {
+    [BurstCompatible]
     internal unsafe struct AudioHandler : IEmpty, IEquatable<AudioHandler>
     {
         public readonly Hash hash;

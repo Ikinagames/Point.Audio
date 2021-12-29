@@ -29,16 +29,19 @@ namespace Point.Audio
     {
         [SerializeField] private EventReference m_Event;
         [SerializeField] private ParamField[] m_Parameters = Array.Empty<ParamField>();
-        [SerializeField] private Audio m_AudioSettings = new Audio
-        {
-            AllowFadeout = true,
-            _rotation = quaternion.identity,
-        };
+
+        [Space]
+        [SerializeField] private bool m_AllowFadeOut = true;
+        [SerializeField] private bool m_OverrideAttenuation;
+        [SerializeField] private float m_OverrideMinDistance = -1, m_OverrideMaxDistance = -1;
 
         public Audio GetAudio()
         {
-            Audio boxed = m_AudioSettings;
-            FMODManager.GetAudio(m_Event, ref boxed);
+            Audio boxed = FMODManager.GetAudio(m_Event);
+            boxed.AllowFadeout = m_AllowFadeOut;
+            boxed.OverrideAttenuation = m_OverrideAttenuation;
+            boxed.OverrideMinDistance = m_OverrideMinDistance;
+            boxed.OverrideMaxDistance = m_OverrideMaxDistance;
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
@@ -51,8 +54,11 @@ namespace Point.Audio
         }
         public Audio GetAudio(Func<FMOD.Studio.PARAMETER_DESCRIPTION, float, float> onProcessParam)
         {
-            Audio boxed = m_AudioSettings;
-            FMODManager.GetAudio(m_Event, ref boxed);
+            Audio boxed = FMODManager.GetAudio(m_Event);
+            boxed.AllowFadeout = m_AllowFadeOut;
+            boxed.OverrideAttenuation = m_OverrideAttenuation;
+            boxed.OverrideMinDistance = m_OverrideMinDistance;
+            boxed.OverrideMaxDistance = m_OverrideMaxDistance;
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {
