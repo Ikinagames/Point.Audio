@@ -100,7 +100,7 @@ namespace Point.Audio
         public float OverrideMinDistance
         {
             get => overrideMinDistance;
-            set => OverrideMinDistance = value;
+            set => overrideMinDistance = value;
         }
         public float OverrideMaxDistance
         {
