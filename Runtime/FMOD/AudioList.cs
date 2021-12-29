@@ -29,6 +29,8 @@ namespace Point.Audio
         internal sealed class SceneDependenceParam
         {
             [SerializeField] private string m_SceneName;
+
+            [FMODParam(GlobalParameter = true, DisableReflection = true)]
             [SerializeField] private ParamField m_Parameter;
 
             public string TargetSceneName => m_SceneName;

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 using UnityEngine;
 using UnityEditor;
@@ -72,12 +73,24 @@ namespace Point.Audio.FMODEditor
             using (new EditorGUI.PropertyScope(position, null, property))
             {
                 var isGlobal = Helper.GetIsGlobalField(property);
-                isGlobal.boolValue 
-                    = EditorGUI.ToggleLeft(PropertyDrawerHelper.GetRect(position), Helper.IsGlobalContent, isGlobal.boolValue);
-                
-                EditorGUILayout.Space();
-                EditorUtilities.Line();
+                var paramSetting = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
+                if (paramSetting != null && paramSetting.GlobalParameter)
+                {
+                    if (!isGlobal.boolValue)
+                    {
+                        isGlobal.boolValue = true;
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
+                }
+                else
+                {
+                    isGlobal.boolValue
+                        = EditorGUI.ToggleLeft(PropertyDrawerHelper.GetRect(position), Helper.IsGlobalContent, isGlobal.boolValue);
 
+                    EditorGUILayout.Space();
+                    EditorUtilities.Line();
+                }
+                
                 var name = Helper.GetNameField(property);
                 if (isGlobal.boolValue)
                 {
@@ -97,25 +110,28 @@ namespace Point.Audio.FMODEditor
                 ignoreSeekSpeed.boolValue
                     = EditorGUI.Toggle(PropertyDrawerHelper.GetRect(position), Helper.IgnoreSeekSpeedContent, ignoreSeekSpeed.boolValue);
 
-                EditorGUILayout.Space();
-                EditorUtilities.Line();
-
-                var enableReflection = Helper.GetEnableReflectionField(property);
-                enableReflection.boolValue
-                    = EditorGUI.ToggleLeft(PropertyDrawerHelper.GetRect(position), Helper.EnableValueReflectionContent, enableReflection.boolValue);
-
-                if (enableReflection.boolValue)
+                if (!paramSetting.DisableReflection)
                 {
-                    EditorGUI.indentLevel++;
+                    EditorGUILayout.Space();
+                    EditorUtilities.Line();
 
-                    var refObj = Helper.GetReferenceObjectField(property);
-                    EditorGUI.PropertyField(PropertyDrawerHelper.GetRect(position), refObj, Helper.ReferenceObjectContent);
+                    var enableReflection = Helper.GetEnableReflectionField(property);
+                    enableReflection.boolValue
+                        = EditorGUI.ToggleLeft(PropertyDrawerHelper.GetRect(position), Helper.EnableValueReflectionContent, enableReflection.boolValue);
 
-                    var fieldname = Helper.GetValueFieldNameField(property);
-                    fieldname.stringValue
-                        = EditorGUI.TextField(PropertyDrawerHelper.GetRect(position), Helper.ValueFieldNameContent, fieldname.stringValue);
+                    if (enableReflection.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
 
-                    EditorGUI.indentLevel--;
+                        var refObj = Helper.GetReferenceObjectField(property);
+                        EditorGUI.PropertyField(PropertyDrawerHelper.GetRect(position), refObj, Helper.ReferenceObjectContent);
+
+                        var fieldname = Helper.GetValueFieldNameField(property);
+                        fieldname.stringValue
+                            = EditorGUI.TextField(PropertyDrawerHelper.GetRect(position), Helper.ValueFieldNameContent, fieldname.stringValue);
+
+                        EditorGUI.indentLevel--;
+                    }
                 }
 
                 if (change.changed)
