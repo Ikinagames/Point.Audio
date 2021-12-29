@@ -25,6 +25,7 @@ namespace Point.Audio.LowLevel
     internal struct AudioHandler : IEmpty
     {
         public FMOD.Studio.EventInstance instance;
+        public Hash hash;
 
         public float3 translation;
         public quaternion rotation;

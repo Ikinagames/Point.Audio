@@ -269,6 +269,7 @@ namespace Point.Audio
             {
                 AudioHandler* handler = Instance.m_Handlers.GetUnusedHandler();
                 {
+                    handler->hash = audio.hash;
                     handler->translation = audio._translation;
                     handler->rotation = audio._rotation;
                 }

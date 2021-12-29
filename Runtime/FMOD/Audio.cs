@@ -34,7 +34,7 @@ namespace Point.Audio
 
         internal FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;
-        internal bool playQueued;
+        internal Hash hash;
 
         [UnityEngine.SerializeField] private bool allowFadeout;
         [UnityEngine.SerializeField] private bool overrideAttenuation;
@@ -197,7 +197,7 @@ namespace Point.Audio
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
-            playQueued = false;
+            hash = Hash.NewHash();
 
             allowFadeout = true;
             overrideAttenuation = false;
@@ -229,7 +229,7 @@ namespace Point.Audio
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
-            playQueued = false;
+            hash = Hash.NewHash();
         }
 
         #endregion
@@ -316,6 +316,12 @@ namespace Point.Audio
 
                 return;
             }
+            else if (parameter.isGlobal)
+            {
+                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    $"This parameter({(string)parameter.description.name}) is global parameter. " +
+                    $"Cannot be setted to an instance event.");
+            }
 #endif
             int index = -1;
 
@@ -398,11 +404,17 @@ namespace Point.Audio
         /// </summary>
         /// <returns></returns>
         public bool IsValidID() => eventDescription.isValid();
+        /// <summary>
+        /// 이 오디오가 유효한 ID를 가지고있고, 핸들러에 의해 관리되고 있는지 반환합니다.
+        /// </summary>
+        /// <returns></returns>
         public bool IsValid()
         {
             unsafe
             {
-                return eventDescription.isValid() && audioHandler != null;
+                return eventDescription.isValid() && 
+                    audioHandler != null &&
+                    hash.Equals(audioHandler->hash);
             }
         }
 

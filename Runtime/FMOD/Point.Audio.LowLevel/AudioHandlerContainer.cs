@@ -21,6 +21,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using System;
+using Point.Collections;
 
 namespace Point.Audio.LowLevel
 {
@@ -147,8 +148,9 @@ namespace Point.Audio.LowLevel
                 handlers[i].instance.getPlaybackState(out var state);
                 if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED)
                 {
-                    handlers[i].instance.release();
-                    handlers[i].instance.clearHandle();
+                    (handlers + i)->instance.release();
+                    (handlers + i)->instance.clearHandle();
+                    (handlers + i)->hash = Hash.Empty;
                 }
             }
         }
