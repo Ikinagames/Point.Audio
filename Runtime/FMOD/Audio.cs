@@ -25,7 +25,7 @@ using Unity.Mathematics;
 
 namespace Point.Audio
 {
-    [BurstCompatible, Serializable]
+    [BurstCompatible]
     public struct Audio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
@@ -36,9 +36,9 @@ namespace Point.Audio
         internal FixedList4096Bytes<ParamReference> parameters;
         internal Hash hash;
 
-        [UnityEngine.SerializeField] private bool allowFadeout;
-        [UnityEngine.SerializeField] private bool overrideAttenuation;
-        [UnityEngine.SerializeField] private float overrideMinDistance, overrideMaxDistance;
+        private bool allowFadeout;
+        private bool overrideAttenuation;
+        private float overrideMinDistance, overrideMaxDistance;
 
         internal float3 _translation;
         internal quaternion _rotation;
