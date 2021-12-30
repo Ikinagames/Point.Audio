@@ -26,6 +26,7 @@ using UnityEngine.Jobs;
 using Unity.Jobs;
 using Unity.Burst;
 using Point.Collections.Buffer;
+using UnityEngine.SceneManagement;
 
 namespace Point.Audio
 {

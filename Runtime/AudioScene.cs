@@ -18,10 +18,14 @@
 #endif
 
 
+using UnityEngine.SceneManagement;
+
 namespace Point.Audio
 {
     public struct AudioScene
     {
+        private readonly int m_SceneBuildIndex;
 
+        public Scene Scene => SceneManager.GetSceneByBuildIndex(m_SceneBuildIndex);
     }
 }
