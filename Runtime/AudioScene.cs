@@ -20,7 +20,7 @@
 
 namespace Point.Audio
 {
-    public struct FMODScene
+    public struct AudioScene
     {
 
     }
