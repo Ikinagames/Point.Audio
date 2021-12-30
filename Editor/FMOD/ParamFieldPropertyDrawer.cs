@@ -110,7 +110,7 @@ namespace Point.Audio.FMODEditor
                 ignoreSeekSpeed.boolValue
                     = EditorGUI.Toggle(PropertyDrawerHelper.GetRect(position), Helper.IgnoreSeekSpeedContent, ignoreSeekSpeed.boolValue);
 
-                if (!paramSetting.DisableReflection)
+                if (paramSetting != null && !paramSetting.DisableReflection)
                 {
                     EditorGUILayout.Space();
                     EditorUtilities.Line();

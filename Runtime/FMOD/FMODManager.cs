@@ -19,12 +19,10 @@
 
 using UnityEngine;
 using Point.Collections;
-using Unity.Collections;
-using System.Linq;
-using Unity.Jobs;
+using Point.Collections.Threading;
 using Point.Audio.LowLevel;
+using Unity.Jobs;
 using FMOD.Studio;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.SceneManagement;
 
 namespace Point.Audio
@@ -38,7 +36,7 @@ namespace Point.Audio
         internal static FMOD.Studio.System StudioSystem => FMODUnity.RuntimeManager.StudioSystem;
         internal static FMOD.System CoreSystem => FMODUnity.RuntimeManager.CoreSystem;
 
-        private bool m_IsFocusing;
+        private AtomicSafeBoolen m_IsFocusing;
 
         private JobHandle m_GlobalJobHandle;
 
@@ -61,13 +59,8 @@ namespace Point.Audio
 
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
-            AudioList audioList = AudioList.Instance;
-            for (int i = 0; i < audioList.m_OnSceneLoadedParams.Length; i++)
-            {
-                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(arg0.name)) continue;
-
-                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference());
-            }
+            FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
+            variables.StartSceneDependencies(arg0);
         }
 
         protected override void OnShutdown()
@@ -83,20 +76,10 @@ namespace Point.Audio
 
         private void Start()
         {
-            AudioList audioList = AudioList.Instance;
-            for (int i = 0; i < audioList.m_StartOnPlay.Length; i++)
-            {
-                Audio audio = audioList.m_StartOnPlay[i].GetAudio();
-                Play(ref audio);
-            }
-
             Scene currentScene = SceneManager.GetActiveScene();
-            for (int i = 0; i < audioList.m_OnSceneLoadedParams.Length; i++)
-            {
-                if (!audioList.m_OnSceneLoadedParams[i].TargetSceneName.Equals(currentScene.name)) continue;
 
-                SetGlobalParameter(audioList.m_OnSceneLoadedParams[i].GetParamReference());
-            }
+            FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
+            variables.StartSceneDependencies(currentScene);
         }
         private void FixedUpdate()
         {
@@ -111,7 +94,7 @@ namespace Point.Audio
 
         private void OnApplicationFocus(bool focus)
         {
-            m_IsFocusing = focus;
+            m_IsFocusing.Value = focus;
         }
 
         #endregion

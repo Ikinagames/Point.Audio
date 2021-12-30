@@ -21,9 +21,16 @@ using System;
 
 namespace Point.Audio
 {
+    /// <summary>
+    /// <see cref="ParamField"/> 에 대한 LowLevel 컨트롤 Attribute 입니다.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public sealed class FMODParamAttribute : Attribute
     {
+        /// <summary>
+        /// 전역 Parameter 임을 명시할 것인지 설정합니다. 
+        /// <see langword="true"/> 일 경우, 인스펙터에서 <see langword="false"/>로 수정될 수 없습니다.
+        /// </summary>
         public bool GlobalParameter = false;
         public bool DisableReflection = false;
     }
