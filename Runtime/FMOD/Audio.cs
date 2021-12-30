@@ -29,8 +29,8 @@ namespace Point.Audio
     public struct Audio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
-        internal unsafe LowLevel.AudioHandler* audioHandler;
-        internal unsafe ref LowLevel.AudioHandler refHandler => ref *audioHandler;
+        internal unsafe LowLevel.UnsafeAudioHandler* audioHandler;
+        internal unsafe ref LowLevel.UnsafeAudioHandler refHandler => ref *audioHandler;
 
         internal FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;

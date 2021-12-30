@@ -26,7 +26,7 @@ using Unity.Mathematics;
 namespace Point.Audio.LowLevel
 {
     [BurstCompatible]
-    internal unsafe struct AudioHandler : IEmpty, IEquatable<AudioHandler>
+    internal unsafe struct UnsafeAudioHandler : IEmpty, IEquatable<UnsafeAudioHandler>
     {
         public readonly Hash hash;
 
@@ -49,9 +49,9 @@ namespace Point.Audio.LowLevel
             }
         }
 
-        public AudioHandler(Hash hash)
+        public UnsafeAudioHandler(Hash hash)
         {
-            this = default(AudioHandler);
+            this = default(UnsafeAudioHandler);
 
             this.hash = hash;
             instanceHash = Hash.Empty;
@@ -146,6 +146,6 @@ namespace Point.Audio.LowLevel
             instance.stop(allowFadeOut ? STOP_MODE.ALLOWFADEOUT : STOP_MODE.IMMEDIATE);
         }
 
-        public bool Equals(AudioHandler other) => hash.Equals(other.hash);
+        public bool Equals(UnsafeAudioHandler other) => hash.Equals(other.hash);
     }
 }

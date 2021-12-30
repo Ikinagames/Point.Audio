@@ -40,7 +40,7 @@ namespace Point.Audio
 
         private JobHandle m_GlobalJobHandle;
 
-        private AudioHandlerContainer m_Handlers;
+        private UnsafeAudioHandlerContainer m_Handlers;
 
         #region Class Instruction
 
@@ -50,7 +50,7 @@ namespace Point.Audio
 
             unsafe
             {
-                m_Handlers = new AudioHandlerContainer(128);
+                m_Handlers = new UnsafeAudioHandlerContainer(128);
             }
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
@@ -79,6 +79,7 @@ namespace Point.Audio
             Scene currentScene = SceneManager.GetActiveScene();
 
             FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
+            variables.Initialize();
             variables.StartSceneDependencies(currentScene);
         }
         private void FixedUpdate()
@@ -281,7 +282,7 @@ namespace Point.Audio
 
             unsafe
             {
-                AudioHandler* handler = Instance.m_Handlers.Insert(ref audio);
+                UnsafeAudioHandler* handler = Instance.m_Handlers.Insert(ref audio);
                 handler->CreateInstance(ref audio);
             }
         }

@@ -43,6 +43,13 @@ namespace Point.Audio
         [SerializeField] private AudioReference[] m_PlayOnStart = Array.Empty<AudioReference>();
         [SerializeField] private SceneContainer[] m_SceneDependencies = Array.Empty<SceneContainer>();
 
+        public void Initialize()
+        {
+            for (int i = 0; i < m_PlayOnStart.Length; i++)
+            {
+                m_PlayOnStart[i].GetAudio().Play();
+            }
+        }
         public void StartSceneDependencies(Scene scene)
         {
             for (int i = 0; i < m_SceneDependencies.Length; i++)

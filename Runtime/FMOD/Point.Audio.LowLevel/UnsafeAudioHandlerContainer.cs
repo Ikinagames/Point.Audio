@@ -22,28 +22,30 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using System;
 using Point.Collections;
+using Point.Collections.Buffer;
 using Unity.Burst;
+using Point.Collections.Buffer.LowLevel;
 
 namespace Point.Audio.LowLevel
 {
     [NativeContainer, BurstCompatible]
-    internal unsafe struct AudioHandlerContainer : IDisposable
+    internal unsafe struct UnsafeAudioHandlerContainer : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
-        private AudioHandler* m_Buffer;
+        private UnsafeReference<UnsafeAudioHandler> m_Buffer;
         private int m_Length;
 
         private JobHandle m_JobHandle;
 
-        public AudioHandlerContainer(int length)
+        public UnsafeAudioHandlerContainer(int length)
         {
-            m_Buffer = (AudioHandler*)UnsafeUtility.Malloc(
-                UnsafeUtility.SizeOf<AudioHandler>() * length,
-                UnsafeUtility.AlignOf<AudioHandler>(),
+            m_Buffer = (UnsafeAudioHandler*)UnsafeUtility.Malloc(
+                UnsafeUtility.SizeOf<UnsafeAudioHandler>() * length,
+                UnsafeUtility.AlignOf<UnsafeAudioHandler>(),
                 Allocator.Persistent);
             for (int i = 0; i < length; i++)
             {
-                *(m_Buffer + i) = new AudioHandler(Hash.NewHash());
+                (m_Buffer + i).SetValue(new UnsafeAudioHandler(Hash.NewHash()));
             }
 
             m_Length = length;
@@ -51,9 +53,9 @@ namespace Point.Audio.LowLevel
             m_JobHandle = default(JobHandle);
         }
 
-        public AudioHandler* Insert(ref Audio audio)
+        public UnsafeReference<UnsafeAudioHandler> Insert(ref Audio audio)
         {
-            AudioHandler* handler = GetUnusedHandler();
+            UnsafeAudioHandler* handler = GetUnusedHandler();
 
             handler->instanceHash = audio.hash;
             handler->translation = audio._translation;
@@ -64,7 +66,7 @@ namespace Point.Audio.LowLevel
 
             return handler;
         }
-        private AudioHandler* GetUnusedHandler()
+        private UnsafeReference<UnsafeAudioHandler> GetUnusedHandler()
         {
             int index = GetUnusedHandlerIndex();
 
@@ -85,12 +87,12 @@ namespace Point.Audio.LowLevel
         {
             m_JobHandle.Complete();
 
-            AudioHandler* tempBuffer = (AudioHandler*)UnsafeUtility.Malloc(
-                UnsafeUtility.SizeOf<AudioHandler>() * (m_Length * 2),
-                UnsafeUtility.AlignOf<AudioHandler>(),
+            UnsafeAudioHandler* tempBuffer = (UnsafeAudioHandler*)UnsafeUtility.Malloc(
+                UnsafeUtility.SizeOf<UnsafeAudioHandler>() * (m_Length * 2),
+                UnsafeUtility.AlignOf<UnsafeAudioHandler>(),
                 Allocator.Persistent);
 
-            UnsafeUtility.MemCpy(tempBuffer, m_Buffer, UnsafeUtility.SizeOf<AudioHandler>() * m_Length);
+            UnsafeUtility.MemCpy(tempBuffer, m_Buffer, UnsafeUtility.SizeOf<UnsafeAudioHandler>() * m_Length);
 
             UnsafeUtility.Free(m_Buffer, Allocator.Persistent);
             m_Buffer = tempBuffer;
@@ -138,7 +140,7 @@ namespace Point.Audio.LowLevel
         private struct TranslationUpdateJob : IJobParallelFor
         {
             [NativeDisableUnsafePtrRestriction]
-            public AudioHandler* handlers;
+            public UnsafeAudioHandler* handlers;
 
             public void Execute(int i)
             {
@@ -151,7 +153,7 @@ namespace Point.Audio.LowLevel
         private struct AudioCheckJob : IJobParallelFor
         {
             [NativeDisableUnsafePtrRestriction]
-            public AudioHandler* handlers;
+            public UnsafeAudioHandler* handlers;
 
             public void Execute(int i)
             {
