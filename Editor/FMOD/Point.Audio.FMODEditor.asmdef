@@ -16,7 +16,9 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "POINT_FMOD"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

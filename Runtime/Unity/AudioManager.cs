@@ -26,7 +26,6 @@ using UnityEngine.Jobs;
 using Unity.Jobs;
 using Unity.Burst;
 using Point.Collections.Buffer;
-using Unity.Mathematics;
 
 namespace Point.Audio
 {
@@ -34,8 +33,6 @@ namespace Point.Audio
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>
         , IStaticInitializer
     {
-        #region Unity Audio
-
         private const int c_InitialCount = 128;
 
         protected override bool EnableLog => false;
@@ -59,15 +56,7 @@ namespace Point.Audio
         private Transform[] m_AudioTransforms;
         private TransformAccessArray m_TransformAccessArray;
 
-        public struct Audio
-        {
-            public bool beingUsed;
-
-            public float3 translation;
-            public quaternion rotation;
-
-            public AssetInfo audio;
-        }
+        
         private struct UpdateTransformationJob : IJobParallelForTransform
         {
             [ReadOnly] public NativeArray<Audio> m_Audios;
@@ -161,11 +150,13 @@ namespace Point.Audio
             }
         }
 
+        public static void GetAudio(in string key)
+        {
+            ResourceManager.LoadAsset(key);
+        }
         public void Play()
         {
 
         }
-
-        #endregion
     }
 }
