@@ -83,7 +83,7 @@ namespace Point.Audio
                     var result = FMODManager.StudioSystem.getParameterDescriptionByName(m_Name, out m_ParsedParameterDescription);
                     if (result != FMOD.RESULT.OK)
                     {
-                        Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                        Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                             $"Global parameter({m_Name}) could not be found.");
                     }
                 }
@@ -93,7 +93,7 @@ namespace Point.Audio
                 var result = ev.getParameterDescriptionByName(m_Name, out m_ParsedParameterDescription);
                 if (result != FMOD.RESULT.OK)
                 {
-                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                         $"Parameter({m_Name}) could not be found.");
                 }
             }
@@ -111,7 +111,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (string.IsNullOrEmpty(m_ValueFieldName))
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Field name is cannot be null or empty. " +
                     $"This is not allowed.");
 
@@ -126,7 +126,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (m_FieldInfo == null && m_PropertyInfo == null)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Could not found field or property name of ({m_ValueFieldName}) in {type.FullName}.");
             }
 #endif

@@ -144,7 +144,7 @@ namespace Point.Audio
             {
                 if (!IsValid())
                 {
-                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                         $"This audio is invalid. " +
                         $"Transform binding is not possible before Play() method executed.");
                     return;
@@ -160,7 +160,7 @@ namespace Point.Audio
 #if DEBUG_MODE
                 if (!IsValid())
                 {
-                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                         $"This audio has an invalid but trying access. " +
                         $"This is not allowed.");
 
@@ -175,7 +175,7 @@ namespace Point.Audio
 #if DEBUG_MODE
                 if (!IsValid())
                 {
-                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                         $"This audio has an invalid but trying access. " +
                         $"This is not allowed.");
 
@@ -271,7 +271,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid but trying access. " +
                     $"This is not allowed.");
 
@@ -310,7 +310,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid but trying access. " +
                     $"This is not allowed.");
 
@@ -318,7 +318,7 @@ namespace Point.Audio
             }
             else if (parameter.isGlobal)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This parameter({(string)parameter.description.name}) is global parameter. " +
                     $"Cannot be setted to an instance event.");
             }
@@ -351,7 +351,7 @@ namespace Point.Audio
                 if (result != FMOD.RESULT.OK)
                 {
                     eventDescription.getPath(out string evPath);
-                    Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                         $"Set parameter({parameter.description.name} : {parameter.value}) faild with {result} at Audio({evPath}).");
                 }
             }
@@ -386,7 +386,7 @@ namespace Point.Audio
         {
             if (!IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio is invalid.");
 
                 return default(ParamReference);
@@ -426,7 +426,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -441,7 +441,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -456,7 +456,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!IsValid())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid but trying to play. " +
                     $"This is not allowed.");
 

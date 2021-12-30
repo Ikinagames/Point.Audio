@@ -121,7 +121,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name, out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return default(ParamReference);
@@ -137,7 +137,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return;
@@ -145,7 +145,7 @@ namespace Point.Audio
 
             StudioSystem.setParameterByID(description.id, value);
 
-            Collections.Point.Log(Collections.Point.LogChannel.Audio,
+            Collections.PointCore.Log(Collections.PointCore.LogChannel.Audio,
                 $"Global parameter({name}) has set to {value}.");
         }
         public static void SetGlobalParameter(ParamReference parameter)
@@ -153,17 +153,19 @@ namespace Point.Audio
             var result = StudioSystem.setParameterByID(parameter.description.id, parameter.value);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Parameter({(string)parameter.description.name}) is not present in the current FMOD.");
             }
 
-            Collections.Point.Log(Collections.Point.LogChannel.Audio,
+            Collections.PointCore.Log(Collections.PointCore.LogChannel.Audio,
                 $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
         public static bool LoadBank(string name, bool loadSamples = false)
         {
+            PointCore.AssertMainThread();
+
             try
             {
                 FMODUnity.RuntimeManager.LoadBank(name, loadSamples);
@@ -179,10 +181,14 @@ namespace Point.Audio
         }
         public static void UnloadBank(string name)
         {
+            PointCore.AssertMainThread();
+
             FMODUnity.RuntimeManager.UnloadBank(name);
         }
         public static FMOD.Studio.Bank GetBank(string path)
         {
+            PointCore.AssertMainThread();
+
             StudioSystem.getBank(path, out var bank);
 
             return bank;
@@ -199,6 +205,8 @@ namespace Point.Audio
 
         public static Audio GetAudio(in FMODUnity.EventReference eventRef)
         {
+            PointCore.AssertMainThread();
+
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
@@ -212,11 +220,13 @@ namespace Point.Audio
         }
         public static void GetAudio(in FMODUnity.EventReference eventRef, ref Audio audio)
         {
+            PointCore.AssertMainThread();
+
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"Error has been raised while retriving event({eventRef.Path}) {result}.");
                 return;
             }
@@ -225,6 +235,8 @@ namespace Point.Audio
         }
         public static Audio GetAudio(in string eventPath)
         {
+            PointCore.AssertMainThread();
+
             var result = StudioSystem.getEvent(eventPath, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
@@ -239,6 +251,8 @@ namespace Point.Audio
 
         public static FMOD.Studio.Bus GetBusByID(FMOD.GUID id)
         {
+            PointCore.AssertMainThread();
+
             if (StudioSystem.getBusByID(id, out var bus) != FMOD.RESULT.OK)
             {
                 return default(FMOD.Studio.Bus);
@@ -248,6 +262,8 @@ namespace Point.Audio
         }
         public static FMOD.Studio.VCA GetVCA(FMOD.GUID id)
         {
+            PointCore.AssertMainThread();
+
             if (StudioSystem.getVCAByID(id, out FMOD.Studio.VCA vca) != FMOD.RESULT.OK)
             {
                 return default(FMOD.Studio.VCA);
@@ -267,10 +283,12 @@ namespace Point.Audio
         /// <param name="audio"></param>
         public static void CreateInstance(ref Audio audio)
         {
+            PointCore.AssertMainThread();
+
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -296,7 +314,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -325,7 +343,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValid())
             {
-                Collections.Point.LogError(Collections.Point.LogChannel.Audio,
+                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
                     $"This audio is invalid but trying to stop. " +
                     $"This is not allowed.");
             }
