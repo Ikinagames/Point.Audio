@@ -27,6 +27,7 @@ using Unity.Jobs;
 using Unity.Burst;
 using Point.Collections.Buffer;
 using UnityEngine.SceneManagement;
+using Point.Collections.SceneManagement;
 
 namespace Point.Audio
 {
@@ -52,12 +53,32 @@ namespace Point.Audio
             m_GlobalJobHandle,
             m_UpdateTransformationJobHandle;
 
+        private TransformScene<AudioSceneHandler> m_AudioScene;
+
         private ObjectPool<Transform> m_AudioTransformPool;
+
         private NativeArray<Audio> m_Audios;
         private Transform[] m_AudioTransforms;
         private TransformAccessArray m_TransformAccessArray;
 
-        
+        private struct AudioSceneHandler : ITransformSceneHandler
+        {
+            public void OnInitialize()
+            {
+            }
+
+            public void OnTransformAdded(in NativeTransform transform)
+            {
+            }
+
+            public void OnTransformRemove(in NativeTransform transform)
+            {
+            }
+
+            public void Dispose()
+            {
+            }
+        }
         private struct UpdateTransformationJob : IJobParallelForTransform
         {
             [ReadOnly] public NativeArray<Audio> m_Audios;
@@ -71,7 +92,9 @@ namespace Point.Audio
 
         protected override void OnInitialze()
         {
+#if DEBUG_MODE
             m_RegisteredAssetBundles = new HashSet<AssetBundle>();
+#endif
 
             m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
@@ -91,6 +114,8 @@ namespace Point.Audio
 
         protected override void OnShutdown()
         {
+            m_GlobalJobHandle.Complete();
+
             if (m_AudioBundles.IsCreated)
             {
                 for (int i = 0; i < m_AudioBundles.Length; i++)
@@ -132,12 +157,17 @@ namespace Point.Audio
 
         public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
         {
+            if (!Instance.m_AudioBundles.IsCreated)
+            {
+                Instance.m_AudioBundles = new NativeList<AssetBundleInfo>(assetBundles.Length, AllocatorManager.Persistent);
+            }
+
             for (int i = 0; i < assetBundles.Length; i++)
             {
 #if DEBUG_MODE
                 if (Instance.m_RegisteredAssetBundles.Contains(assetBundles[i]))
                 {
-                    PointCore.LogError(PointCore.LogChannel.Audio,
+                    PointCore.LogError(LogChannel.Audio,
                         $"You\'re trying to register audio AssetBundle that already registered. " +
                         $"This is not allowed.");
                     continue;
