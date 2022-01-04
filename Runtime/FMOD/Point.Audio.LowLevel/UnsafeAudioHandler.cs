@@ -90,7 +90,7 @@ namespace Point.Audio.LowLevel
 
                 if (result != FMOD.RESULT.OK)
                 {
-                    Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                    PointCore.LogError(Channel.Audio,
                         $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
                 }
 

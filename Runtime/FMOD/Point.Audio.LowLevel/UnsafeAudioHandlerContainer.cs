@@ -32,23 +32,17 @@ namespace Point.Audio.LowLevel
     internal unsafe struct UnsafeAudioHandlerContainer : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
-        private UnsafeReference<UnsafeAudioHandler> m_Buffer;
-        private int m_Length;
+        private UnsafeAllocator<UnsafeAudioHandler> m_Buffer;
 
         private JobHandle m_JobHandle;
 
         public UnsafeAudioHandlerContainer(int length)
         {
-            m_Buffer = (UnsafeAudioHandler*)UnsafeUtility.Malloc(
-                UnsafeUtility.SizeOf<UnsafeAudioHandler>() * length,
-                UnsafeUtility.AlignOf<UnsafeAudioHandler>(),
-                Allocator.Persistent);
+            m_Buffer = new UnsafeAllocator<UnsafeAudioHandler>(length, Allocator.Persistent);
             for (int i = 0; i < length; i++)
             {
-                (m_Buffer + i).SetValue(new UnsafeAudioHandler(Hash.NewHash()));
+                m_Buffer[i] = new UnsafeAudioHandler(Hash.NewHash());
             }
-
-            m_Length = length;
 
             m_JobHandle = default(JobHandle);
         }
@@ -70,11 +64,11 @@ namespace Point.Audio.LowLevel
         {
             int index = GetUnusedHandlerIndex();
 
-            return m_Buffer + index;
+            return m_Buffer.ElementAt(index);
         }
         private int GetUnusedHandlerIndex()
         {
-            for (int i = 0; i < m_Length; i++)
+            for (int i = 0; i < m_Buffer.Length; i++)
             {
                 if (m_Buffer[i].IsEmpty()) return i;
             }
@@ -87,17 +81,13 @@ namespace Point.Audio.LowLevel
         {
             m_JobHandle.Complete();
 
-            UnsafeAudioHandler* tempBuffer = (UnsafeAudioHandler*)UnsafeUtility.Malloc(
-                UnsafeUtility.SizeOf<UnsafeAudioHandler>() * (m_Length * 2),
-                UnsafeUtility.AlignOf<UnsafeAudioHandler>(),
-                Allocator.Persistent);
+            int prevLength = m_Buffer.Length;
+            m_Buffer.Resize(prevLength * 2, NativeArrayOptions.ClearMemory);
 
-            UnsafeUtility.MemCpy(tempBuffer, m_Buffer, UnsafeUtility.SizeOf<UnsafeAudioHandler>() * m_Length);
-
-            UnsafeUtility.Free(m_Buffer, Allocator.Persistent);
-            m_Buffer = tempBuffer;
-
-            m_Length *= 2;
+            for (int i = prevLength; i < m_Buffer.Length; i++)
+            {
+                m_Buffer[i] = new UnsafeAudioHandler(Hash.NewHash());
+            }
         }
 
         public JobHandle Combine(JobHandle a)
@@ -110,7 +100,7 @@ namespace Point.Audio.LowLevel
         {
             m_JobHandle.Complete();
 
-            UnsafeUtility.Free(m_Buffer, Allocator.Persistent);
+            m_Buffer.Dispose();
         }
 
         public void CompleteAllJobs() => m_JobHandle.Complete();
@@ -120,17 +110,17 @@ namespace Point.Audio.LowLevel
 
             TranslationUpdateJob trJob = new TranslationUpdateJob
             {
-                handlers = m_Buffer
+                handlers = m_Buffer.Ptr
             };
             AudioCheckJob checkJob = new AudioCheckJob
             {
-                handlers = m_Buffer
+                handlers = m_Buffer.Ptr
             };
 
-            JobHandle trJobHandle = trJob.Schedule(m_Length, 64, m_JobHandle);
+            JobHandle trJobHandle = trJob.Schedule(m_Buffer.Length, 64, m_JobHandle);
             Combine(trJobHandle);
 
-            JobHandle checkJobHandle = checkJob.Schedule(m_Length, 64, m_JobHandle);
+            JobHandle checkJobHandle = checkJob.Schedule(m_Buffer.Length, 64, m_JobHandle);
             Combine(checkJobHandle);
 
             return m_JobHandle;

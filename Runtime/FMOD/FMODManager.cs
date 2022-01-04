@@ -105,7 +105,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name, out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return default(ParamReference);
@@ -121,7 +121,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return;
@@ -129,7 +129,7 @@ namespace Point.Audio
 
             StudioSystem.setParameterByID(description.id, value);
 
-            Collections.PointCore.Log(Collections.PointCore.LogChannel.Audio,
+            Collections.PointCore.Log(Channel.Audio,
                 $"Global parameter({name}) has set to {value}.");
         }
         public static void SetGlobalParameter(ParamReference parameter)
@@ -137,11 +137,11 @@ namespace Point.Audio
             var result = StudioSystem.setParameterByID(parameter.description.id, parameter.value);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"Parameter({(string)parameter.description.name}) is not present in the current FMOD.");
             }
 
-            Collections.PointCore.Log(Collections.PointCore.LogChannel.Audio,
+            Collections.PointCore.Log(Channel.Audio,
                 $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
         }
 
@@ -210,7 +210,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"Error has been raised while retriving event({eventRef.Path}) {result}.");
                 return;
             }
@@ -272,7 +272,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -298,7 +298,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -327,7 +327,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValid())
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"This audio is invalid but trying to stop. " +
                     $"This is not allowed.");
             }

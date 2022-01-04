@@ -17,6 +17,7 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
 using System;
 using UnityEngine;
 
@@ -78,7 +79,7 @@ namespace Point.Audio
         {
             if (!m_Audio.IsValidID())
             {
-                Collections.PointCore.LogError(Collections.PointCore.LogChannel.Audio,
+                Collections.PointCore.LogError(Channel.Audio,
                     $"This audio is invalid.");
 
                 return default(ParamReference);
