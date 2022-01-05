@@ -79,7 +79,7 @@ namespace Point.Audio
         {
             if (!m_Audio.IsValidID())
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"This audio is invalid.");
 
                 return default(ParamReference);

@@ -105,7 +105,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name, out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return default(ParamReference);
@@ -121,7 +121,7 @@ namespace Point.Audio
             var result = StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"Parameter({name}) is not present in the current FMOD.");
 
                 return;
@@ -129,7 +129,7 @@ namespace Point.Audio
 
             StudioSystem.setParameterByID(description.id, value);
 
-            Collections.PointCore.Log(Channel.Audio,
+            PointHelper.Log(Channel.Audio,
                 $"Global parameter({name}) has set to {value}.");
         }
         public static void SetGlobalParameter(ParamReference parameter)
@@ -137,18 +137,18 @@ namespace Point.Audio
             var result = StudioSystem.setParameterByID(parameter.description.id, parameter.value);
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"Parameter({(string)parameter.description.name}) is not present in the current FMOD.");
             }
 
-            Collections.PointCore.Log(Channel.Audio,
+            PointHelper.Log(Channel.Audio,
                 $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
         public static bool LoadBank(string name, bool loadSamples = false)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             try
             {
@@ -165,13 +165,13 @@ namespace Point.Audio
         }
         public static void UnloadBank(string name)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             FMODUnity.RuntimeManager.UnloadBank(name);
         }
         public static FMOD.Studio.Bank GetBank(string path)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             StudioSystem.getBank(path, out var bank);
 
@@ -189,7 +189,7 @@ namespace Point.Audio
 
         public static Audio GetAudio(in FMODUnity.EventReference eventRef)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -204,13 +204,13 @@ namespace Point.Audio
         }
         public static void GetAudio(in FMODUnity.EventReference eventRef, ref Audio audio)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"Error has been raised while retriving event({eventRef.Path}) {result}.");
                 return;
             }
@@ -219,7 +219,7 @@ namespace Point.Audio
         }
         public static Audio GetAudio(in string eventPath)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             var result = StudioSystem.getEvent(eventPath, out FMOD.Studio.EventDescription ev);
 #if DEBUG_MODE
@@ -235,7 +235,7 @@ namespace Point.Audio
 
         public static FMOD.Studio.Bus GetBusByID(FMOD.GUID id)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             if (StudioSystem.getBusByID(id, out var bus) != FMOD.RESULT.OK)
             {
@@ -246,7 +246,7 @@ namespace Point.Audio
         }
         public static FMOD.Studio.VCA GetVCA(FMOD.GUID id)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
             if (StudioSystem.getVCAByID(id, out FMOD.Studio.VCA vca) != FMOD.RESULT.OK)
             {
@@ -267,12 +267,12 @@ namespace Point.Audio
         /// <param name="audio"></param>
         public static void CreateInstance(ref Audio audio)
         {
-            PointCore.AssertMainThread();
+            PointHelper.AssertMainThread();
 
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -298,7 +298,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"This audio has an invalid FMOD id but trying to play. " +
                     $"This is not allowed.");
 
@@ -327,7 +327,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (!audio.IsValid())
             {
-                Collections.PointCore.LogError(Channel.Audio,
+                PointHelper.LogError(Channel.Audio,
                     $"This audio is invalid but trying to stop. " +
                     $"This is not allowed.");
             }
