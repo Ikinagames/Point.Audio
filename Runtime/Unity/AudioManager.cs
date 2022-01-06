@@ -167,7 +167,7 @@ namespace Point.Audio
 #if DEBUG_MODE
                 if (Instance.m_RegisteredAssetBundles.Contains(assetBundles[i]))
                 {
-                    PointCore.LogError(LogChannel.Audio,
+                    PointHelper.LogError(LogChannel.Audio,
                         $"You\'re trying to register audio AssetBundle that already registered. " +
                         $"This is not allowed.");
                     continue;
