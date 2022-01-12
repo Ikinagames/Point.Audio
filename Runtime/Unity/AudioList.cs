@@ -205,23 +205,14 @@ namespace Point.Audio
             }
         }
 
-        [Tooltip("별도 프리팹이 설정되지 않은 AudioClip에 할당될 기본 프리팹입니다.")]
-        [SerializeField] private AudioSource m_DefaultAudioSourcePrefab;
-        [Tooltip("별도 그룹이 설정되지 않은 AudioClip에 할당될 기본 그룹입니다.")]
-        [SerializeField] private AudioMixerGroup m_MasterGroup;
         [SerializeField] private AudioSetting[] m_AudioSettings = Array.Empty<AudioSetting>();
 
-        private readonly Dictionary<AudioKey, AudioSetting>
-            m_AudioSettingHashMap = new Dictionary<AudioKey, AudioSetting>();
-
-        public void Initialize()
+        internal void Initialize(Dictionary<AudioKey, AudioSetting> hashMap)
         {
-            m_AudioSettingHashMap.Clear();
-
             for (int i = 0; i < m_AudioSettings.Length; i++)
             {
 #if UNITY_EDITOR
-                if (m_AudioSettingHashMap.ContainsKey(m_AudioSettings[i].Key))
+                if (hashMap.ContainsKey(m_AudioSettings[i].Key))
                 {
                     PointHelper.LogError(Channel.Audio,
                         $"{m_AudioSettings[i].EditorAudioClip.name} is duplicated.");
@@ -229,35 +220,11 @@ namespace Point.Audio
                     continue;
                 }
 #endif
-                m_AudioSettingHashMap.Add(m_AudioSettings[i].Key, m_AudioSettings[i]);
+                hashMap.Add(m_AudioSettings[i].Key, m_AudioSettings[i]);
 
                 PointHelper.Log(Channel.Audio,
                     $"Audio list has been initialized.");
             }
-        }
-
-        public AudioSetting GetAudioSetting(in string key) => GetAudioSetting((AudioKey)key);
-        public AudioSetting GetAudioSetting(in AudioKey key)
-        {
-#if UNITY_EDITOR
-            if (!m_AudioSettingHashMap.ContainsKey(key))
-            {
-                PointHelper.LogError(Channel.Audio,
-                    $"You are trying to get an invalid audio setting(clipHash: \"{key}\"). This is not allowed.");
-
-                return null;
-            }
-#endif
-            AudioSetting setting = m_AudioSettingHashMap[key];
-            setting.IncrementIndex();
-
-            if (setting.CurrentIndex > 0 && setting.Keys.Length > 1)
-            {
-                AudioKey newKey = setting.Keys[setting.CurrentIndex];
-                setting = m_AudioSettingHashMap[newKey];
-            }
-
-            return setting;
         }
     }
 }

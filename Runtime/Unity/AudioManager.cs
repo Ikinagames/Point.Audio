@@ -28,6 +28,7 @@ using Unity.Burst;
 using Point.Collections.Buffer;
 using UnityEngine.SceneManagement;
 using Point.Collections.SceneManagement;
+using UnityEngine.Audio;
 
 namespace Point.Audio
 {
@@ -54,6 +55,7 @@ namespace Point.Audio
             m_UpdateTransformationJobHandle;
 
         private TransformScene<AudioSceneHandler> m_AudioScene;
+        private Dictionary<AudioKey, AudioList.AudioSetting> m_RuntimeAudioSettings;
 
         private ObjectPool<Transform> m_AudioTransformPool;
 
@@ -111,6 +113,16 @@ namespace Point.Audio
 
             return obj.transform;
         }
+        private void Awake()
+        {
+            m_RuntimeAudioSettings = new Dictionary<AudioKey, AudioList.AudioSetting>();
+
+            var list = PointAudioSettings.Instance.m_AudioLists;
+            for (int i = 0; i < list.Length; i++)
+            {
+                list[i].Initialize(m_RuntimeAudioSettings);
+            }
+        }
 
         protected override void OnShutdown()
         {
@@ -155,6 +167,29 @@ namespace Point.Audio
             }
         }
 
+        internal AudioList.AudioSetting GetAudioSetting(AudioKey audioKey)
+        {
+#if DEBUG_MODE
+            if (!m_RuntimeAudioSettings.ContainsKey(audioKey))
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"You are trying to get an invalid audio setting(clipHash: \"{audioKey}\"). This is not allowed.");
+
+                return null;
+            }
+#endif
+            var setting = m_RuntimeAudioSettings[audioKey];
+            setting.IncrementIndex();
+
+            if (setting.CurrentIndex > 0 && setting.Keys.Length > 1)
+            {
+                AudioKey newKey = setting.Keys[setting.CurrentIndex];
+                setting = m_RuntimeAudioSettings[newKey];
+            }
+
+            return setting;
+        }
+
         public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
         {
             if (!Instance.m_AudioBundles.IsCreated)
@@ -180,14 +215,52 @@ namespace Point.Audio
                 Instance.m_AudioBundles.Add(bundleInfo);
             }
         }
-
         public static void GetAudio(in string key)
         {
-            ResourceManager.LoadAsset(key);
+            //ResourceManager.LoadAsset(key);
         }
         public void Play()
         {
 
+        }
+    }
+
+    [BurstCompatible]
+    internal struct RuntimeAudioSetting
+    {
+        public AudioKey AudioKey;
+        public AudioList.AudioOptions AudioOptions;
+        public float 
+            Volume,
+            
+            MinPitch, MaxPitch;
+        public int MaximumPlayCount;
+        public FixedList4096Bytes<AudioKey> VariationKeys;
+        public int CurrentIndex;
+
+        [NotBurstCompatible]
+        public AudioSource Prefab
+        {
+            get
+            {
+                var setting = AudioManager.Instance.GetAudioSetting(AudioKey);
+                return setting.Prefab;
+            }
+        }
+        [NotBurstCompatible]
+        public AudioMixerGroup AudioMixerGroup
+        {
+            get
+            {
+                var setting = AudioManager.Instance.GetAudioSetting(AudioKey);
+                return setting.Group;
+            }
+        }
+
+        public void test()
+        {
+            //AudioMixer tep = null;
+            //tep.
         }
     }
 }
