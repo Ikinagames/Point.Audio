@@ -64,7 +64,7 @@ namespace Point.Audio
 
             [Space]
             [Tooltip("AudioClip 이 동시에 최대로 재생될 수 있는 갯수 입니다.")]
-            [SerializeField] private int m_MaximumPlayCount = 32;
+            [SerializeField] public int m_MaximumPlayCount = 32;
             [Tooltip("Variations 에 하나 이상의 AudioClip 을 포함한다면, 어떻게 재생할 것인지에 대한 설정입니다.")]
             [SerializeField] private AudioOptions m_AudioOptions = AudioOptions.Sequence;
             [SerializeField] private AudioClipPathField[] m_Variations = Array.Empty<AudioClipPathField>();

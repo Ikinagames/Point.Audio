@@ -257,6 +257,25 @@ namespace Point.Audio
             }
         }
 
+        [NotBurstCompatible]
+        public RuntimeAudioSetting(AudioKey audioKey)
+        {
+            var setting = AudioManager.Instance.GetAudioSetting(audioKey);
+
+            this.AudioKey = audioKey;
+            this.AudioOptions = setting.Options;
+            this.Volume = setting.Volume;
+            this.MinPitch = setting.m_MinPitch;
+            this.MaxPitch = setting.m_MaxPitch;
+            this.MaximumPlayCount = setting.m_MaximumPlayCount;
+            this.VariationKeys = new FixedList4096Bytes<AudioKey>();
+            for (int i = 0; i < setting.Keys.Length; i++)
+            {
+                this.VariationKeys.Add(setting.Keys[i]);
+            }
+            this.CurrentIndex = 0;
+        }
+
         public void test()
         {
             //AudioMixer tep = null;
