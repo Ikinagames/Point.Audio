@@ -17,18 +17,69 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
+using Point.Collections.Buffer.LowLevel;
 using Point.Collections.ResourceControl;
+using System;
 using Unity.Mathematics;
 
 namespace Point.Audio
 {
-    public struct Audio
+    public struct Audio : IValidation, IDisposable
+    {
+        internal readonly UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> m_AudioPointer;
+        internal readonly RuntimeAudioKey m_Key;
+
+        internal Audio(UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p)
+        {
+            m_AudioPointer = p;
+            m_Key = p.Value.Key;
+        }
+
+        public void Play() { }
+        public void Stop() { }
+        public void Destroy()
+        {
+            if (!IsValid())
+            {
+                return;
+            }
+
+            m_AudioPointer.Value.Value.beingUsed = false;
+        }
+
+        public bool IsValid()
+        {
+            if (m_AudioPointer.Value.Key.Equals(m_Key))
+            {
+                return true;
+            }
+            return false;
+        }
+        void IDisposable.Dispose()
+        {
+            Destroy();
+        }
+    }
+    internal struct UnsafeAudio
     {
         public bool beingUsed;
+        //public readonly RuntimeAudioKey key;
+
+        public readonly AssetInfo audio;
+        public readonly RuntimeAudioSetting audioSetting;
 
         public float3 translation;
         public quaternion rotation;
 
-        public AssetInfo audio;
+        public UnsafeAudio(/*RuntimeAudioKey key,*/ RuntimeAudioSetting setting, AssetInfo asset)
+        {
+            this = default(UnsafeAudio);
+
+            this.beingUsed = true;
+            //this.key = key;
+            this.audioSetting = setting;
+            this.audio = asset;
+        }
     }
 }

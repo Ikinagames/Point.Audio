@@ -29,6 +29,8 @@ using Point.Collections.Buffer;
 using UnityEngine.SceneManagement;
 using Point.Collections.SceneManagement;
 using UnityEngine.Audio;
+using Point.Collections.Buffer.LowLevel;
+using System;
 
 namespace Point.Audio
 {
@@ -44,9 +46,9 @@ namespace Point.Audio
         private static int s_InstanceCount = 0;
         private static Transform s_Folder = null;
 
-#if DEBUG_MODE
-        private HashSet<AssetBundle> m_RegisteredAssetBundles;
-#endif
+//#if DEBUG_MODE
+//        private HashSet<AssetBundle> m_RegisteredAssetBundles;
+//#endif
 
         private NativeList<AssetBundleInfo> m_AudioBundles;
 
@@ -59,7 +61,8 @@ namespace Point.Audio
 
         private ObjectPool<Transform> m_AudioTransformPool;
 
-        private NativeArray<Audio> m_Audios;
+        //private NativeArray<Audio> m_Audios;
+        private UnsafeLinearHashMap<RuntimeAudioKey, UnsafeAudio> m_Audios;
         private Transform[] m_AudioTransforms;
         private TransformAccessArray m_TransformAccessArray;
 
@@ -83,7 +86,7 @@ namespace Point.Audio
         }
         private struct UpdateTransformationJob : IJobParallelForTransform
         {
-            [ReadOnly] public NativeArray<Audio> m_Audios;
+            [ReadOnly] public NativeArray<UnsafeAudio> m_Audios;
 
             public void Execute(int i, TransformAccess transform)
             {
@@ -94,16 +97,18 @@ namespace Point.Audio
 
         protected override void OnInitialze()
         {
-#if DEBUG_MODE
-            m_RegisteredAssetBundles = new HashSet<AssetBundle>();
-#endif
+//#if DEBUG_MODE
+//            m_RegisteredAssetBundles = new HashSet<AssetBundle>();
+//#endif
 
-            m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
+            //m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
             m_AudioTransforms = new Transform[c_InitialCount];
             m_TransformAccessArray = new TransformAccessArray(m_AudioTransforms);
             //FMODUnity.EventReference
             GameObject audioFolder = new GameObject("Audio");
             s_Folder = audioFolder.transform;
+
+            m_AudioScene = new TransformScene<AudioSceneHandler>();
         }
         private static Transform AudioTransformFactory()
         {
@@ -128,18 +133,18 @@ namespace Point.Audio
         {
             m_GlobalJobHandle.Complete();
 
-            if (m_AudioBundles.IsCreated)
-            {
-                for (int i = 0; i < m_AudioBundles.Length; i++)
-                {
-                    m_AudioBundles[i].Unload(true);
-                }
+            //if (m_AudioBundles.IsCreated)
+            //{
+            //    for (int i = 0; i < m_AudioBundles.Length; i++)
+            //    {
+            //        m_AudioBundles[i].Unload(true);
+            //    }
 
-                m_AudioBundles.Dispose();
-            }
+            //    m_AudioBundles.Dispose();
+            //}
 
             m_TransformAccessArray.Dispose();
-            m_Audios.Dispose();
+            //m_Audios.Dispose();
             m_AudioTransforms = null;
         }
 
@@ -151,20 +156,20 @@ namespace Point.Audio
         {
             m_UpdateTransformationJobHandle.Complete();
 
-            {
-                UpdateTransformationJob updateTransformation
-                    = new UpdateTransformationJob()
-                    {
-                        m_Audios = m_Audios
-                    };
+            //{
+            //    UpdateTransformationJob updateTransformation
+            //        = new UpdateTransformationJob()
+            //        {
+            //            m_Audios = m_Audios
+            //        };
 
-                JobHandle job = updateTransformation.Schedule(m_TransformAccessArray);
-                m_UpdateTransformationJobHandle
-                    = JobHandle.CombineDependencies(m_UpdateTransformationJobHandle, job);
+            //    JobHandle job = updateTransformation.Schedule(m_TransformAccessArray);
+            //    m_UpdateTransformationJobHandle
+            //        = JobHandle.CombineDependencies(m_UpdateTransformationJobHandle, job);
 
-                m_GlobalJobHandle
-                    = JobHandle.CombineDependencies(m_GlobalJobHandle, m_UpdateTransformationJobHandle);
-            }
+            //    m_GlobalJobHandle
+            //        = JobHandle.CombineDependencies(m_GlobalJobHandle, m_UpdateTransformationJobHandle);
+            //}
         }
 
         internal AudioList.AudioSetting GetAudioSetting(AudioKey audioKey)
@@ -190,34 +195,50 @@ namespace Point.Audio
             return setting;
         }
 
-        public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
+//        public static void RegisterAudioAssetBundle(params AssetBundle[] assetBundles)
+//        {
+//            if (!Instance.m_AudioBundles.IsCreated)
+//            {
+//                Instance.m_AudioBundles = new NativeList<AssetBundleInfo>(assetBundles.Length, AllocatorManager.Persistent);
+//            }
+
+//            for (int i = 0; i < assetBundles.Length; i++)
+//            {
+//#if DEBUG_MODE
+//                if (Instance.m_RegisteredAssetBundles.Contains(assetBundles[i]))
+//                {
+//                    PointHelper.LogError(LogChannel.Audio,
+//                        $"You\'re trying to register audio AssetBundle that already registered. " +
+//                        $"This is not allowed.");
+//                    continue;
+//                }
+
+//                Instance.m_RegisteredAssetBundles.Add(assetBundles[i]);
+//#endif
+
+//                AssetBundleInfo bundleInfo = ResourceManager.RegisterAssetBundle(assetBundles[i]);
+//                Instance.m_AudioBundles.Add(bundleInfo);
+//            }
+//        }
+
+        private UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> AddKey(in RuntimeAudioKey key)
         {
-            if (!Instance.m_AudioBundles.IsCreated)
-            {
-                Instance.m_AudioBundles = new NativeList<AssetBundleInfo>(assetBundles.Length, AllocatorManager.Persistent);
-            }
+            int index = m_Audios.Add(key, new UnsafeAudio());
+            UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p = m_Audios.PointerAt(index);
 
-            for (int i = 0; i < assetBundles.Length; i++)
-            {
-#if DEBUG_MODE
-                if (Instance.m_RegisteredAssetBundles.Contains(assetBundles[i]))
-                {
-                    PointHelper.LogError(LogChannel.Audio,
-                        $"You\'re trying to register audio AssetBundle that already registered. " +
-                        $"This is not allowed.");
-                    continue;
-                }
-
-                Instance.m_RegisteredAssetBundles.Add(assetBundles[i]);
-#endif
-
-                AssetBundleInfo bundleInfo = ResourceManager.RegisterAssetBundle(assetBundles[i]);
-                Instance.m_AudioBundles.Add(bundleInfo);
-            }
+            return p;
         }
-        public static void GetAudio(in string key)
+        public static Audio GetAudio(in string key)
         {
-            //ResourceManager.LoadAsset(key);
+            AssetInfo assetInfo = ResourceManager.LoadAsset(key);
+            RuntimeAudioKey runtimeKey = RuntimeAudioKey.NewKey();
+            RuntimeAudioSetting runtimeSetting = new RuntimeAudioSetting(key);
+
+            UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p = Instance.AddKey(runtimeKey);
+
+            p.Value.Value = new UnsafeAudio(/*runtimeKey, */runtimeSetting, assetInfo);
+
+            return new Audio(p);
         }
         public void Play()
         {
@@ -226,7 +247,17 @@ namespace Point.Audio
     }
 
     [BurstCompatible]
-    internal struct RuntimeAudioSetting
+    public struct RuntimeAudioKey : IEmpty, IEquatable<RuntimeAudioKey>
+    {
+        internal static RuntimeAudioKey NewKey() => new RuntimeAudioKey() { m_Hash = CollectionUtility.CreateHashCode2() };
+
+        internal short m_Hash;
+
+        public bool IsEmpty() => m_Hash == 0;
+        public bool Equals(RuntimeAudioKey other) => m_Hash == other.m_Hash;
+    }
+    [BurstCompatible]
+    public struct RuntimeAudioSetting
     {
         public AudioKey AudioKey;
         public AudioList.AudioOptions AudioOptions;
@@ -273,13 +304,7 @@ namespace Point.Audio
             {
                 this.VariationKeys.Add(setting.Keys[i]);
             }
-            this.CurrentIndex = 0;
-        }
-
-        public void test()
-        {
-            //AudioMixer tep = null;
-            //tep.
+            this.CurrentIndex = setting.CurrentIndex;
         }
     }
 }

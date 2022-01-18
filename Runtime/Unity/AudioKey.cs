@@ -44,6 +44,6 @@ namespace Point.Audio
 
         public static explicit operator AudioKey(Hash hash) => new AudioKey(hash);
         [NotBurstCompatible]
-        public static explicit operator AudioKey(string key) => new AudioKey(new Hash(key));
+        public static implicit operator AudioKey(string key) => new AudioKey(new Hash(key));
     }
 }
