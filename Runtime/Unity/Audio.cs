@@ -50,7 +50,7 @@ namespace Point.Audio
 
         public bool IsValid()
         {
-            if (m_AudioPointer.Value.Key.Equals(m_Key))
+            if (m_AudioPointer.Value.Key.Equals(m_Key) && m_AudioPointer.Value.Value.beingUsed)
             {
                 return true;
             }
