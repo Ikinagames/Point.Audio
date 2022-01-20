@@ -119,7 +119,7 @@ namespace Point.Audio
         {
             GameObject obj = new GameObject($"Audio_{s_InstanceCount}");
             s_InstanceCount++;
-            obj.AddComponent<AudioSource>();
+            //obj.AddComponent<AudioSource>();
 
             return obj.transform;
         }
@@ -200,10 +200,21 @@ namespace Point.Audio
             return setting;
         }
 
+        private Transform GetAudioTransform(in RuntimeAudioKey key)
+        {
+            if (!m_Audios.TryGetIndex(key, out var index))
+            {
+                PointHelper.LogError(Channel.Audio, "");
+                return null;
+            }
+
+            return m_AudioTransforms[index];
+        }
         private UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> AddKey(in RuntimeAudioKey key)
         {
             int index = m_Audios.Add(key, new UnsafeAudio());
             UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p = m_Audios.PointerAt(index);
+            p.Value.Value.beingUsed = true;
 
             if (m_AudioTransforms.Length != m_Audios.Capacity)
             {
@@ -227,14 +238,23 @@ namespace Point.Audio
             Transform tr = m_AudioTransforms[index];
             m_AudioTransformPool.Reserve(tr);
             m_AudioTransforms[index] = null;
-
-            AudioSource audioSource = tr.GetComponent<AudioSource>();
+            
+            AudioSource audioSource = tr.GetComponentInChildren<AudioSource>();
             audioSource.Stop();
             audioSource.clip = null;
 
             m_TransformAccessArray.SetTransforms(m_AudioTransforms);
 
+            m_Audios.ElementAt(index).Value.beingUsed = false;
             m_Audios.Remove(key);
+        }
+        internal void InternalPlay(in Audio audio, AudioClip clip)
+        {
+            Transform tr = GetAudioTransform(in audio.m_Key);
+            AudioSource audioSource = tr.GetComponentInChildren<AudioSource>(true);
+
+            audioSource.clip = clip;
+            audioSource.Play();
         }
 
         public static Audio GetAudio(in string key)
@@ -249,7 +269,16 @@ namespace Point.Audio
 
             return new Audio(p);
         }
-        public void Play()
+        public static void ReserveAudio(in Audio audio)
+        {
+            Instance.RemoveKey(in audio.m_Key);
+        }
+
+        public static void Play(in Audio audio)
+        {
+            Transform tr = Instance.GetAudioTransform(audio.m_Key);
+        }
+        public static void Stop()
         {
 
         }

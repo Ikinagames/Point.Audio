@@ -22,6 +22,7 @@ using Point.Collections.Buffer.LowLevel;
 using Point.Collections.ResourceControl;
 using System;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace Point.Audio
 {
@@ -29,6 +30,14 @@ namespace Point.Audio
     {
         internal readonly UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> m_AudioPointer;
         internal readonly RuntimeAudioKey m_Key;
+
+        //public AudioClip clip
+        //{
+        //    get
+        //    {
+
+        //    }
+        //}
 
         internal Audio(UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p)
         {
@@ -45,7 +54,9 @@ namespace Point.Audio
                 return;
             }
 
-            m_AudioPointer.Value.Value.beingUsed = false;
+            AudioManager.ReserveAudio(in this);
+
+            ((IDisposable)this).Dispose();
         }
 
         public bool IsValid()
@@ -58,7 +69,7 @@ namespace Point.Audio
         }
         void IDisposable.Dispose()
         {
-            Destroy();
+            if (IsValid()) Destroy();
         }
     }
     internal struct UnsafeAudio
