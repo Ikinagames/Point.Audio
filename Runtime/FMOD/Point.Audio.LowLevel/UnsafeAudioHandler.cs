@@ -19,6 +19,7 @@
 
 using FMOD.Studio;
 using Point.Collections;
+using Point.Collections.Buffer.LowLevel;
 using System;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -139,7 +140,20 @@ namespace Point.Audio.LowLevel
 
         public void StartInstance()
         {
+            instance.setCallback(Callback, EVENT_CALLBACK_TYPE.STOPPED);
             instance.start();
+        }
+        private FMOD.RESULT Callback(EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameters)
+        {
+            //UnsafeReference<FMOD.Studio.EventInstance> ev = new UnsafeReference<EventInstance>(_event);
+            //ev.Value.release();
+
+            instance.release();
+            instance.clearHandle();
+
+            instanceHash = Hash.Empty;
+
+            return FMOD.RESULT.OK;
         }
         public void StopInstance(bool allowFadeOut)
         {

@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.Buffer.LowLevel;
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -29,8 +30,7 @@ namespace Point.Audio
     public struct Audio : IValidation
     {
         [NativeDisableUnsafePtrRestriction]
-        internal unsafe LowLevel.UnsafeAudioHandler* audioHandler;
-        internal unsafe ref LowLevel.UnsafeAudioHandler refHandler => ref *audioHandler;
+        internal UnsafeReference<LowLevel.UnsafeAudioHandler> audioHandler;
 
         internal FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;
@@ -45,16 +45,7 @@ namespace Point.Audio
 
         #region Readonly
 
-        public bool HasInitialized
-        {
-            get
-            {
-                unsafe
-                {
-                    return audioHandler != null;
-                }
-            }
-        }
+        public bool HasInitialized => audioHandler.IsCreated;
         public FMOD.Studio.PLAYBACK_STATE PlaybackState
         {
             get
@@ -64,7 +55,7 @@ namespace Point.Audio
                     return FMOD.Studio.PLAYBACK_STATE.STOPPED;
                 }
 
-                refHandler.instance.getPlaybackState(out var state);
+                audioHandler.Value.instance.getPlaybackState(out var state);
                 return state;
             }
         }
@@ -112,7 +103,7 @@ namespace Point.Audio
         {
             get
             {
-                if (HasInitialized) return refHandler.translation;
+                if (HasInitialized) return audioHandler.Value.translation;
 
                 return _translation;
             }
@@ -120,14 +111,14 @@ namespace Point.Audio
             {
                 _translation = value;
 
-                if (HasInitialized) refHandler.translation = value;
+                if (HasInitialized) audioHandler.Value.translation = value;
             }
         }
         public quaternion rotation
         {
             get
             {
-                if (HasInitialized) return refHandler.rotation;
+                if (HasInitialized) return audioHandler.Value.rotation;
 
                 return _rotation;
             }
@@ -135,7 +126,7 @@ namespace Point.Audio
             {
                 _rotation = value;
 
-                if (HasInitialized) refHandler.rotation = value;
+                if (HasInitialized) audioHandler.Value.rotation = value;
             }
         }
         public UnityEngine.Transform bindTransform
@@ -149,7 +140,7 @@ namespace Point.Audio
                         $"Transform binding is not possible before Play() method executed.");
                     return;
                 }
-                FMODUnity.RuntimeManager.AttachInstanceToGameObject(refHandler.instance, value);
+                FMODUnity.RuntimeManager.AttachInstanceToGameObject(audioHandler.Value.instance, value);
             }
         }
 
@@ -167,7 +158,7 @@ namespace Point.Audio
                     return -1;
                 }
 #endif
-                refHandler.instance.getVolume(out float vol);
+                audioHandler.Value.instance.getVolume(out float vol);
                 return vol;
             }
             set
@@ -182,7 +173,7 @@ namespace Point.Audio
                     return;
                 }
 #endif
-                refHandler.instance.setVolume(value);
+                audioHandler.Value.instance.setVolume(value);
             }
         }
 
@@ -220,7 +211,7 @@ namespace Point.Audio
 
         internal unsafe void SetEvent(in FMOD.Studio.EventDescription desc)
         {
-            if (audioHandler != null)
+            if (!audioHandler.IsCreated)
             {
                 throw new Exception();
             }
@@ -302,7 +293,7 @@ namespace Point.Audio
 
             if (IsValid())
             {
-                refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+                audioHandler.Value.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
             }
         }
         public void SetParameter(ParamReference parameter)
@@ -346,7 +337,11 @@ namespace Point.Audio
 
             if (IsValid())
             {
-                var result = refHandler.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+                var result = audioHandler.Value.instance
+                    .setParameterByID(
+                    parameter.description.id, 
+                    parameter.value, 
+                    parameter.ignoreSeekSpeed);
 
                 if (result != FMOD.RESULT.OK)
                 {
@@ -413,8 +408,8 @@ namespace Point.Audio
             unsafe
             {
                 return eventDescription.isValid() && 
-                    audioHandler != null &&
-                    hash.Equals(audioHandler->instanceHash);
+                    audioHandler.IsCreated &&
+                    hash.Equals(audioHandler.Value.instanceHash);
             }
         }
 

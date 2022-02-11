@@ -17,24 +17,15 @@
 #define DEBUG_MODE
 #endif
 
-using Point.Collections;
+using FMODUnity;
+using System;
 using UnityEngine;
 
 namespace Point.Audio
 {
-    [DisallowMultipleComponent]
-    [AddComponentMenu("Point/FMOD/Audio Room")]
-    public sealed class FMODAudioRoom : MonoBehaviour
+    [AddComponentMenu("Point/FMOD/Room Event")]
+    public sealed class FMODRoomEvent : MonoBehaviour
     {
-        [SerializeField] private AABB m_AABB;
-
-
-    }
-
-    internal struct UnsafeAudioRoom
-    {
-        private int m_Index;
-        private AABB m_AABB;
-
+        [SerializeField] private int m_RoomID = -1;
     }
 }

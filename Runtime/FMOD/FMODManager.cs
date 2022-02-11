@@ -24,6 +24,8 @@ using Point.Audio.LowLevel;
 using Unity.Jobs;
 using FMOD.Studio;
 using UnityEngine.SceneManagement;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Point.Audio
 {
@@ -286,6 +288,29 @@ namespace Point.Audio
                 handler->CreateInstance(ref audio);
             }
         }
+        public struct FindInstanceEnumerator : IEnumerable<EventInstance>
+        {
+            private UnsafeAudioHandlerContainer.FindEventEnumerator m_Handler;
+
+            internal FindInstanceEnumerator(UnsafeAudioHandlerContainer.FindEventEnumerator handler)
+            {
+                m_Handler = handler;
+            }
+
+            public IEnumerator<EventInstance> GetEnumerator()
+            {
+                foreach (var item in m_Handler)
+                {
+                    yield return item.Value.instance;
+                }
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        public static FindInstanceEnumerator FindEventInstancesOf(EventDescription description)
+        {
+            return new FindInstanceEnumerator(Instance.m_Handlers.FindEventInstancesOf(description));
+        }
+
         /// <summary>
         /// 오디오를 재생합니다.
         /// </summary>
@@ -310,13 +335,10 @@ namespace Point.Audio
                 CreateInstance(ref audio);
             }
 
-            unsafe
-            {
-                audio.audioHandler->Set3DAttributes();
-                audio.audioHandler->SetParameters(ref audio);
+            audio.audioHandler.Value.Set3DAttributes();
+            audio.audioHandler.Value.SetParameters(ref audio);
 
-                audio.audioHandler->StartInstance();
-            }
+            audio.audioHandler.Value.StartInstance();
         }
         /// <summary>
         /// 오디오를 정지합니다.
@@ -332,10 +354,7 @@ namespace Point.Audio
                     $"This is not allowed.");
             }
 #endif
-            unsafe
-            {
-                audio.audioHandler->StopInstance(audio.AllowFadeout);
-            }
+            audio.audioHandler.Value.StopInstance(audio.AllowFadeout);
         }
     }
 }

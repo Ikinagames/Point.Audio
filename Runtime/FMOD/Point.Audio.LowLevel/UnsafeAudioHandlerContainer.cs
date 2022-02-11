@@ -25,6 +25,8 @@ using Point.Collections;
 using Point.Collections.Buffer;
 using Unity.Burst;
 using Point.Collections.Buffer.LowLevel;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace Point.Audio.LowLevel
 {
@@ -90,10 +92,45 @@ namespace Point.Audio.LowLevel
             }
         }
 
-        public JobHandle Combine(JobHandle a)
+        public struct FindEventEnumerator : IEnumerable<UnsafeReference<UnsafeAudioHandler>>
         {
-            m_JobHandle = JobHandle.CombineDependencies(m_JobHandle, a);
-            return m_JobHandle;
+            UnsafeAllocator<UnsafeAudioHandler> m_Buffer;
+            FMOD.Studio.EventDescription m_Description;
+
+            public FindEventEnumerator(
+                UnsafeAllocator<UnsafeAudioHandler> buffer, 
+                FMOD.Studio.EventDescription desc)
+            {
+                m_Buffer = buffer;
+                m_Description = desc;
+            }
+
+            public IEnumerator<UnsafeReference<UnsafeAudioHandler>> GetEnumerator()
+            {
+                for (int i = 0; i < m_Buffer.Length; i++)
+                {
+                    if (m_Buffer[i].IsEmpty() ||
+                        m_Buffer[i].instance.getDescription(out var desc) != FMOD.RESULT.OK)
+                    {
+                        continue;
+                    }
+
+                    if (m_Description.handle.Equals(desc.handle))
+                    {
+                        yield return m_Buffer.ElementAt(i);
+                    }
+                }
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        /// <summary>
+        /// 현재 재생 중인 모든 인스턴스에서 탐색됩니다.
+        /// </summary>
+        /// <param name="desc"></param>
+        /// <returns></returns>
+        public FindEventEnumerator FindEventInstancesOf(FMOD.Studio.EventDescription desc)
+        {
+            return new FindEventEnumerator(m_Buffer, desc);
         }
 
         public void Dispose()
@@ -101,6 +138,14 @@ namespace Point.Audio.LowLevel
             m_JobHandle.Complete();
 
             m_Buffer.Dispose();
+        }
+
+        #region Jobs
+
+        public JobHandle Combine(JobHandle a)
+        {
+            m_JobHandle = JobHandle.CombineDependencies(m_JobHandle, a);
+            return m_JobHandle;
         }
 
         public void CompleteAllJobs() => m_JobHandle.Complete();
@@ -155,5 +200,7 @@ namespace Point.Audio.LowLevel
                 }
             }
         }
+
+        #endregion
     }
 }
