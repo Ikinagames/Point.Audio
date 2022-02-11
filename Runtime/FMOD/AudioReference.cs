@@ -46,7 +46,7 @@ namespace Point.Audio
             for (int i = 0; i < m_Parameters.Length; i++)
             {
                 var param = m_Parameters[i].GetParamReference(boxed.eventDescription);
-                
+
                 boxed.SetParameter(param);
             }
 

@@ -32,6 +32,7 @@ namespace Point.Audio
     /// <see cref="AnimationEvent"/> 의 FunctionName 은 TriggerAction 이어야 동작합니다.
     /// </remarks>
     [RequireComponent(typeof(Animator))]
+    [AddComponentMenu("Point/FMOD/Animation Binder")]
     public class FMODAnimationBinder : MonoBehaviour
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;

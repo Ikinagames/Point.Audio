@@ -11,7 +11,7 @@ namespace Point.Audio.FMODEditor
     [CustomPropertyDrawer(typeof(ParamField), true)]
     public sealed class ParamFieldPropertyDrawer : PropertyDrawer
     {
-        private sealed class Helper
+        public sealed class Helper
         {
             const string
                 c_IsGlobal = "m_IsGlobal",
