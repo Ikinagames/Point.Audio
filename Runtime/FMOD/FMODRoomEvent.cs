@@ -26,6 +26,9 @@ namespace Point.Audio
     [AddComponentMenu("Point/FMOD/Room Event")]
     public sealed class FMODRoomEvent : MonoBehaviour
     {
-        [SerializeField] private int m_RoomID = -1;
+        [SerializeField] private StudioEventEmitter[] m_Emitters = Array.Empty<StudioEventEmitter>();
+        [SerializeField] private string m_RoomName = string.Empty;
+        
+
     }
 }

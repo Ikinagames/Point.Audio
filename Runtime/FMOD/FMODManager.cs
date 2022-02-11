@@ -26,6 +26,7 @@ using FMOD.Studio;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 
 namespace Point.Audio
 {
@@ -43,6 +44,7 @@ namespace Point.Audio
         private JobHandle m_GlobalJobHandle;
 
         private UnsafeAudioHandlerContainer m_Handlers;
+        private NativeHashMap<Hash, AudioRoom> m_AudioRooms;
 
         #region Class Instruction
 
@@ -50,10 +52,8 @@ namespace Point.Audio
         {
             m_IsFocusing = true;
 
-            unsafe
-            {
-                m_Handlers = new UnsafeAudioHandlerContainer(128);
-            }
+            m_Handlers = new UnsafeAudioHandlerContainer(128);
+            m_AudioRooms = new NativeHashMap<Hash, AudioRoom>(128, AllocatorManager.Persistent);
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
@@ -70,6 +70,7 @@ namespace Point.Audio
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
 
             m_Handlers.Dispose();
+            m_AudioRooms.Dispose();
         }
 
         #endregion
@@ -101,6 +102,8 @@ namespace Point.Audio
         }
 
         #endregion
+
+        #region General Controls
 
         public static ParamReference GetGlobalParameter(string name)
         {
@@ -356,5 +359,9 @@ namespace Point.Audio
 #endif
             audio.audioHandler.Value.StopInstance(audio.AllowFadeout);
         }
+
+        #endregion
+
+
     }
 }

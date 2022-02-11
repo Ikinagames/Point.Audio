@@ -18,6 +18,8 @@
 #endif
 
 using Point.Collections;
+using System;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Point.Audio
@@ -26,15 +28,30 @@ namespace Point.Audio
     [AddComponentMenu("Point/FMOD/Audio Room")]
     public sealed class FMODAudioRoom : MonoBehaviour
     {
+        [SerializeField] private string m_RoomName;
         [SerializeField] private AABB m_AABB;
 
-
+        [NonSerialized] private Hash m_NameHash;
     }
 
-    internal struct UnsafeAudioRoom
+    public struct AudioRoom : IEquatable<AudioRoom>
     {
-        private int m_Index;
+        private Hash m_Hash;
         private AABB m_AABB;
 
+        public AudioRoom(Hash hash, AABB aabb)
+        {
+            m_Hash = hash;
+            m_AABB = aabb;
+        }
+
+        #region Bounds
+
+        public void Encapsulate(float3 point) => m_AABB.Encapsulate(point);
+        public void Encapsulate(AABB aabb) => m_AABB.Encapsulate(aabb);
+
+        #endregion
+
+        public bool Equals(AudioRoom other) => m_Hash.Equals(other.m_Hash);
     }
 }
