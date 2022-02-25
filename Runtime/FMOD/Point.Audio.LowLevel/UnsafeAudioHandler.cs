@@ -52,10 +52,14 @@ namespace Point.Audio.LowLevel
 
         public UnsafeAudioHandler(Hash hash)
         {
-            this = default(UnsafeAudioHandler);
-
             this.hash = hash;
+
+            instance = default(EventInstance);
+            generation = 0;
+
             instanceHash = Hash.Empty;
+
+            translation = 0;
             rotation = quaternion.identity;
         }
 
@@ -66,6 +70,11 @@ namespace Point.Audio.LowLevel
             instance.clearHandle();
 
             instanceHash = Hash.Empty;
+        }
+
+        public bool ValidateAudio(in Audio audio)
+        {
+            return audio.hash.Equals(instanceHash);
         }
 
         public void CreateInstance(ref Audio audio)
