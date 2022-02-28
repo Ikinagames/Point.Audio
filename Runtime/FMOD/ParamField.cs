@@ -154,5 +154,57 @@ namespace Point.Audio
             }
             return Convert.ToSingle(value);
         }
+
+        public void Execute()
+        {
+            ParamReference param;
+            if (m_IsGlobal)
+            {
+                param = GetGlobalParamReference();
+                FMODManager.SetGlobalParameter(param);
+
+                return;
+            }
+#if DEBUG_MODE
+            PointHelper.LogError(Channel.Audio,
+                $"Cannot execute parameter field which is not global.");
+#endif
+        }
+        public void Execute(FMOD.Studio.EventInstance ev)
+        {
+            if (m_IsGlobal)
+            {
+                Execute();
+#if DEBUG_MODE
+                PointHelper.LogWarning(Channel.Audio,
+                    $"You can execute this parameter that is global without event description.");
+#endif
+                return;
+            }
+
+            FMOD.RESULT result = ev.getDescription(out var description);
+#if DEBUG_MODE
+            if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"Err " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+
+            ParamReference param = GetParamReference(description);
+            result = ev.setParameterByID(param.description.id, m_Value, m_IgnoreSeekSpeed);
+
+#if DEBUG_MODE
+            if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"Err " +
+                    $"This is not allowed.");
+            }
+#endif
+        }
     }
 }
