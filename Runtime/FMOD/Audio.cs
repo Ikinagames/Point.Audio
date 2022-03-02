@@ -29,7 +29,6 @@ namespace Point.Audio
     [BurstCompatible]
     public struct Audio : IValidation
     {
-        [NativeDisableUnsafePtrRestriction]
         internal UnsafeReference<LowLevel.UnsafeAudioHandler> audioHandler;
 
         internal FMOD.Studio.EventDescription eventDescription;
@@ -184,7 +183,7 @@ namespace Point.Audio
         [BurstCompatible]
         internal unsafe Audio(FMOD.Studio.EventDescription desc)
         {
-            audioHandler = null;
+            audioHandler = default(UnsafeReference<LowLevel.UnsafeAudioHandler>);
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
@@ -216,7 +215,7 @@ namespace Point.Audio
                 throw new Exception();
             }
 
-            audioHandler = null;
+            audioHandler = default(UnsafeReference<LowLevel.UnsafeAudioHandler>);
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
@@ -407,9 +406,13 @@ namespace Point.Audio
         {
             unsafe
             {
-                return eventDescription.isValid() && 
-                    audioHandler.IsCreated &&
-                    hash.Equals(audioHandler.Value.instanceHash);
+                if (!eventDescription.isValid()) return false;
+                else if (!audioHandler.IsCreated) return false;
+
+                //var targetHash = audioHandler.Value.instanceHash;
+                return audioHandler.Value.ValidateAudio(in this);
+                //return
+                //    hash.Equals(targetHash);
             }
         }
 
