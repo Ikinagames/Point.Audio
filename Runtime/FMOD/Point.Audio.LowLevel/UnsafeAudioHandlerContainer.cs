@@ -30,7 +30,7 @@ using System.Collections;
 
 namespace Point.Audio.LowLevel
 {
-    [BurstCompatible]
+    [NativeContainer, BurstCompatible]
     internal unsafe struct UnsafeAudioHandlerContainer : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
