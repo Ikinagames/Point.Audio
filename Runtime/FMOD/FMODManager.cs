@@ -27,6 +27,9 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Point.Collections.Buffer.LowLevel;
+using System;
 
 namespace Point.Audio
 {
@@ -38,13 +41,17 @@ namespace Point.Audio
 
         internal static FMOD.Studio.System StudioSystem => FMODUnity.RuntimeManager.StudioSystem;
         internal static FMOD.System CoreSystem => FMODUnity.RuntimeManager.CoreSystem;
+        internal static ResonanceAudioHelper ResonanceAudio => Instance.m_ResonanceAudioHelper;
 
+        public const string
+            BusPrefix = "bus:/";
+
+        private ResonanceAudioHelper m_ResonanceAudioHelper;
         private AtomicSafeBoolen m_IsFocusing;
 
         private JobHandle m_GlobalJobHandle;
 
         private UnsafeAudioHandlerContainer m_Handlers;
-        private NativeHashMap<Hash, AudioRoom> m_AudioRooms;
 
         #region Class Instruction
 
@@ -52,8 +59,8 @@ namespace Point.Audio
         {
             m_IsFocusing = true;
 
+            m_ResonanceAudioHelper = new ResonanceAudioHelper();
             m_Handlers = new UnsafeAudioHandlerContainer(128);
-            m_AudioRooms = new NativeHashMap<Hash, AudioRoom>(128, AllocatorManager.Persistent);
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
@@ -70,7 +77,7 @@ namespace Point.Audio
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
 
             m_Handlers.Dispose();
-            m_AudioRooms.Dispose();
+            m_ResonanceAudioHelper.Dispose();
         }
 
         #endregion
@@ -362,6 +369,207 @@ namespace Point.Audio
 
         #endregion
 
+        /// <summary>
+        /// <see cref="FMODAudioRoom"/> 에서 기준을 잡을 <see cref="Transform"/> 을 설정합니다.
+        /// </summary>
+        /// <param name="tr"></param>
+        public static void SetAudioRoomTarget(Transform tr)
+        {
+            ResonanceAudio.SetRoomTarget(tr);
+        }
 
+        public sealed class ResonanceAudioHelper : IDisposable
+        {
+            public const float
+                /// Maximum allowed gain value in decibels.
+                maxGainDb = 24.0f,
+                /// Minimum allowed gain value in decibels.
+                minGainDb = -24.0f,
+                /// Maximum allowed reverb brightness modifier value.
+                maxReverbBrightness = 1.0f,
+                /// Minimum allowed reverb brightness modifier value.
+                minReverbBrightness = -1.0f,
+                /// Maximum allowed reverb time modifier value.
+                maxReverbTime = 3.0f,
+                /// Maximum allowed reflectivity multiplier of a room surface material.
+                maxReflectivity = 2.0f;
+
+            // Right-handed to left-handed matrix converter (and vice versa).
+            private static readonly Matrix4x4 flipZ = Matrix4x4.Scale(new Vector3(1, 1, -1));
+
+            // Plugin data parameter index for the room properties.
+            private static readonly int roomPropertiesIndex = 1;
+
+            // Container to store the currently active rooms in the scene.
+            private List<FMODAudioRoom> enabledRooms;
+            private UnsafeAllocator<AudioRoom> m_TempRoomBuffer;
+            private FMOD.DSP m_ResonanceAudioListenerPlugin;
+
+            private Transform m_RoomTarget;
+
+            public Transform RoomTarget
+            {
+                get => m_RoomTarget;
+                set => SetRoomTarget(value);
+            }
+            public Vector3 RoomTargetPosition
+            {
+                get
+                {
+                    if (m_RoomTarget == null)
+                    {
+                        StudioSystem.getListenerAttributes(0, out FMOD.ATTRIBUTES_3D att);
+                        return new Vector3(att.position.x, att.position.y, att.position.z);
+                    }
+
+                    return m_RoomTarget.position;
+                }
+            }
+
+            public ResonanceAudioHelper()
+            {
+                enabledRooms = new List<FMODAudioRoom>();
+                m_TempRoomBuffer = new UnsafeAllocator<AudioRoom>(1, Allocator.Persistent);
+                m_ResonanceAudioListenerPlugin = LoadResonanceAudioPlugin();
+
+                m_RoomTarget = null;
+            }
+            private static FMOD.DSP LoadResonanceAudioPlugin()
+            {
+                const string
+                    c_PluginName = "Resonance Audio Listener",
+                    c_ResonanceAudioBusName = BusPrefix + c_PluginName;
+
+                FMOD.DSP dsp = default(FMOD.DSP);
+                FMOD.RESULT result = StudioSystem.getBus(c_ResonanceAudioBusName, out Bus resonanceAudioBus);
+                StudioSystem.flushCommands();
+                if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+                {
+                    return dsp;
+                }
+
+                result = resonanceAudioBus.getChannelGroup(out FMOD.ChannelGroup group);
+                StudioSystem.flushCommands();
+                if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+                {
+                    PointHelper.LogError(Channel.Audio,
+                        $"Could not resolve Resonance Audio Listener group.");
+
+                    return dsp;
+                }
+
+                return group.getDSP(c_ResonanceAudioBusName);
+            }
+
+            public void SetRoomTarget(Transform transform)
+            {
+                m_RoomTarget = transform;
+            }
+            public void RegisterAudioRoom(FMODAudioRoom room)
+            {
+                enabledRooms.Add(room);
+            }
+            public void RemoveAudioRoom(FMODAudioRoom room)
+            {
+                enabledRooms.Remove(room);
+            }
+
+            /// Updates the room effects of the environment with given |room| properties.
+            /// @note This should only be called from the main Unity thread.
+            public void UpdateAudioRoom(FMODAudioRoom room, bool roomEnabled)
+            {
+                // Update the enabled rooms list.
+                if (roomEnabled)
+                {
+                    if (!enabledRooms.Contains(room))
+                    {
+                        enabledRooms.Add(room);
+                    }
+                }
+                else
+                {
+                    enabledRooms.Remove(room);
+                }
+                // Update the current room effects to be applied.
+
+                FMOD.RESULT result;
+                if (enabledRooms.Count > 0)
+                {
+                    FMODAudioRoom currentRoom = enabledRooms[enabledRooms.Count - 1];
+                    m_TempRoomBuffer[0] = GetRoomProperties(currentRoom);
+
+                    result = m_ResonanceAudioListenerPlugin.setParameterData(roomPropertiesIndex, 
+                        UnsafeBufferUtility.ToBytes(m_TempRoomBuffer.Ptr, (int)m_TempRoomBuffer.Size));
+                }
+                else
+                {
+                    // Set the room properties to a null room, which will effectively disable the room effects.
+                    result = m_ResonanceAudioListenerPlugin.setParameterData(roomPropertiesIndex, Array.Empty<byte>());
+                }
+
+                if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+                {
+                    "err".ToLogError();
+                }
+            }
+
+            #region Utils
+
+            // Converts given |db| value to its amplitude equivalent where 'dB = 20 * log10(amplitude)'.
+            private static float ConvertAmplitudeFromDb(float db)
+            {
+                return Mathf.Pow(10.0f, 0.05f * db);
+            }
+
+            // Converts given |position| and |rotation| from Unity space to audio space.
+            private static void ConvertAudioTransformFromUnity(ref Vector3 position,
+              ref Quaternion rotation)
+            {
+                // Compose the transformation matrix.
+                Matrix4x4 transformMatrix = Matrix4x4.TRS(position, rotation, Vector3.one);
+                // Convert the transformation matrix from left-handed to right-handed.
+                transformMatrix = flipZ * transformMatrix * flipZ;
+                // Update |position| and |rotation| respectively.
+                position = transformMatrix.GetColumn(3);
+                rotation = Quaternion.LookRotation(transformMatrix.GetColumn(2), transformMatrix.GetColumn(1));
+            }
+            // Returns room properties of the given |room|.
+            private static AudioRoom GetRoomProperties(FMODAudioRoom room)
+            {
+                AudioRoom roomProperties;
+                Vector3 position = room.transform.position;
+                Quaternion rotation = room.transform.rotation;
+                Vector3 scale = Vector3.Scale(room.transform.lossyScale, room.size);
+                ConvertAudioTransformFromUnity(ref position, ref rotation);
+                roomProperties.positionX = position.x;
+                roomProperties.positionY = position.y;
+                roomProperties.positionZ = position.z;
+                roomProperties.rotationX = rotation.x;
+                roomProperties.rotationY = rotation.y;
+                roomProperties.rotationZ = rotation.z;
+                roomProperties.rotationW = rotation.w;
+                roomProperties.dimensionsX = scale.x;
+                roomProperties.dimensionsY = scale.y;
+                roomProperties.dimensionsZ = scale.z;
+                roomProperties.materialLeft = room.leftWall;
+                roomProperties.materialRight = room.rightWall;
+                roomProperties.materialBottom = room.floor;
+                roomProperties.materialTop = room.ceiling;
+                roomProperties.materialFront = room.frontWall;
+                roomProperties.materialBack = room.backWall;
+                roomProperties.reverbGain = ConvertAmplitudeFromDb(room.reverbGainDb);
+                roomProperties.reverbTime = room.reverbTime;
+                roomProperties.reverbBrightness = room.reverbBrightness;
+                roomProperties.reflectionScalar = room.reflectivity;
+                return roomProperties;
+            }
+
+            #endregion
+
+            public void Dispose()
+            {
+                m_TempRoomBuffer.Dispose();
+            }
+        }
     }
 }

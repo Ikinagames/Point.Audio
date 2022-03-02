@@ -28,30 +28,102 @@ namespace Point.Audio
     [AddComponentMenu("Point/FMOD/Audio Room")]
     public sealed class FMODAudioRoom : MonoBehaviour
     {
-        [SerializeField] private string m_RoomName;
-        [SerializeField] private AABB m_AABB;
+        /// Room surface material in negative x direction.
+        public SurfaceMaterial leftWall = SurfaceMaterial.ConcreteBlockCoarse;
+        /// Room surface material in positive x direction.
+        public SurfaceMaterial rightWall = SurfaceMaterial.ConcreteBlockCoarse;
+        /// Room surface material in negative y direction.
+        public SurfaceMaterial floor = SurfaceMaterial.ParquetOnConcrete;
+        /// Room surface material in positive y direction.
+        public SurfaceMaterial ceiling = SurfaceMaterial.PlasterRough;
+        /// Room surface material in negative z direction.
+        public SurfaceMaterial backWall = SurfaceMaterial.ConcreteBlockCoarse;
+        /// Room surface material in positive z direction.
+        public SurfaceMaterial frontWall = SurfaceMaterial.ConcreteBlockCoarse;
 
-        [NonSerialized] private Hash m_NameHash;
-    }
+        [Space]
+        /// Reflectivity scalar for each surface of the room.
+        [Range(0, 2)]
+        public float reflectivity = 1.0f;
+        /// Reverb gain modifier in decibels.
+        [Range(-24, 24)]
+        public float reverbGainDb = 0.0f;
+        /// Reverb brightness modifier.
+        [Range(-1, 1)]
+        public float reverbBrightness = 0.0f;
+        /// Reverb time modifier.
+        [Range(0, 3)]
+        public float reverbTime = 1.0f;
+        /// Size of the room (normalized with respect to scale of the game object).
+        public Vector3 size = Vector3.one;
 
-    public struct AudioRoom : IEquatable<AudioRoom>
-    {
-        private Hash m_Hash;
-        private AABB m_AABB;
+        [Space]
+        [Header("Trigger")]
+        public ParamField[] m_OnEnter = Array.Empty<ParamField>();
+        public ParamField[] m_OnExit = Array.Empty<ParamField>();
 
-        public AudioRoom(Hash hash, AABB aabb)
+        public AABB Bounds => new AABB(transform.position, size);
+        private bool m_IsEntered = false;
+
+        void OnEnable()
         {
-            m_Hash = hash;
-            m_AABB = aabb;
+            ExecuteTriggerAction(FMODHelper.IsListenerInsideRoom(this));
+            FMODManager.ResonanceAudio.UpdateAudioRoom(this, m_IsEntered);
         }
 
-        #region Bounds
+        void OnDisable()
+        {
+            if (PointApplication.IsShutdown) return;
 
-        public void Encapsulate(float3 point) => m_AABB.Encapsulate(point);
-        public void Encapsulate(AABB aabb) => m_AABB.Encapsulate(aabb);
+            FMODManager.ResonanceAudio.UpdateAudioRoom(this, false);
+            m_IsEntered = false;
+        }
 
-        #endregion
+        private void ExecuteTriggerAction(bool entered)
+        {
+            if (entered && !m_IsEntered)
+            {
+                for (int i = 0; i < m_OnEnter.Length; i++)
+                {
+                    m_OnEnter[i].Execute();
+                }
 
-        public bool Equals(AudioRoom other) => m_Hash.Equals(other.m_Hash);
+                m_IsEntered = true;
+                return;
+            }
+            else if (!entered && m_IsEntered)
+            {
+                for (int i = 0; i < m_OnExit.Length; i++)
+                {
+                    m_OnExit[i].Execute();
+                }
+
+                m_IsEntered = false;
+                return;
+            }
+        }
+        void Update()
+        {
+            if (FMODHelper.IsListenerInsideRoom(this))
+            {
+                FMODManager.ResonanceAudio.UpdateAudioRoom(this, true);
+                ExecuteTriggerAction(true);
+            }
+            else
+            {
+                FMODManager.ResonanceAudio.UpdateAudioRoom(this, false);
+                ExecuteTriggerAction(false);
+            }
+        }
+#if DEBUG_MODE
+        void OnDrawGizmosSelected()
+        {
+            // Draw shoebox model wireframe of the room.
+            Gizmos.color = Color.yellow;
+            //Gizmos.matrix = transform.localToWorldMatrix;
+            var bounds = Bounds;
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+#endif
     }
 }
