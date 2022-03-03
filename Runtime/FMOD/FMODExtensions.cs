@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    public static class FMODHelper
+    public static class FMODExtensions
     {
         public static FMOD.DSP getDSP(in this FMOD.Studio.Bus bus, in string dspName)
         {

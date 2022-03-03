@@ -67,7 +67,7 @@ namespace Point.Audio
 
         void OnEnable()
         {
-            ExecuteTriggerAction(FMODHelper.IsListenerInsideRoom(this));
+            ExecuteTriggerAction(FMODExtensions.IsListenerInsideRoom(this));
             FMODManager.ResonanceAudio.UpdateAudioRoom(this, m_IsEntered);
         }
 
@@ -104,7 +104,7 @@ namespace Point.Audio
         }
         void Update()
         {
-            if (FMODHelper.IsListenerInsideRoom(this))
+            if (FMODExtensions.IsListenerInsideRoom(this))
             {
                 FMODManager.ResonanceAudio.UpdateAudioRoom(this, true);
                 ExecuteTriggerAction(true);
