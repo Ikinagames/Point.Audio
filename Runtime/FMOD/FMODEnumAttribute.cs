@@ -20,12 +20,18 @@
 
 namespace Point.Audio
 {
-    /// <summary>
-    /// 
-    /// </summary>
     [System.AttributeUsage(System.AttributeTargets.Enum, AllowMultiple = false)]
-    public sealed class FMODLabeledEnumAttribute : FMODEnumAttribute
+    public class FMODEnumAttribute : System.Attribute
     {
-        public FMODLabeledEnumAttribute(string name) : base(name) { }
+        /// <summary>
+        /// <see langword="null"/> 이 아닐 경우, 이 타입의
+        /// <see cref="System.Type.FullName"/> 이 아닌 이 string 을 사용합니다.
+        /// </summary>
+        public string Name;
+
+        public FMODEnumAttribute(string name)
+        {
+            Name = name;
+        }
     }
 }
