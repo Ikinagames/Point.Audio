@@ -19,6 +19,7 @@
 
 using Point.Collections;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -43,12 +44,22 @@ namespace Point.Audio
         [SerializeField] private AudioReference[] m_PlayOnStart = Array.Empty<AudioReference>();
         [SerializeField] private SceneContainer[] m_SceneDependencies = Array.Empty<SceneContainer>();
 
+        private readonly List<Audio> m_GlobalAudios = new List<Audio>();
+
         public void Initialize()
         {
             for (int i = 0; i < m_PlayOnStart.Length; i++)
             {
                 m_PlayOnStart[i].GetAudio().Play();
             }
+        }
+        public void StopGlobalAudios()
+        {
+            for (int i = 0; i < m_GlobalAudios.Count; i++)
+            {
+                m_GlobalAudios[i].Stop();
+            }
+            m_GlobalAudios.Clear();
         }
         public void StartSceneDependencies(Scene scene)
         {
@@ -67,6 +78,8 @@ namespace Point.Audio
                 {
                     Audio audio = audioRef.GetAudio();
                     audio.Play();
+
+                    m_GlobalAudios.Add(audio);
                 }
             }
         }

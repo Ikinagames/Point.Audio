@@ -70,6 +70,8 @@ namespace Point.Audio
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
             FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
+
+            variables.StopGlobalAudios();
             variables.StartSceneDependencies(arg0);
         }
 
