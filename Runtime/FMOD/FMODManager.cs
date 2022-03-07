@@ -30,6 +30,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Point.Collections.Buffer.LowLevel;
 using System;
+using System.Reflection;
 
 namespace Point.Audio
 {
@@ -128,9 +129,40 @@ namespace Point.Audio
 
             return param;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TEnum"><seealso cref="FMODLabeledEnumAttribute"/> 를 상속받는 타입</typeparam>
+        /// <param name="value"></param>
+        public static void SetGlobalParameter<TEnum>(TEnum value)
+            where TEnum : struct, IConvertible
+        {
+#if DEBUG_MODE
+            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return;
+            }
+#endif
+            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODLabeledEnumAttribute>();
+#if DEBUG_MODE
+            if (att == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return;
+            }
+#endif
+            int temp = value.ToInt32(System.Globalization.CultureInfo.InvariantCulture);
+            SetGlobalParameter(string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name, temp);
+        }
         public static void SetGlobalParameter(string name, float value)
         {
             var result = StudioSystem.getParameterDescriptionByName(name.ToString(), out var description);
+#if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
                 PointHelper.LogError(Channel.Audio,
@@ -138,15 +170,19 @@ namespace Point.Audio
 
                 return;
             }
+#endif
 
             StudioSystem.setParameterByID(description.id, value);
 
+#if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
                 $"Global parameter({name}) has set to {value}.");
+#endif
         }
         public static void SetGlobalParameter(ParamReference parameter)
         {
             var result = StudioSystem.setParameterByID(parameter.description.id, parameter.value);
+#if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
                 PointHelper.LogError(Channel.Audio,
@@ -155,6 +191,7 @@ namespace Point.Audio
 
             PointHelper.Log(Channel.Audio,
                 $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
+#endif
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
