@@ -113,9 +113,34 @@ namespace Point.Audio
 
         #region General Controls
 
-        public static ParamReference GetGlobalParameter(string name)
+        public static ParamReference GetGlobalParameter<TEnum>()
+            where TEnum : struct, IConvertible
+        {
+#if DEBUG_MODE
+            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return default(ParamReference);
+            }
+#endif
+            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
+#if DEBUG_MODE
+            if (att == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return default(ParamReference);
+            }
+#endif
+            return GetGlobalParameter(string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name);
+        }
+        public static ParamReference GetGlobalParameter(in string name)
         {
             var result = StudioSystem.getParameterDescriptionByName(name, out var description);
+#if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
                 PointHelper.LogError(Channel.Audio,
@@ -123,7 +148,7 @@ namespace Point.Audio
 
                 return default(ParamReference);
             }
-
+#endif
             StudioSystem.getParameterByID(description.id, out float value);
             var param = new ParamReference(name, value);
 
@@ -132,7 +157,7 @@ namespace Point.Audio
         /// <summary>
         /// 
         /// </summary>
-        /// <typeparam name="TEnum"><seealso cref="FMODLabeledEnumAttribute"/> 를 상속받는 타입</typeparam>
+        /// <typeparam name="TEnum"><seealso cref="FMODEnumAttribute"/> 를 상속받는 타입</typeparam>
         /// <param name="value"></param>
         public static void SetGlobalParameter<TEnum>(TEnum value)
             where TEnum : struct, IConvertible
@@ -146,7 +171,7 @@ namespace Point.Audio
                 return;
             }
 #endif
-            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODLabeledEnumAttribute>();
+            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
 #if DEBUG_MODE
             if (att == null)
             {
