@@ -19,6 +19,7 @@
 
 using Point.Collections;
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace Point.Audio
@@ -75,6 +76,31 @@ namespace Point.Audio
             m_Audio.Stop();
         }
 
+        protected ParamReference GetParamReference<TEnum>()
+            where TEnum : struct, IConvertible
+        {
+#if DEBUG_MODE
+            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return default(ParamReference);
+            }
+#endif
+            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
+#if DEBUG_MODE
+            if (att == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+
+                return default(ParamReference);
+            }
+#endif
+            string name = string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name;
+            return m_Audio.GetParameter(name);
+        }
         protected ParamReference GetParamReference(string name)
         {
             if (!m_Audio.IsValidID())
