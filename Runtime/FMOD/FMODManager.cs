@@ -119,7 +119,7 @@ namespace Point.Audio
             where TEnum : struct, IConvertible
         {
 #if DEBUG_MODE
-            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            if (!FMODExtensions.IsFMODEnum<TEnum>())
             {
                 PointHelper.LogError(Channel.Audio,
                     $"");
@@ -127,17 +127,7 @@ namespace Point.Audio
                 return default(ParamReference);
             }
 #endif
-            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
-#if DEBUG_MODE
-            if (att == null)
-            {
-                PointHelper.LogError(Channel.Audio,
-                    $"");
-
-                return default(ParamReference);
-            }
-#endif
-            return GetGlobalParameter(string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name);
+            return GetGlobalParameter(FMODExtensions.ConvertToName<TEnum>());
         }
         public static ParamReference GetGlobalParameter(in string name)
         {
@@ -165,7 +155,7 @@ namespace Point.Audio
             where TEnum : struct, IConvertible
         {
 #if DEBUG_MODE
-            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            if (!FMODExtensions.IsFMODEnum<TEnum>())
             {
                 PointHelper.LogError(Channel.Audio,
                     $"");
@@ -173,18 +163,8 @@ namespace Point.Audio
                 return;
             }
 #endif
-            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
-#if DEBUG_MODE
-            if (att == null)
-            {
-                PointHelper.LogError(Channel.Audio,
-                    $"");
-
-                return;
-            }
-#endif
-            int temp = value.ToInt32(System.Globalization.CultureInfo.InvariantCulture);
-            SetGlobalParameter(string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name, temp);
+            int temp = value.ToInt32();
+            SetGlobalParameter(FMODExtensions.ConvertToName<TEnum>(), temp);
         }
         public static void SetGlobalParameter(string name, float value)
         {

@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using System.Reflection;
 using UnityEngine;
 
 namespace Point.Audio
@@ -74,6 +75,30 @@ namespace Point.Audio
             bool result = room.Bounds.Contains(listenerPosition);
 
             return result;
+        }
+
+        public static bool IsFMODEnum<TEnum>()
+        {
+            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            {
+                return false;
+            }
+            else if (TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>() == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        public static string ConvertToName<TEnum>()
+        {
+            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
+            return att.ConvertToName();
+        }
+        public static string ConvertToName<TEnumAttribute>(this TEnumAttribute att)
+            where TEnumAttribute : FMODEnumAttribute
+        {
+            return string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnumAttribute>.Name : att.Name;
         }
     }
 }

@@ -80,7 +80,7 @@ namespace Point.Audio
             where TEnum : struct, IConvertible
         {
 #if DEBUG_MODE
-            if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
+            if (!FMODExtensions.IsFMODEnum<TEnum>())
             {
                 PointHelper.LogError(Channel.Audio,
                     $"");
@@ -88,18 +88,7 @@ namespace Point.Audio
                 return default(ParamReference);
             }
 #endif
-            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
-#if DEBUG_MODE
-            if (att == null)
-            {
-                PointHelper.LogError(Channel.Audio,
-                    $"");
-
-                return default(ParamReference);
-            }
-#endif
-            string name = string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name;
-            return m_Audio.GetParameter(name);
+            return m_Audio.GetParameter(FMODExtensions.ConvertToName<TEnum>());
         }
         protected ParamReference GetParamReference(string name)
         {
