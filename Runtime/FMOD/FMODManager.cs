@@ -67,6 +67,8 @@ namespace Point.Audio
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
             LoadDynamicPlugins();
+
+            LoadBanks();
         }
         private void LoadDynamicPlugins()
         {
@@ -108,6 +110,13 @@ namespace Point.Audio
                 result = CoreSystem.loadPlugin(pluginPath64, out handle);
             }
 #endif
+        }
+        private void LoadBanks()
+        {
+            const string
+                c_MasterBank = "Master";
+
+            FMODUnity.RuntimeManager.LoadBank(c_MasterBank);
         }
         
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
@@ -294,6 +303,9 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
+                PointHelper.LogError(Channel.Audio,
+                    $"Critical Error. Please fix other issues before play the game.");
+                Debug.Break();
                 throw new System.Exception();
             }
 #endif
