@@ -20,10 +20,12 @@
 
 #include "pch.h"
 #include "fmod.hpp"
+#include "fmod_common.h"
+
 #include "downsampler.h"
 #include "fmod_gain.h"
 
-static FMOD_PLUGINLIST Plugin_List[2] = {
+static FMOD_PLUGINLIST Plugin_List[] = {
 	{ FMOD_PLUGINTYPE_DSP, get_downsampler() },
 	//{ FMOD_PLUGINTYPE_DSP, FMOD_TEST_GAIN_GetDSPDescription() },
 };

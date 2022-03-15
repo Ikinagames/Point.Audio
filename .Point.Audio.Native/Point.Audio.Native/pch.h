@@ -31,6 +31,7 @@
 #include "framework.h"
 
 #include "downsampler.h"
+#include "doubler.h"
 #include "fmod_gain.h"
 
 #include "fmod.hpp"

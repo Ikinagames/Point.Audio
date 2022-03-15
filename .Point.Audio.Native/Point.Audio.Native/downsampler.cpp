@@ -17,16 +17,32 @@
 #include <math.h>
 
 #include "pch.h"
-#include "downsampler.h"
 #include "fmod.hpp"
 #include "fmod_dsp.h"
 #include "fmod_studio.hpp"
 
+#include "downsampler.h"
+
+/// <summary>
+/// quentize 될 버퍼 길이
+/// </summary>
 static FMOD_DSP_PARAMETER_DESC p_downsample_count;
-static FMOD_DSP_PARAMETER_DESC p_downsample_gain;
+/// <summary>
+/// input 값의로 gate 처리
+/// </summary>
 static FMOD_DSP_PARAMETER_DESC p_downsample_input_amplitude;
-static FMOD_DSP_PARAMETER_DESC p_downsample_mix;
+/// <summary>
+/// 임의의 노이즈 mixer
+/// </summary>
 static FMOD_DSP_PARAMETER_DESC p_downsample_noise;
+/// <summary>
+/// 프로세싱된 아웃풋을 오리지널과 믹싱 레벨
+/// </summary>
+static FMOD_DSP_PARAMETER_DESC p_downsample_mix;
+/// <summary>
+/// 최종 아웃풋 게인 값
+/// </summary>
+static FMOD_DSP_PARAMETER_DESC p_downsample_gain;
 
 enum
 {
@@ -37,6 +53,38 @@ enum
 	DSP_PARAM_GAIN,
 
 	DSP_PARAM_NUM_PARAMETERS
+};
+
+FMOD_DSP_PARAMETER_DESC* DownSampler_ParameterList[DSP_PARAM_NUM_PARAMETERS] = {
+	&p_downsample_count,
+	&p_downsample_noise,
+	&p_downsample_input_amplitude,
+	&p_downsample_mix,
+	&p_downsample_gain,
+};
+FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
+	FMOD_PLUGIN_SDK_VERSION,
+	"Point Downsampler",		//	name
+	0x00010000,					//	plug-in version
+	1,							//	number of input buffers to process
+	1,							//	number of output buffers to process
+	DOWNSAMPLER_DSP_CREATE_CALLBACK,		//	create callback
+	DOWNSAMPLER_DSP_RELEASE_CALLBACK,		//	release callback
+	DOWNSAMPLER_DSP_RESET_CALLBACK,			//
+	0/*DSP_READ_CALLBACK*/,			//
+	DOWNSAMPLER_DSP_PROCESS_CALLBACK,		//
+	0/*DSP_SETPOSITION_CALLBACK*/,	//
+
+	DSP_PARAM_NUM_PARAMETERS,	//	number of parameters
+	DownSampler_ParameterList,				//
+	DOWNSAMPLER_DSP_SETPARAM_FLOAT_CALLBACK,
+	DOWNSAMPLER_DSP_SETPARAM_INT_CALLBACK,
+	0,
+	0,
+	DOWNSAMPLER_DSP_GETPARAM_FLOAT_CALLBACK,
+	DOWNSAMPLER_DSP_GETPARAM_INT_CALLBACK,
+	0,
+	0
 };
 
 #pragma region Downsampler Class
@@ -93,16 +141,6 @@ enum
 		float processed = element + (element * (MINUSONE_TO_ONE * m_noiseamplitude));
 		processed = max(-1, min(1, processed));
 
-		//float procMix;
-		//if (0 < m_inputamplitude && fabsf(processed) < m_inputamplitude) {
-		//	procMix = 0;
-		//}
-		//else procMix = (processed * .01f * m_mix);
-
-		//float mix = procMix + (element * 0.01f * (100 - m_mix));
-
-		//return mix * gain;
-
 		return processed;
 	}
 	void Downsampler::process(float* inbuffer, float* outbuffer, unsigned int length, 
@@ -158,49 +196,17 @@ enum
 
 #pragma endregion
 
-FMOD_DSP_PARAMETER_DESC* ParameterList[DSP_PARAM_NUM_PARAMETERS] = {
-	&p_downsample_count,
-	&p_downsample_noise,
-	&p_downsample_input_amplitude,
-	&p_downsample_mix,
-	&p_downsample_gain,
-};
-FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
-	FMOD_PLUGIN_SDK_VERSION,
-	"Point Downsampler",		//	name
-	0x00010000,					//	plug-in version
-	1,							//	number of input buffers to process
-	1,							//	number of output buffers to process
-	DSP_CREATE_CALLBACK,		//	create callback
-	DSP_RELEASE_CALLBACK,		//	release callback
-	DSP_RESET_CALLBACK,			//
-	0/*DSP_READ_CALLBACK*/,			//
-	DSP_PROCESS_CALLBACK,		//
-	0/*DSP_SETPOSITION_CALLBACK*/,	//
-
-	DSP_PARAM_NUM_PARAMETERS,	//	number of parameters
-	ParameterList,				//
-	DSP_SETPARAM_FLOAT_CALLBACK,
-	DSP_SETPARAM_INT_CALLBACK,
-	0,
-	0,
-	DSP_GETPARAM_FLOAT_CALLBACK,
-	DSP_GETPARAM_INT_CALLBACK,
-	0,
-	0
-};
-
 FMOD_DSP_DESCRIPTION* get_downsampler() {
 	FMOD_DSP_INIT_PARAMDESC_INT(
 		p_downsample_count, "Sample Count", "Sample(s)", "Count for downsampling. 1 to 32. Default = 4", 
 		1, 32, 4, false, 0);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_noise, "Noise", "", "",
-		0, 1, 0
+		0, 1, .02f
 		);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_input_amplitude, "Gate", "", "",
-		0, 1, .1f
+		0, 1, .01f
 		);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_mix, "Mix", "", "",
@@ -218,7 +224,7 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 
 	#pragma region Inits
 
-	FMOD_RESULT F_CALL DSP_CREATE_CALLBACK(FMOD_DSP_STATE* dsp_state)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_CREATE_CALLBACK(FMOD_DSP_STATE* dsp_state)
 	{
 		dsp_state->plugindata = (Downsampler*)FMOD_DSP_ALLOC(dsp_state, sizeof(Downsampler));
 		if (!dsp_state->plugindata) {
@@ -227,14 +233,14 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 
 		return FMOD_OK;
 	}
-	FMOD_RESULT F_CALL DSP_RELEASE_CALLBACK(FMOD_DSP_STATE* dsp_state)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_RELEASE_CALLBACK(FMOD_DSP_STATE* dsp_state)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 		FMOD_DSP_FREE(dsp_state, state);
 		return FMOD_OK;
 	}
 
-	FMOD_RESULT F_CALL DSP_RESET_CALLBACK(FMOD_DSP_STATE* dsp_state)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_RESET_CALLBACK(FMOD_DSP_STATE* dsp_state)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 
@@ -243,19 +249,19 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		return FMOD_OK;
 	}
 
-	FMOD_RESULT F_CALL DSP_READ_CALLBACK(FMOD_DSP_STATE* dsp_state, float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int* outchannels)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_READ_CALLBACK(FMOD_DSP_STATE* dsp_state, float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int* outchannels)
 	{
 		return FMOD_OK;
 	}
 
-	FMOD_RESULT F_CALL DSP_SETPOSITION_CALLBACK(FMOD_DSP_STATE* dsp_state, unsigned int pos)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_SETPOSITION_CALLBACK(FMOD_DSP_STATE* dsp_state, unsigned int pos)
 	{
 		return FMOD_OK;
 	}
 
 	#pragma endregion
 
-	FMOD_RESULT F_CALL DSP_PROCESS_CALLBACK(
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_PROCESS_CALLBACK(
 		FMOD_DSP_STATE* dsp_state, unsigned int length, 
 		const FMOD_DSP_BUFFER_ARRAY* inbufferarray, FMOD_DSP_BUFFER_ARRAY* outbufferarray, 
 		FMOD_BOOL inputsidle, FMOD_DSP_PROCESS_OPERATION op)
@@ -292,7 +298,7 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 	
 	/*																									*/
 
-	FMOD_RESULT F_CALL DSP_SETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, float value)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_SETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, float value)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 
@@ -310,11 +316,13 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		case DSP_PARAM_GAIN:
 			state->setGain(value);
 			break;
+		default:
+			break;
 		}
 
 		return FMOD_OK;
 	}
-	FMOD_RESULT F_CALL DSP_GETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, float* value, char* valuestr)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_GETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, float* value, char* valuestr)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 
@@ -338,11 +346,13 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 			//}
 
 			break;
+		default:
+			break;
 		}
 
 		return FMOD_OK;
 	}
-	FMOD_RESULT F_CALL DSP_SETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int value)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_SETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int value)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 
@@ -352,11 +362,13 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 
 			state->setSampleCount(value);
 			break;
+		default:
+			break;
 		}
 
 		return FMOD_OK;
 	}
-	FMOD_RESULT F_CALL DSP_GETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int* value, char* valuestr)
+	FMOD_RESULT F_CALL DOWNSAMPLER_DSP_GETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int* value, char* valuestr)
 	{
 		Downsampler* state = (Downsampler*)dsp_state->plugindata;
 
@@ -367,6 +379,8 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 			*value = state->getSampleCount();
 			//if (valuestr) sprintf(valuestr, "%s", state->getSampleCount());
 
+			break;
+		default:
 			break;
 		}
 
