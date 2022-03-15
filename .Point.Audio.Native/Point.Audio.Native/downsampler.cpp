@@ -25,6 +25,7 @@
 static FMOD_DSP_PARAMETER_DESC p_downsample_count;
 static FMOD_DSP_PARAMETER_DESC p_downsample_gain;
 static FMOD_DSP_PARAMETER_DESC p_downsample_input_amplitude;
+static FMOD_DSP_PARAMETER_DESC p_downsample_mix;
 static FMOD_DSP_PARAMETER_DESC p_downsample_noise;
 
 enum
@@ -32,9 +33,10 @@ enum
 	DSP_PARAM_SAMPLECOUNT = 0,
 	DSP_PARAM_NOISE,
 	DSP_PARAM_INPUT_AMPLITUDE,
+	DSP_PARAM_MIX,
 	DSP_PARAM_GAIN,
 
-	DSP_PARAM_NUM_PARAMTERS
+	DSP_PARAM_NUM_PARAMETERS
 };
 
 #pragma region Downsampler Class
@@ -80,16 +82,28 @@ enum
 		m_inputamplitude = value;
 	}
 
-	float Downsampler::processBufferValue(float element, float gain) {
-		if (0 < m_inputamplitude && fabsf(element) < m_inputamplitude) {
-			return 0;
-		}
-		else if (m_inputamplitude == 0 && element < 0.01f) {
-			return element;
-		}
+	float Downsampler::getMix() {
+		return m_mix;
+	}
+	void Downsampler::setMix(float value) {
+		m_mix = value;
+	}
 
-		float norm = element + (MINUSONE_TO_ONE * m_noiseamplitude);
-		return norm * gain;
+	float Downsampler::processBufferValue(float element) {
+		float processed = element + (element * (MINUSONE_TO_ONE * m_noiseamplitude));
+		processed = max(-1, min(1, processed));
+
+		//float procMix;
+		//if (0 < m_inputamplitude && fabsf(processed) < m_inputamplitude) {
+		//	procMix = 0;
+		//}
+		//else procMix = (processed * .01f * m_mix);
+
+		//float mix = procMix + (element * 0.01f * (100 - m_mix));
+
+		//return mix * gain;
+
+		return processed;
 	}
 	void Downsampler::process(float* inbuffer, float* outbuffer, unsigned int length, 
 		int inchannels, int outchannels) {
@@ -108,14 +122,15 @@ enum
 
 					gain += delta;
 
-					float norm = processBufferValue(inbuffer[i], gain);
+					float processed = processBufferValue(inbuffer[i]);
 
-					outbuffer[i] = norm;
+					outbuffer[i] = MIX(processed, inbuffer[i], m_mix) * gain;
 					for (int j = 1; 
 						j < normalizeCount && i + j < samples && 0 < m_ramp_samples_left; j++, 
 						m_ramp_samples_left--)
 					{
-						outbuffer[i + j] = norm;
+						//outbuffer[i + j] = processed;
+						outbuffer[i + j] = MIX(processed, inbuffer[i + j], m_mix) * gain;
 					}
 				}
 				else {
@@ -127,12 +142,14 @@ enum
 
 		for (unsigned int i = 0; i < samples; i += normalizeCount)
 		{
-			float norm = processBufferValue(inbuffer[i], gain);
-
-			outbuffer[i] = norm;
+			float processed = processBufferValue(inbuffer[i]);
+			
+			//outbuffer[i] = processed;
+			outbuffer[i] = MIX(processed, inbuffer[i], m_mix) * gain;
 			for (int j = 1; j < normalizeCount && i + j < samples; j++)
 			{
-				outbuffer[i + j] = norm;
+				//outbuffer[i + j] = processed;
+				outbuffer[i + j] = MIX(processed, inbuffer[i + j], m_mix) * gain;
 			}
 		}
 
@@ -141,10 +158,11 @@ enum
 
 #pragma endregion
 
-FMOD_DSP_PARAMETER_DESC* ParameterList[DSP_PARAM_NUM_PARAMTERS] = {
+FMOD_DSP_PARAMETER_DESC* ParameterList[DSP_PARAM_NUM_PARAMETERS] = {
 	&p_downsample_count,
 	&p_downsample_noise,
 	&p_downsample_input_amplitude,
+	&p_downsample_mix,
 	&p_downsample_gain,
 };
 FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
@@ -160,7 +178,7 @@ FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
 	DSP_PROCESS_CALLBACK,		//
 	0/*DSP_SETPOSITION_CALLBACK*/,	//
 
-	DSP_PARAM_NUM_PARAMTERS,	//	number of parameters
+	DSP_PARAM_NUM_PARAMETERS,	//	number of parameters
 	ParameterList,				//
 	DSP_SETPARAM_FLOAT_CALLBACK,
 	DSP_SETPARAM_INT_CALLBACK,
@@ -174,15 +192,19 @@ FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
 
 FMOD_DSP_DESCRIPTION* get_downsampler() {
 	FMOD_DSP_INIT_PARAMDESC_INT(
-		p_downsample_count, "Sample Count", " Count", "Count for downsampling. 1 to 32. Default = 4", 
+		p_downsample_count, "Sample Count", "Sample(s)", "Count for downsampling. 1 to 32. Default = 4", 
 		1, 32, 4, false, 0);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_noise, "Noise", "", "",
 		0, 1, 0
 		);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
-		p_downsample_input_amplitude, "Input Gate", "", "",
-		0, 1, .01f
+		p_downsample_input_amplitude, "Gate", "", "",
+		0, 1, .1f
+		);
+	FMOD_DSP_INIT_PARAMDESC_FLOAT(
+		p_downsample_mix, "Mix", "", "",
+		0, 1, .5f
 		);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_gain, "Gain", "dB", "Gain in dB. -80 to 10. Default = 0",
@@ -282,6 +304,9 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		case DSP_PARAM_INPUT_AMPLITUDE:
 			state->setInputAmplitude(value);
 			break;
+		case DSP_PARAM_MIX:
+			state->setMix(value);
+			break;
 		case DSP_PARAM_GAIN:
 			state->setGain(value);
 			break;
@@ -302,6 +327,9 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		case DSP_PARAM_INPUT_AMPLITUDE:
 			*value = state->getInputAmplitude();
 
+			break;
+		case DSP_PARAM_MIX:
+			*value = state->getMix();
 			break;
 		case DSP_PARAM_GAIN:
 			*value = state->getGain();

@@ -34,43 +34,27 @@ FMOD_RESULT F_CALL DSP_GETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int in
 FMOD_RESULT F_CALL DSP_SETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int value);
 FMOD_RESULT F_CALL DSP_GETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int* value, char* valuestr);
 
-FMOD_DSP_DESCRIPTION* get_downsampler();
+FMOD_DSP_DESCRIPTION* get_doubler();
 
-class Downsampler
+class Doubler
 {
 public:
-	Downsampler();
-	~Downsampler();
-
-	void reset();
-
-	int getSampleCount();
-	void setSampleCount(int);
-
-	float getGain();
-	void setGain(float);
-
-	float getNoise();
-	void setNoise(float);
-
-	float getInputAmplitude();
-	void setInputAmplitude(float);
-
-	float getMix();
-	void setMix(float);
-
-	float processBufferValue(float element);
-	void process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels);
+	Doubler();
+	~Doubler();
 
 private:
-	int current_sampleCount;
-	float m_noiseamplitude;
-	float m_inputamplitude;
 
-	float m_mix;
 
 	float m_target_gain;
 	float m_current_gain;
 
 	int m_ramp_samples_left;
 };
+
+Doubler::Doubler()
+{
+}
+
+Doubler::~Doubler()
+{
+}

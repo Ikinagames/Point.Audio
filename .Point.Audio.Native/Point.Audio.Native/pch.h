@@ -54,3 +54,5 @@
 // Math
 //#define MINUSONE_TO_ONE ((float)rand() / (RAND_MAX))
 #define MINUSONE_TO_ONE (((float)(rand()%32768) / 16384.0f) - 1.0f)
+// _amount = 0 ~ 1
+#define MIX(_a, _original, _amount) (((_a) * _amount) + ((_original) * (1 - _amount)))
