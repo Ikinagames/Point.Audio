@@ -65,8 +65,51 @@ namespace Point.Audio
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
-        }
 
+            LoadDynamicPlugins();
+        }
+        private void LoadDynamicPlugins()
+        {
+            const string pluginName = "Point.Audio.Native";
+            FMOD.RESULT result;
+#if UNITY_EDITOR
+            RuntimePlatform currentPlatform = Application.platform;
+            if (currentPlatform == RuntimePlatform.WindowsEditor ||
+                currentPlatform == RuntimePlatform.OSXEditor ||
+                currentPlatform == RuntimePlatform.LinuxEditor)
+            {
+                string[] guids = UnityEditor.AssetDatabase.FindAssets(pluginName + " l:Dll l:Audio");
+                for (int i = 0; i < guids.Length; i++)
+                {
+                    string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[i]);
+                    result = CoreSystem.loadPlugin(path, out _);
+                    if (result != FMOD.RESULT.OK)
+                    {
+                        PointHelper.LogError(Channel.Audio,
+                            $"Err. falid to load plugin({path}), {result}");
+                    }
+                }
+
+                return;
+            }
+#endif
+            var platform = FMODUnity.Settings.Instance.FindCurrentPlatform();
+            string pluginPath = platform.GetPluginPath(pluginName);
+
+            uint handle;
+
+            result = CoreSystem.loadPlugin(pluginPath, out handle);
+
+#if UNITY_64 || UNITY_EDITOR_64
+            // Add a "64" suffix and try again
+            if (result == FMOD.RESULT.ERR_FILE_BAD || result == FMOD.RESULT.ERR_FILE_NOTFOUND)
+            {
+                string pluginPath64 = platform.GetPluginPath(pluginName + "64");
+                result = CoreSystem.loadPlugin(pluginPath64, out handle);
+            }
+#endif
+        }
+        
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
             FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
@@ -421,7 +464,7 @@ namespace Point.Audio
         {
             ResonanceAudio.SetRoomTarget(tr);
         }
-
+        
         public sealed class ResonanceAudioHelper : IDisposable
         {
             public const float
