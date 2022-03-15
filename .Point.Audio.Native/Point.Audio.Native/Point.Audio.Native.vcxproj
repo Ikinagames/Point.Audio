@@ -165,12 +165,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="downsampler.h" />
+    <ClInclude Include="fmod_gain.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="downsampler.cpp" />
+    <ClCompile Include="fmod_gain.cpp" />
     <ClCompile Include="fmod_noise.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

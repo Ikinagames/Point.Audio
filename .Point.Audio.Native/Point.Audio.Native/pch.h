@@ -23,12 +23,19 @@
 #define PCH_H
 
 // add headers that you want to pre-compile here
-#include "framework.h"
-#include "downsampler.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+
+#include "framework.h"
+
+#include "downsampler.h"
+#include "fmod_gain.h"
+
+#include "fmod.hpp"
+#include "fmod_dsp.h"
+#include "fmod_studio.hpp"
 
 #endif //PCH_H
 
@@ -43,3 +50,7 @@
 
 #define DECIBELS_TO_LINEAR(__dbval__)  ((__dbval__ <= -80.0f) ? 0.0f : powf(10.0f, __dbval__ / 20.0f))
 #define LINEAR_TO_DECIBELS(__linval__) ((__linval__ <= 0.0f) ? -80.0f : 20.0f * log10f((float)__linval__))
+
+// Math
+//#define MINUSONE_TO_ONE ((float)rand() / (RAND_MAX))
+#define MINUSONE_TO_ONE (((float)(rand()%32768) / 16384.0f) - 1.0f)

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include <stdlib.h>
+#include <math.h>
 
 #include "pch.h"
 #include "downsampler.h"
@@ -23,43 +24,20 @@
 
 static FMOD_DSP_PARAMETER_DESC p_downsample_count;
 static FMOD_DSP_PARAMETER_DESC p_downsample_gain;
+static FMOD_DSP_PARAMETER_DESC p_downsample_input_amplitude;
+static FMOD_DSP_PARAMETER_DESC p_downsample_noise;
 
 enum
 {
 	DSP_PARAM_SAMPLECOUNT = 0,
+	DSP_PARAM_NOISE,
+	DSP_PARAM_INPUT_AMPLITUDE,
 	DSP_PARAM_GAIN,
 
 	DSP_PARAM_NUM_PARAMTERS
 };
 
 #pragma region Downsampler Class
-
-	class Downsampler
-	{
-	public:
-		Downsampler();
-		~Downsampler();
-
-		void reset();
-
-		int getSampleCount();
-		void setSampleCount(int);
-
-		float getGain();
-		void setGain(float);
-
-		void process(float* inbuffer, float* outbuffer, unsigned int length, int channels);
-
-	private:
-		int current_sampleCount;
-
-		float m_target_gain;
-		float m_current_gain;
-
-		int m_ramp_samples_left;
-
-		void gainProcess(float* inbuffer, float* outbuffer, unsigned int length, int channels);
-	};
 
 	Downsampler::Downsampler()
 	{
@@ -88,58 +66,85 @@ enum
 		m_ramp_samples_left = FMOD_NOISE_RAMPCOUNT;
 	}
 
-	void Downsampler::gainProcess(float* inbuffer, float* outbuffer, unsigned int length, int channels) {
-		
+	float Downsampler::getNoise() {
+		return m_noiseamplitude;
+	}
+	void Downsampler::setNoise(float value) {
+		m_noiseamplitude = value;
+	}
+
+	float Downsampler::getInputAmplitude() {
+		return m_inputamplitude;
+	}
+	void Downsampler::setInputAmplitude(float value) {
+		m_inputamplitude = value;
+	}
+
+	float Downsampler::processBufferValue(float element, float gain) {
+		if (0 < m_inputamplitude && fabsf(element) < m_inputamplitude) {
+			return 0;
+		}
+		else if (m_inputamplitude == 0 && element < 0.01f) {
+			return element;
+		}
+
+		float norm = element + (MINUSONE_TO_ONE * m_noiseamplitude);
+		return norm * gain;
+	}
+	void Downsampler::process(float* inbuffer, float* outbuffer, unsigned int length, 
+		int inchannels, int outchannels) {
+
 		float gain = m_current_gain;
+		unsigned int samples = length * inchannels;
+		int normalizeCount = current_sampleCount * inchannels;
 
 		if (m_ramp_samples_left) {
 			float target = m_target_gain;
 			float delta = (target - gain) / m_ramp_samples_left;
-			while (length)
+
+			for (unsigned int i = 0; i < samples; i += normalizeCount)
 			{
-				if (--m_ramp_samples_left) {
-					
+				if (0 < m_ramp_samples_left) {
+
 					gain += delta;
-					for (int i = 0; i < channels; i++)
+
+					float norm = processBufferValue(inbuffer[i], gain);
+
+					outbuffer[i] = norm;
+					for (int j = 1; 
+						j < normalizeCount && i + j < samples && 0 < m_ramp_samples_left; j++, 
+						m_ramp_samples_left--)
 					{
-						*outbuffer++ = *inbuffer++ * gain;
+						outbuffer[i + j] = norm;
 					}
 				}
 				else {
 					gain = target;
 					break;
 				}
-				--length;
 			}
 		}
 
-		unsigned int samples = length * channels;
-		while (samples--)
+		for (unsigned int i = 0; i < samples; i += normalizeCount)
 		{
-			*outbuffer++ = *inbuffer++ * gain;
-		}
+			float norm = processBufferValue(inbuffer[i], gain);
 
-		m_current_gain = gain;
-	}
-	void Downsampler::process(float* inbuffer, float* outbuffer, unsigned int length, int channels) {
-
-		gainProcess(inbuffer, outbuffer, length, channels);
-
-		unsigned int samples = length * channels;
-		for (int i = 0; i < samples; i += current_sampleCount)
-		{
-			float norm = inbuffer[i];
-			for (int j = 1; j < current_sampleCount; j++)
+			outbuffer[i] = norm;
+			for (int j = 1; j < normalizeCount && i + j < samples; j++)
 			{
 				outbuffer[i + j] = norm;
 			}
 		}
+
+		m_current_gain = gain;
 	}
 
 #pragma endregion
 
 FMOD_DSP_PARAMETER_DESC* ParameterList[DSP_PARAM_NUM_PARAMTERS] = {
 	&p_downsample_count,
+	&p_downsample_noise,
+	&p_downsample_input_amplitude,
 	&p_downsample_gain,
 };
 FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
@@ -172,6 +177,14 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		p_downsample_count, "Sample Count", " Count", "Count for downsampling. 1 to 32. Default = 4", 
 		1, 32, 4, false, 0);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
+		p_downsample_noise, "Noise", "", "",
+		0, 1, 0
+		);
+	FMOD_DSP_INIT_PARAMDESC_FLOAT(
+		p_downsample_input_amplitude, "Input Gate", "", "",
+		0, 1, .01f
+		);
+	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_downsample_gain, "Gain", "dB", "Gain in dB. -80 to 10. Default = 0",
 		GAIN_MIN, GAIN_MAX, 0
 		);
@@ -180,6 +193,8 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 }
 
 #pragma region Callbacks
+
+	#pragma region Inits
 
 	FMOD_RESULT F_CALL DSP_CREATE_CALLBACK(FMOD_DSP_STATE* dsp_state)
 	{
@@ -211,24 +226,48 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 		return FMOD_OK;
 	}
 
-	FMOD_RESULT F_CALL DSP_PROCESS_CALLBACK(FMOD_DSP_STATE* dsp_state, unsigned int length, const FMOD_DSP_BUFFER_ARRAY* inbufferarray, FMOD_DSP_BUFFER_ARRAY* outbufferarray, FMOD_BOOL inputsidle, FMOD_DSP_PROCESS_OPERATION op)
-	{
-		Downsampler* state = (Downsampler*)dsp_state->plugindata;
-
-		if (op == FMOD_DSP_PROCESS_QUERY) {
-
-			return FMOD_OK;
-		}
-
-		state->process(inbufferarray->buffers[0], outbufferarray->buffers[0], length, outbufferarray->buffernumchannels[0]);
-
-		return FMOD_OK;
-	}
 	FMOD_RESULT F_CALL DSP_SETPOSITION_CALLBACK(FMOD_DSP_STATE* dsp_state, unsigned int pos)
 	{
 		return FMOD_OK;
 	}
 
+	#pragma endregion
+
+	FMOD_RESULT F_CALL DSP_PROCESS_CALLBACK(
+		FMOD_DSP_STATE* dsp_state, unsigned int length, 
+		const FMOD_DSP_BUFFER_ARRAY* inbufferarray, FMOD_DSP_BUFFER_ARRAY* outbufferarray, 
+		FMOD_BOOL inputsidle, FMOD_DSP_PROCESS_OPERATION op)
+	{
+		Downsampler* state = (Downsampler*)dsp_state->plugindata;
+
+		if (op == FMOD_DSP_PROCESS_QUERY) {
+
+			if (outbufferarray && inbufferarray)
+			{
+				outbufferarray[0].buffernumchannels[0] = inbufferarray[0].buffernumchannels[0];
+				outbufferarray[0].speakermode = inbufferarray[0].speakermode;
+			}
+
+			if (inputsidle) {
+				return FMOD_ERR_DSP_DONTPROCESS;
+			}
+
+			return FMOD_OK;
+		}
+
+		//if (inputsidle) {
+		//	return FMOD_ERR_DSP_SILENCE;
+		//}
+
+		state->process(
+			inbufferarray->buffers[0], outbufferarray->buffers[0], 
+			length, 
+			inbufferarray->buffernumchannels[0],
+			outbufferarray->buffernumchannels[0]);
+
+		return FMOD_OK;
+	}
+	
 	/*																									*/
 
 	FMOD_RESULT F_CALL DSP_SETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, float value)
@@ -237,8 +276,13 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 
 		switch (index)
 		{
+		case DSP_PARAM_NOISE:
+			state->setNoise(value);
+			break;
+		case DSP_PARAM_INPUT_AMPLITUDE:
+			state->setInputAmplitude(value);
+			break;
 		case DSP_PARAM_GAIN:
-
 			state->setGain(value);
 			break;
 		}
@@ -251,11 +295,19 @@ FMOD_DSP_DESCRIPTION* get_downsampler() {
 
 		switch (index)
 		{
+		case DSP_PARAM_NOISE:
+			*value = state->getNoise();
+
+			break;
+		case DSP_PARAM_INPUT_AMPLITUDE:
+			*value = state->getInputAmplitude();
+
+			break;
 		case DSP_PARAM_GAIN:
 			*value = state->getGain();
-			if (valuestr) {
-				sprintf(valuestr, "%.1f dB", state->getGain());
-			}
+			//if (valuestr) {
+			//	sprintf(valuestr, "%.1f dB", state->getGain());
+			//}
 
 			break;
 		}

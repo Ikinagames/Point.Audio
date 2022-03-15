@@ -35,3 +35,37 @@ FMOD_RESULT F_CALL DSP_SETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int inde
 FMOD_RESULT F_CALL DSP_GETPARAM_INT_CALLBACK(FMOD_DSP_STATE* dsp_state, int index, int* value, char* valuestr);
 
 FMOD_DSP_DESCRIPTION* get_downsampler();
+
+class Downsampler
+{
+public:
+	Downsampler();
+	~Downsampler();
+
+	void reset();
+
+	int getSampleCount();
+	void setSampleCount(int);
+
+	float getGain();
+	void setGain(float);
+
+	float getNoise();
+	void setNoise(float);
+
+	float getInputAmplitude();
+	void setInputAmplitude(float);
+
+	float processBufferValue(float element, float gain);
+	void process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels);
+
+private:
+	int current_sampleCount;
+	float m_noiseamplitude;
+	float m_inputamplitude;
+
+	float m_target_gain;
+	float m_current_gain;
+
+	int m_ramp_samples_left;
+};

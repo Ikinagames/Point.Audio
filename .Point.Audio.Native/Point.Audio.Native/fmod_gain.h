@@ -13,21 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// pch.cpp: source file corresponding to the pre-compiled header
+#pragma once
 
 #include <stdlib.h>
-#include <math.h>
 
 #include "pch.h"
 #include "fmod.hpp"
-#include "downsampler.h"
-#include "fmod_gain.h"
+#include "fmod_dsp.h"
+#include "fmod_studio.hpp"
 
-static FMOD_PLUGINLIST Plugin_List[2] = {
-	{ FMOD_PLUGINTYPE_DSP, get_downsampler() },
-	//{ FMOD_PLUGINTYPE_DSP, FMOD_TEST_GAIN_GetDSPDescription() },
-};
-
-DLLEXPORT FMOD_PLUGINLIST* F_CALL FMODGetPluginDescriptionList() {
-	return Plugin_List;
-}
+FMOD_DSP_DESCRIPTION* FMOD_TEST_GAIN_GetDSPDescription();
