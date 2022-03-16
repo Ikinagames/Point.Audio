@@ -39,15 +39,56 @@ FMOD_DSP_DESCRIPTION* get_doubler();
 class Doubler
 {
 public:
+	void Initialize(FMOD_DSP_STATE* dsp_state);
+	void Reserve(FMOD_DSP_STATE* dsp_state);
+
 	float getGain();
 	void setGain(float);
 
-	virtual void reset();
-	virtual void process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels);
+	float getLeftTime();
+	void setLeftTime(float);
+	float getRightTime();
+	void setRightTime(float);
+
+	float getMix();
+	void setMix(float);
+
+	void reset();
+	void process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels);
 
 private:
 	float m_target_gain;
 	float m_current_gain;
 
+	float m_left_time;
+	float m_right_time;
+
+	float m_mix;
+
 	int m_ramp_samples_left;
+
+	float* m_left_buffer;
+	float* m_right_buffer;
+
+	float* m_left_rdPtr;
+	float* m_right_rdPtr;
+
+	unsigned int blocksize;
+	float block_per_second;
 };
+
+void Doubler::Initialize(FMOD_DSP_STATE* dsp_state) {
+	int samplerate;
+	FMOD_DSP_GETSAMPLERATE(dsp_state, &samplerate);
+	FMOD_DSP_GETBLOCKSIZE(dsp_state, &blocksize);
+
+	block_per_second = (float)(1 / samplerate) * blocksize;
+	int c = 1000 / block_per_second;
+
+	m_left_buffer = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * samplerate);
+	m_right_buffer = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * samplerate);
+}
+void Doubler::Reserve(FMOD_DSP_STATE* dsp_state) {
+	FMOD_DSP_FREE(dsp_state, m_left_buffer);
+	FMOD_DSP_FREE(dsp_state, m_right_buffer);
+}

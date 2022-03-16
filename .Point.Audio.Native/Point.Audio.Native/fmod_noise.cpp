@@ -13,16 +13,6 @@ This example shows how to created a plugin effect.
 #include "pch.h"
 #include "fmod.hpp"
 
-//extern "C" {
-//    F_EXPORT FMOD_DSP_DESCRIPTION* F_CALL FMOD_Point_Noise_GetDSPDescription();
-//}
-//
-//const float FMOD_PARAM_GAIN_MIN     = -80.0f;
-//const float FMOD_PARAM_GAIN_MAX     = 10.0f;
-//const float FMOD_PARAM_GAIN_DEFAULT = 0.0f;
-
-
-
 enum
 {
     FMOD_NOISE_PARAM_LEVEL = 0,
