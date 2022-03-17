@@ -76,7 +76,7 @@ FMOD_DSP_DESCRIPTION* get_doubler() {
 	);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_doubler_rTime, "Right Time", "ms", "",
-		50, 500, 0
+		0, 500, 50
 	);
 	FMOD_DSP_INIT_PARAMDESC_FLOAT(
 		p_doubler_mix, "Mix", "", "",
@@ -94,9 +94,89 @@ FMOD_DSP_DESCRIPTION* get_doubler() {
 
 #pragma region Doubler Class
 
+void GetOutChannelCount(FMOD_DSP_STATE* dsp_state, unsigned int* channelcount) {
+	FMOD_SPEAKERMODE in_speakermode, out_speakermode;
+	FMOD_DSP_GETSPEAKERMODE(dsp_state, &in_speakermode, &out_speakermode);
+	
+	switch (out_speakermode)
+	{
+	case FMOD_SPEAKERMODE_MONO:
+		*channelcount = 1;
+		break;
+	case FMOD_SPEAKERMODE_STEREO:
+		*channelcount = 2;
+		break;
+	case FMOD_SPEAKERMODE_QUAD:
+		*channelcount = 4;
+		break;
+	default:
+		*channelcount = 2;
+		break;
+	}
+}
+
+void Doubler::Initialize(FMOD_DSP_STATE* dsp_state) {
+	FMOD_DSP_GETSAMPLERATE(dsp_state, &m_samplerate);
+	FMOD_SPEAKERMODE in_speakermode, out_speakermode;
+	FMOD_DSP_GETSPEAKERMODE(dsp_state, &in_speakermode, &out_speakermode);
+	GetOutChannelCount(dsp_state, &m_channel_count);
+
+	m_time_parameter = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * m_channel_count);
+
+	size_t ptr_size = sizeof(float*) * m_channel_count;
+
+	m_buffer_size = m_samplerate;
+
+	m_buffer = (float**)FMOD_DSP_ALLOC(dsp_state, ptr_size);
+	m_rd_ptr = (float**)FMOD_DSP_ALLOC(dsp_state, ptr_size);
+	m_wr_ptr = (float**)FMOD_DSP_ALLOC(dsp_state, ptr_size);
+
+	for (unsigned int channel = 0; channel < m_channel_count; channel++)
+	{
+		m_buffer[channel] = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * m_buffer_size);
+
+		m_rd_ptr[channel] = m_buffer[channel];
+		
+		int pos = m_time_parameter[channel] * m_samplerate;
+		m_wr_ptr[channel] = m_rd_ptr[channel] + pos;
+		if (m_buffer[channel] + m_buffer_size <= m_wr_ptr[channel]) {
+			m_wr_ptr[channel] -= m_buffer_size;
+		}
+	}
+}
+void Doubler::Reserve(FMOD_DSP_STATE* dsp_state) {
+	FMOD_DSP_FREE(dsp_state, m_time_parameter);
+
+	for (unsigned int i = 0; i < m_channel_count; i++)
+	{
+		FMOD_DSP_FREE(dsp_state, m_buffer[i]);
+	}
+
+	FMOD_DSP_FREE(dsp_state, m_buffer);
+	FMOD_DSP_FREE(dsp_state, m_rd_ptr);
+	FMOD_DSP_FREE(dsp_state, m_wr_ptr);
+}
+
+void Doubler::rdPtrCheck() {
+	for (unsigned int i = 0; i < m_channel_count; i++)
+	{
+		if (m_buffer[i] + m_buffer_size <= m_rd_ptr[i]) {
+			m_rd_ptr[i] = m_buffer[i];
+		}
+	}
+}
+void Doubler::setBuffer(int channel, float value) {
+	*m_wr_ptr[channel] = value;
+	m_wr_ptr[channel]++;
+
+	if (m_buffer[channel] + m_buffer_size <= m_wr_ptr[channel]) {
+		m_wr_ptr[channel] = m_buffer[channel];
+	}
+}
+
 float Doubler::getGain()
 {
-	return m_target_gain;
+	return LINEAR_TO_DECIBELS(m_target_gain);
 }
 void Doubler::setGain(float value)
 {
@@ -104,17 +184,18 @@ void Doubler::setGain(float value)
 	m_ramp_samples_left = FMOD_NOISE_RAMPCOUNT;
 }
 
-float Doubler::getLeftTime() {
-	return m_left_time;
+float Doubler::getTime(int channel) {
+	return m_time_parameter[channel] * 1000;
 }
-void Doubler::setLeftTime(float value) {
-	m_left_time = value;
-}
-float Doubler::getRightTime() {
-	return m_right_time;
-}
-void Doubler::setRightTime(float value) {
-	m_right_time = value;
+void Doubler::setTime(int channel, float value) {
+	m_time_parameter[channel] = value * .001f;
+
+	int pos = m_time_parameter[channel] * m_samplerate;
+
+	m_wr_ptr[channel] += pos;
+	if (m_buffer[channel] + m_buffer_size <= m_wr_ptr[channel]) {
+		m_wr_ptr[channel] -= m_buffer_size;
+	}
 }
 
 float Doubler::getMix() {
@@ -128,13 +209,23 @@ void Doubler::reset()
 {
 	m_current_gain = m_target_gain;
 	m_ramp_samples_left = 0;
+
+	for (unsigned int i = 0; i < m_channel_count; i++)
+	{
+		m_rd_ptr[i] = m_buffer[i];
+
+		int pos = m_time_parameter[i] * m_samplerate;
+		m_wr_ptr[i] = m_rd_ptr[i] + pos;
+		if (m_buffer[i] + m_buffer_size <= m_wr_ptr[i]) {
+			m_wr_ptr[i] -= m_buffer_size;
+		}
+	}
 }
 
 void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels)
 {
 	float gain = m_current_gain;
 	unsigned int samples = length * inchannels;
-	int targetChannel = inchannels > 1 ? 2 : 1;
 
 	if (m_ramp_samples_left) {
 		float target = m_target_gain;
@@ -145,12 +236,18 @@ void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, in
 			if (m_ramp_samples_left--) {
 				gain += delta;
 
-				//outbuffer[i] = 
-
-				for (unsigned int j = 0; j < targetChannel && i + j < samples; j++)
+				for (unsigned int channel = 0; channel < inchannels; channel++)
 				{
-					outbuffer[i + j] = inbuffer[i + j] * gain;
+					setBuffer(channel, inbuffer[i + channel]);
+					outbuffer[i + channel] = *m_rd_ptr[channel] * gain;
+
+					m_rd_ptr[channel]++;
+					if (m_buffer[channel] + m_buffer_size <= m_rd_ptr[channel]) {
+						m_rd_ptr[channel] = m_buffer[channel];
+					}
 				}
+
+				//rdPtrCheck();
 			}
 			else {
 				gain = target;
@@ -161,10 +258,18 @@ void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, in
 
 	for (unsigned int i = 0; i < samples; i += inchannels)
 	{
-		for (unsigned int j = 0; j < targetChannel && i + j < samples; j++)
+		for (unsigned int channel = 0; channel < inchannels; channel++)
 		{
-			outbuffer[i + j] = inbuffer[i + j] * gain;
+			setBuffer(channel, inbuffer[i + channel]);
+			outbuffer[i + channel] = *m_rd_ptr[channel] * gain;
+
+			m_rd_ptr[channel]++;
+			if (m_buffer[channel] + m_buffer_size <= m_rd_ptr[channel]) {
+				m_rd_ptr[channel] = m_buffer[channel];
+			}
 		}
+
+		//rdPtrCheck();
 	}
 	
 	m_current_gain = gain;
@@ -234,7 +339,7 @@ FMOD_RESULT F_CALL DOUBLER_DSP_PROCESS_CALLBACK(
 		if (outbufferarray && inbufferarray)
 		{
 			outbufferarray[0].buffernumchannels[0] = inbufferarray[0].buffernumchannels[0];
-			outbufferarray[0].speakermode = FMOD_SPEAKERMODE_STEREO;
+			outbufferarray[0].speakermode = inbufferarray[0].speakermode;
 		}
 
 		if (inputsidle) {
@@ -266,10 +371,10 @@ FMOD_RESULT F_CALL DOUBLER_DSP_SETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state
 	switch (index)
 	{
 	case DSP_PARAM_LTIME:
-		state->setLeftTime(value);
+		state->setTime(0, value);
 		break;
 	case DSP_PARAM_RTIME:
-		state->setRightTime(value);
+		state->setTime(1, value);
 		break;
 	case DSP_PARAM_MIX:
 		state->setMix(value);
@@ -290,10 +395,10 @@ FMOD_RESULT F_CALL DOUBLER_DSP_GETPARAM_FLOAT_CALLBACK(FMOD_DSP_STATE* dsp_state
 	switch (index)
 	{
 	case DSP_PARAM_LTIME:
-		*value = state->getLeftTime();
+		*value = state->getTime(0);
 		break;
 	case DSP_PARAM_RTIME:
-		*value = state->getRightTime();
+		*value = state->getTime(1);
 		break;
 	case DSP_PARAM_MIX:
 		*value = state->getMix();

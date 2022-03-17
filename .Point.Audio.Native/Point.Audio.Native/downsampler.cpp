@@ -109,7 +109,7 @@ FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
 	}
 
 	float Downsampler::getGain() {
-		return m_target_gain;
+		return LINEAR_TO_DECIBELS(m_target_gain);
 	}
 	void Downsampler::setGain(float level) {
 		m_target_gain = DECIBELS_TO_LINEAR(level);

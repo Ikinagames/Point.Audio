@@ -15,12 +15,17 @@
 
 #pragma once
 
+#ifndef __DOUBLER_H__
+#define __DOUBLER_H__
+
 #include <stdlib.h>
 
 #include "pch.h"
 #include "fmod.hpp"
 #include "fmod_dsp.h"
 #include "fmod_studio.hpp"
+
+#endif // !__DOUBLER_H__
 
 FMOD_RESULT F_CALL DOUBLER_DSP_CREATE_CALLBACK(FMOD_DSP_STATE* dsp_state);
 FMOD_RESULT F_CALL DOUBLER_DSP_RELEASE_CALLBACK(FMOD_DSP_STATE* dsp_state);
@@ -45,10 +50,13 @@ public:
 	float getGain();
 	void setGain(float);
 
-	float getLeftTime();
+	/*float getLeftTime();
 	void setLeftTime(float);
 	float getRightTime();
-	void setRightTime(float);
+	void setRightTime(float);*/
+
+	float getTime(int channel);
+	void setTime(int channel, float value);
 
 	float getMix();
 	void setMix(float);
@@ -60,35 +68,23 @@ private:
 	float m_target_gain;
 	float m_current_gain;
 
-	float m_left_time;
-	float m_right_time;
+	//holds = second, input = ms
+	float* m_time_parameter;
 
 	float m_mix;
 
 	int m_ramp_samples_left;
 
-	float* m_left_buffer;
-	float* m_right_buffer;
+	int m_buffer_size;
+	// channel count
+	unsigned int m_channel_count;
+	float** m_buffer;
+	float** m_rd_ptr;
+	float** m_wr_ptr;
 
-	float* m_left_rdPtr;
-	float* m_right_rdPtr;
+	// also buffer length
+	int m_samplerate;
 
-	unsigned int blocksize;
-	float block_per_second;
+	void rdPtrCheck();
+	void setBuffer(int, float);
 };
-
-void Doubler::Initialize(FMOD_DSP_STATE* dsp_state) {
-	int samplerate;
-	FMOD_DSP_GETSAMPLERATE(dsp_state, &samplerate);
-	FMOD_DSP_GETBLOCKSIZE(dsp_state, &blocksize);
-
-	block_per_second = (float)(1 / samplerate) * blocksize;
-	int c = 1000 / block_per_second;
-
-	m_left_buffer = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * samplerate);
-	m_right_buffer = (float*)FMOD_DSP_ALLOC(dsp_state, sizeof(float) * samplerate);
-}
-void Doubler::Reserve(FMOD_DSP_STATE* dsp_state) {
-	FMOD_DSP_FREE(dsp_state, m_left_buffer);
-	FMOD_DSP_FREE(dsp_state, m_right_buffer);
-}
