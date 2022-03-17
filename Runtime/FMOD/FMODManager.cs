@@ -49,6 +49,7 @@ namespace Point.Audio
 
         private ResonanceAudioHelper m_ResonanceAudioHelper;
         private AtomicSafeBoolen m_IsFocusing;
+        private Bus m_MasterBus;
 
         private JobHandle m_GlobalJobHandle;
 
@@ -65,6 +66,16 @@ namespace Point.Audio
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+
+            FMOD.RESULT result;
+
+            result = StudioSystem.getBus(BusPrefix, out m_MasterBus);
+#if UNITY_EDITOR
+            if (result != FMOD.RESULT.OK)
+            {
+                PointHelper.LogError(Channel.Audio, "err. failed to load master bus");
+            }
+#endif
 
             LoadDynamicPlugins();
 
@@ -151,6 +162,8 @@ namespace Point.Audio
         {
 #if UNITY_EDITOR
             if (UnityEditor.EditorApplication.isPaused) return;
+
+            m_MasterBus.setMute(UnityEditor.EditorUtility.audioMasterMute);
 #endif
             m_GlobalJobHandle.Complete();
 

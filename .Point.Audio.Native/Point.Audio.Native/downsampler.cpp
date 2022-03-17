@@ -139,6 +139,10 @@ FMOD_DSP_DESCRIPTION Point_Downsampler_Desc = {
 
 	float Downsampler::processBufferValue(float element) {
 		float processed = element + (element * (MINUSONE_TO_ONE * m_noiseamplitude));
+
+		element += MINUSONE_TO_ONE * m_noiseamplitude;
+
+		//float processed = MIX(MINUSONE_TO_ONE + element, element, m_noiseamplitude);
 		processed = max(-1, min(1, processed));
 
 		return processed;

@@ -50,11 +50,6 @@ public:
 	float getGain();
 	void setGain(float);
 
-	/*float getLeftTime();
-	void setLeftTime(float);
-	float getRightTime();
-	void setRightTime(float);*/
-
 	float getTime(int channel);
 	void setTime(int channel, float value);
 

@@ -203,12 +203,22 @@ float Doubler::getMix() {
 }
 void Doubler::setMix(float value) {
 	m_mix = value;
+
+	clear();
 }
 
 void Doubler::clear() {
 	for (unsigned int channel = 0; channel < m_channel_count; channel++)
 	{
 		memset(m_buffer[channel], 0, sizeof(float) * m_buffer_size);
+
+		m_rd_ptr[channel] = m_buffer[channel];
+
+		int pos = m_time_parameter[channel] * m_samplerate;
+		m_wr_ptr[channel] = m_rd_ptr[channel] + pos;
+		if (m_buffer[channel] + m_buffer_size <= m_wr_ptr[channel]) {
+			m_wr_ptr[channel] -= m_buffer_size;
+		}
 	}
 }
 void Doubler::reset()
@@ -216,16 +226,7 @@ void Doubler::reset()
 	m_current_gain = m_target_gain;
 	m_ramp_samples_left = 0;
 
-	for (unsigned int i = 0; i < m_channel_count; i++)
-	{
-		m_rd_ptr[i] = m_buffer[i];
-
-		int pos = m_time_parameter[i] * m_samplerate;
-		m_wr_ptr[i] = m_rd_ptr[i] + pos;
-		if (m_buffer[i] + m_buffer_size <= m_wr_ptr[i]) {
-			m_wr_ptr[i] -= m_buffer_size;
-		}
-	}
+	clear();
 }
 
 void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels)

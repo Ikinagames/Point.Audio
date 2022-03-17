@@ -17,6 +17,10 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
+using System.Collections.Generic;
+using Unity.Collections;
+
 namespace Point.Audio
 {
     /// Material type that determines the acoustic properties of a room surface.
