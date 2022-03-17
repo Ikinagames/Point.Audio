@@ -205,6 +205,12 @@ void Doubler::setMix(float value) {
 	m_mix = value;
 }
 
+void Doubler::clear() {
+	for (unsigned int channel = 0; channel < m_channel_count; channel++)
+	{
+		memset(m_buffer[channel], 0, sizeof(float) * m_buffer_size);
+	}
+}
 void Doubler::reset()
 {
 	m_current_gain = m_target_gain;
@@ -239,7 +245,7 @@ void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, in
 				for (unsigned int channel = 0; channel < inchannels; channel++)
 				{
 					setBuffer(channel, inbuffer[i + channel]);
-					outbuffer[i + channel] = *m_rd_ptr[channel] * gain;
+					outbuffer[i + channel] = MIX(*m_rd_ptr[channel], inbuffer[i + channel], m_mix) * gain;
 
 					m_rd_ptr[channel]++;
 					if (m_buffer[channel] + m_buffer_size <= m_rd_ptr[channel]) {
@@ -261,7 +267,7 @@ void Doubler::process(float* inbuffer, float* outbuffer, unsigned int length, in
 		for (unsigned int channel = 0; channel < inchannels; channel++)
 		{
 			setBuffer(channel, inbuffer[i + channel]);
-			outbuffer[i + channel] = *m_rd_ptr[channel] * gain;
+			outbuffer[i + channel] = MIX(*m_rd_ptr[channel], inbuffer[i + channel], m_mix) * gain;
 
 			m_rd_ptr[channel]++;
 			if (m_buffer[channel] + m_buffer_size <= m_rd_ptr[channel]) {
@@ -343,6 +349,8 @@ FMOD_RESULT F_CALL DOUBLER_DSP_PROCESS_CALLBACK(
 		}
 
 		if (inputsidle) {
+			state->clear();
+
 			return FMOD_ERR_DSP_DONTPROCESS;
 		}
 

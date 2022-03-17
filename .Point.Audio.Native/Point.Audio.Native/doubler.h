@@ -61,6 +61,7 @@ public:
 	float getMix();
 	void setMix(float);
 
+	void clear();
 	void reset();
 	void process(float* inbuffer, float* outbuffer, unsigned int length, int inchannels, int outchannels);
 
@@ -75,6 +76,7 @@ private:
 
 	int m_ramp_samples_left;
 
+	// buffer length
 	int m_buffer_size;
 	// channel count
 	unsigned int m_channel_count;
@@ -82,7 +84,6 @@ private:
 	float** m_rd_ptr;
 	float** m_wr_ptr;
 
-	// also buffer length
 	int m_samplerate;
 
 	void rdPtrCheck();
