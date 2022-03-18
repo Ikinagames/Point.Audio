@@ -190,12 +190,7 @@ float Doubler::getTime(int channel) {
 void Doubler::setTime(int channel, float value) {
 	m_time_parameter[channel] = value * .001f;
 
-	int pos = m_time_parameter[channel] * m_samplerate;
-
-	m_wr_ptr[channel] += pos;
-	if (m_buffer[channel] + m_buffer_size <= m_wr_ptr[channel]) {
-		m_wr_ptr[channel] -= m_buffer_size;
-	}
+	clear();
 }
 
 float Doubler::getMix() {
