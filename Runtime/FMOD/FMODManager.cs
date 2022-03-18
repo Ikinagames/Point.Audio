@@ -48,6 +48,7 @@ namespace Point.Audio
             BusPrefix = "bus:/";
 
         private ResonanceAudioHelper m_ResonanceAudioHelper;
+        private IUserPropertyProcessor[] m_GlobalPropertyProcesors = Array.Empty<IUserPropertyProcessor>();
         private AtomicSafeBoolen m_IsFocusing;
 
         private JobHandle m_GlobalJobHandle;
@@ -56,7 +57,7 @@ namespace Point.Audio
 
         #region Class Instruction
 
-        protected override void OnInitialze()
+        protected override void OnInitialize()
         {
             m_IsFocusing = true;
 
@@ -168,6 +169,14 @@ namespace Point.Audio
         #endregion
 
         #region General Controls
+
+        public static void RegisterUserPropertyProcessor(IUserPropertyProcessor processor)
+        {
+            int length = Instance.m_GlobalPropertyProcesors.Length + 1;
+            Array.Resize(ref Instance.m_GlobalPropertyProcesors, length);
+
+            Instance.m_GlobalPropertyProcesors[length - 1] = processor;
+        }
 
         public static ParamReference GetGlobalParameter<TEnum>()
             where TEnum : struct, IConvertible
@@ -422,6 +431,17 @@ namespace Point.Audio
             return new FindInstanceEnumerator(Instance.m_Handlers.FindEventInstancesOf(description));
         }
 
+        private void ProcessUserProperty(ref Audio audio)
+        {
+            for (int i = 0; i < m_GlobalPropertyProcesors.Length; i++)
+            {
+                foreach (var item in audio.GetPropertyEnumerator())
+                {
+                    m_GlobalPropertyProcesors[i].OnProcess(ref audio, in item);
+                }
+            }
+            
+        }
         /// <summary>
         /// 오디오를 재생합니다.
         /// </summary>
@@ -448,6 +468,8 @@ namespace Point.Audio
 
             audio.audioHandler.Value.Set3DAttributes();
             audio.audioHandler.Value.SetParameters(ref audio);
+
+            Instance.ProcessUserProperty(ref audio);
 
             audio.audioHandler.Value.StartInstance();
         }

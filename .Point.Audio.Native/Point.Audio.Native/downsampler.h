@@ -15,12 +15,17 @@
 
 #pragma once
 
+#ifndef  __DOWNSAMPLER_H__
+#define __DOWNSAMPLER_H__
+
 #include <stdlib.h>
 
 #include "pch.h"
 #include "fmod.hpp"
 #include "fmod_dsp.h"
 #include "fmod_studio.hpp"
+
+#endif // ! __DOWNSAMPLER_H__
 
 FMOD_RESULT F_CALL DOWNSAMPLER_DSP_CREATE_CALLBACK(FMOD_DSP_STATE* dsp_state);
 FMOD_RESULT F_CALL DOWNSAMPLER_DSP_RELEASE_CALLBACK(FMOD_DSP_STATE* dsp_state);

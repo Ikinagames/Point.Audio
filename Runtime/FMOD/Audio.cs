@@ -20,6 +20,8 @@
 using Point.Collections;
 using Point.Collections.Buffer.LowLevel;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -70,6 +72,25 @@ namespace Point.Audio
 #endif
                 eventDescription.is3D(out bool value);
                 return value;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="GetUserPropertyByIndex"/>
+        /// </summary>
+        public int UserPropertyCount
+        {
+            get
+            {
+                FMOD.RESULT result = eventDescription.getUserPropertyCount(out int count);
+#if DEBUG_MODE
+                if (result != FMOD.RESULT.OK)
+                {
+                    PointHelper.LogError(Channel.Audio,
+                        $"Err. {result}");
+                }
+#endif
+                return count;
             }
         }
 
@@ -389,6 +410,19 @@ namespace Point.Audio
             return new ParamReference(eventDescription, name);
         }
 
+        public PropertyEnumerator GetPropertyEnumerator() => new PropertyEnumerator(eventDescription);
+        public FMOD.Studio.USER_PROPERTY GetUserProperty(string name)
+        {
+            eventDescription.getUserProperty(name, out FMOD.Studio.USER_PROPERTY property);
+
+            return property;
+        }
+        public FMOD.Studio.USER_PROPERTY GetUserPropertyByIndex(int index)
+        {
+            eventDescription.getUserPropertyByIndex(index, out FMOD.Studio.USER_PROPERTY property);
+            return property;
+        }
+
         #endregion
 
         #region Validation
@@ -462,6 +496,54 @@ namespace Point.Audio
             }
 #endif
             FMODManager.Stop(ref this);
+        }
+
+        public struct PropertyEnumerator : IEnumerable<FMOD.Studio.USER_PROPERTY>, IEnumerator<FMOD.Studio.USER_PROPERTY>
+        {
+            private FMOD.Studio.EventDescription eventDescription;
+            private readonly int m_Count;
+            private int m_Current;
+
+            public PropertyEnumerator(FMOD.Studio.EventDescription desc)
+            {
+                eventDescription = desc;
+                desc.getUserPropertyCount(out m_Count);
+                m_Current = 0;
+            }
+
+            public FMOD.Studio.USER_PROPERTY Current
+            {
+                get
+                {
+                    if (m_Count <= m_Current) return default(FMOD.Studio.USER_PROPERTY);
+
+                    eventDescription.getUserPropertyByIndex(m_Current, out var property);
+                    return property;
+                }
+            }
+            object IEnumerator.Current => Current;
+
+            public void Dispose()
+            {
+            }
+            public bool MoveNext()
+            {
+                m_Current++;
+
+                if (m_Count <= m_Current)
+                {
+                    m_Current = 0;
+                    return false;
+                }
+                return true;
+            }
+            void IEnumerator.Reset()
+            {
+                m_Current = 0;
+            }
+
+            IEnumerator<FMOD.Studio.USER_PROPERTY> IEnumerable<FMOD.Studio.USER_PROPERTY>.GetEnumerator() => this;
+            IEnumerator IEnumerable.GetEnumerator() => this;
         }
     }
 }

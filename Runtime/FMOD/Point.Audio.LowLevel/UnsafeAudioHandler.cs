@@ -97,6 +97,7 @@ namespace Point.Audio.LowLevel
 
             SetParameters(ref audio);
         }
+
         public void SetParameters(ref Audio audio)
         {
             for (int i = 0; i < audio.parameters.Length; i++)
@@ -162,7 +163,7 @@ namespace Point.Audio.LowLevel
         }
 
         [AOT.MonoPInvokeCallback(typeof(FMOD.Studio.EVENT_CALLBACK))]
-        private FMOD.RESULT Callback(EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameterPtr)
+        private static FMOD.RESULT Callback(EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameterPtr)
         {
             FMOD.Studio.EventInstance instance = new FMOD.Studio.EventInstance(_event);
 
@@ -259,7 +260,7 @@ namespace Point.Audio.LowLevel
                     break;
             }
 
-            instanceHash = Hash.Empty;
+            //instanceHash = Hash.Empty;
 
             return FMOD.RESULT.OK;
         }
