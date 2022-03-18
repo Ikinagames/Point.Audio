@@ -119,7 +119,22 @@ namespace Point.Audio
             FMODUnity.RuntimeManager.LoadBank(c_MasterBank);
             FMODUnity.RuntimeManager.LoadBank(c_MasterBank + ".strings");
         }
-        
+        private void RegisterUserPropertyProcessors()
+        {
+            List<IUserPropertyProcessor> global = new List<IUserPropertyProcessor>();
+            foreach (var item in TypeHelper.GetTypesIter(t => TypeHelper.TypeOf<IUserPropertyProcessor>.Type.IsAssignableFrom(t)))
+            {
+                global.Add((IUserPropertyProcessor)Activator.CreateInstance(item));
+
+#if UNITY_EDITOR
+                PointHelper.Log(Channel.Audio,
+                    $"Registered FMOD parameter processor({TypeHelper.ToString(item)}).");
+#endif
+            }
+
+            m_GlobalPropertyProcesors = global.ToArray();
+        }
+
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
             FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
@@ -169,14 +184,6 @@ namespace Point.Audio
         #endregion
 
         #region General Controls
-
-        public static void RegisterUserPropertyProcessor(IUserPropertyProcessor processor)
-        {
-            int length = Instance.m_GlobalPropertyProcesors.Length + 1;
-            Array.Resize(ref Instance.m_GlobalPropertyProcesors, length);
-
-            Instance.m_GlobalPropertyProcesors[length - 1] = processor;
-        }
 
         public static ParamReference GetGlobalParameter<TEnum>()
             where TEnum : struct, IConvertible

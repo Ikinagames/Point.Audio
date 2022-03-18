@@ -24,11 +24,13 @@ namespace Point.Audio
     /// <summary>
     /// FMOD
     /// </summary>
+    [UnityEngine.Scripting.RequireImplementors]
     public interface IUserPropertyProcessor
     {
         void OnProcess(ref Audio audio, in FMOD.Studio.USER_PROPERTY property);
     }
 
+    [Point.Collections.InternalIgnoreType]
     public struct TestUserPropertyProcessor : IUserPropertyProcessor
     {
         public void OnProcess(ref Audio audio, in USER_PROPERTY property)
