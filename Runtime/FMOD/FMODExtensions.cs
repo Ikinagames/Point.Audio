@@ -19,6 +19,7 @@
 
 using Point.Collections;
 using System.Reflection;
+using Unity.Burst.CompilerServices;
 using UnityEngine;
 
 namespace Point.Audio
@@ -99,6 +100,11 @@ namespace Point.Audio
             where TEnumAttribute : FMODEnumAttribute
         {
             return string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnumAttribute>.Name : att.Name;
+        }
+
+        public static FMOD.RESULT SetWeight(this FMODUnity.StudioListener t, [AssumeRange(0, 1)] in float value)
+        {
+            return FMODManager.SetupListenerWeight(t, value);
         }
     }
 }

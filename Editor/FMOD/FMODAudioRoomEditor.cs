@@ -34,6 +34,8 @@ namespace Point.Audio.FMODEditor
         private SerializedProperty reverbTime = null;
         private SerializedProperty size = null;
 
+        private SerializedProperty onEnter, onExit;
+
         private GUIContent surfaceMaterialsLabel = new GUIContent("Surface Materials",
           "Room surface materials to calculate the acoustic properties of the room.");
         private GUIContent surfaceMaterialLabel = new GUIContent("Surface Material",
@@ -65,6 +67,9 @@ namespace Point.Audio.FMODEditor
             reverbBrightness = serializedObject.FindProperty("reverbBrightness");
             reverbTime = serializedObject.FindProperty("reverbTime");
             size = serializedObject.FindProperty("size");
+
+            onEnter = serializedObject.FindProperty("m_OnEnter");
+            onExit = serializedObject.FindProperty("m_OnExit");
         }
 
         /// @cond
@@ -106,6 +111,9 @@ namespace Point.Audio.FMODEditor
             EditorGUILayout.Separator();
 
             EditorGUILayout.PropertyField(size, sizeLabel);
+
+            EditorGUILayout.PropertyField(onEnter);
+            EditorGUILayout.PropertyField(onExit);
 
             serializedObject.ApplyModifiedProperties();
         }

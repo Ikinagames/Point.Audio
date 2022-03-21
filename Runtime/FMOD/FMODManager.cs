@@ -31,6 +31,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Point.Collections.Buffer.LowLevel;
 using System;
 using System.Reflection;
+using Point.Collections.Buffer;
 
 namespace Point.Audio
 {
@@ -51,6 +52,8 @@ namespace Point.Audio
         private IUserPropertyProcessor[] m_GlobalPropertyProcesors = Array.Empty<IUserPropertyProcessor>();
         private AtomicSafeBoolen m_IsFocusing;
 
+        private ObjectPool<FMODUnity.StudioListener> m_ListenerPool;
+
         private JobHandle m_GlobalJobHandle;
 
         private UnsafeAudioHandlerContainer m_Handlers;
@@ -69,6 +72,16 @@ namespace Point.Audio
 
             LoadDynamicPlugins();
             LoadBanks();
+        }
+        private void SetupObjectPool()
+        {
+            m_ListenerPool = new ObjectPool<FMODUnity.StudioListener>(
+                factory: ListenerFactory, 
+                onGet: ListenerOnGet,
+                onReserve: ListenerOnReserve,
+                onRelease: ListenerOnRelease
+                );
+
         }
         private void LoadDynamicPlugins()
         {
@@ -151,6 +164,24 @@ namespace Point.Audio
             m_ResonanceAudioHelper.Dispose();
         }
 
+        private static FMODUnity.StudioListener ListenerFactory()
+        {
+            GameObject obj = new GameObject("Listener");
+            return obj.AddComponent<FMODUnity.StudioListener>();
+        }
+        private static void ListenerOnGet(FMODUnity.StudioListener listener)
+        {
+            listener.enabled = true;
+        }
+        private static void ListenerOnReserve(FMODUnity.StudioListener listener)
+        {
+            listener.enabled = false;
+        }
+        private static void ListenerOnRelease(FMODUnity.StudioListener listener)
+        {
+            Destroy(listener.gameObject);
+        }
+
         #endregion
 
         #region Monobehaviour Messages
@@ -184,6 +215,93 @@ namespace Point.Audio
         #endregion
 
         #region General Controls
+
+        public static FMODUnity.StudioListener SetupListener(GameObject obj)
+        {
+            return obj.AddComponent<FMODUnity.StudioListener>();
+        }
+        public static FMODUnity.StudioListener SetupListener()
+        {
+            FMODUnity.StudioListener listener = Instance.m_ListenerPool.Get();
+
+            return listener;
+        }
+        public static FMODUnity.StudioListener GetMainListener()
+        {
+            int main = GetMainListenerIndex();
+            for (int i = 0; i < FMODUnity.RuntimeManager.listeners.Count; i++)
+            {
+                if (FMODUnity.RuntimeManager.listeners[i].ListenerNumber == main)
+                {
+                    return FMODUnity.RuntimeManager.listeners[i];
+                }
+            }
+
+            return null;
+        }
+        public static int GetMainListenerIndex()
+        {
+            StudioSystem.getNumListeners(out int numListeners);
+            int index = 0;
+            float max;
+            StudioSystem.getListenerWeight(0, out max);
+            for (int i = 1; i < numListeners; i++)
+            {
+                StudioSystem.getListenerWeight(i, out float temp);
+                if (temp > max)
+                {
+                    max = temp;
+                    index = i;
+                }
+            }
+
+            return index;
+        }
+        public static FMOD.RESULT SetupListenerWeight(FMODUnity.StudioListener listener, in float weight)
+            => SetupListenerWeight(listener.ListenerNumber, in weight);
+        public static FMOD.RESULT SetupListenerWeight(int listener, in float weight)
+        {
+            StudioSystem.getNumListeners(out int numListeners);
+
+            float sum = 0;
+            List<int> temp = new List<int>();
+            for (int i = 0; i < numListeners; i++)
+            {
+                StudioSystem.getListenerWeight(i, out float targetWeight);
+                if (targetWeight > 0 && i != listener)
+                {
+                    temp.Add(i);
+
+                    sum += targetWeight * 100;
+                }
+            }
+
+            if (100 - sum + weight < 0)
+            {
+                float a = (sum + weight - 100) / temp.Count;
+                for (int i = 0; i < temp.Count; i++)
+                {
+                    StudioSystem.getListenerWeight(temp[i], out float currentWeight);
+                    StudioSystem.setListenerWeight(temp[i], currentWeight - a);
+                }
+            }
+            else
+            {
+                float a = (100 - sum + weight) / temp.Count;
+                for (int i = 0; i < temp.Count; i++)
+                {
+                    StudioSystem.getListenerWeight(temp[i], out float currentWeight);
+                    StudioSystem.setListenerWeight(temp[i], currentWeight + a);
+                }
+            }
+
+            FMOD.RESULT result = StudioSystem.setListenerWeight(listener, weight);
+            return result;
+        }
+        public static void ReserveListener(FMODUnity.StudioListener listener)
+        {
+            Instance.m_ListenerPool.Reserve(listener);
+        }
 
         public static ParamReference GetGlobalParameter<TEnum>()
             where TEnum : struct, IConvertible
@@ -442,7 +560,7 @@ namespace Point.Audio
         {
             for (int i = 0; i < m_GlobalPropertyProcesors.Length; i++)
             {
-                foreach (var item in audio.GetPropertyEnumerator())
+                foreach (USER_PROPERTY item in audio.GetPropertyEnumerator())
                 {
                     m_GlobalPropertyProcesors[i].OnProcess(ref audio, in item);
                 }
