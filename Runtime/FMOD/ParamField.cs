@@ -42,6 +42,8 @@ namespace Point.Audio
         [NonSerialized] private PropertyInfo m_PropertyInfo;
         [NonSerialized] private FieldInfo m_FieldInfo;
 
+        public bool IsGlobal { get => m_IsGlobal; set => m_IsGlobal = value; }
+
         public ParamReference GetGlobalParamReference()
         {
             float targetValue;
@@ -204,9 +206,8 @@ namespace Point.Audio
 #if DEBUG_MODE
             if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
             {
-                PointHelper.LogError(Channel.Audio,
-                    $"Fatal error. Could\'nt set parameter to fmod. " +
-                    $"This is not allowed.");
+                PointHelper.LogWarning(Channel.Audio,
+                    $"Fatal error. Could\'nt set parameter to fmod.");
             }
 #endif
         }

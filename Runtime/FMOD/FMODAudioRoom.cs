@@ -58,6 +58,10 @@ namespace Point.Audio
         public Vector3 size = Vector3.one;
 
         [Space]
+        [Header("Connected Emitters")]
+        public FMODUnity.StudioEventEmitter[] m_Emitters = Array.Empty<FMODUnity.StudioEventEmitter>();
+
+        [Space]
         [Header("Trigger")]
         public ParamField[] m_OnEnter = Array.Empty<ParamField>();
         public ParamField[] m_OnExit = Array.Empty<ParamField>();
@@ -85,7 +89,8 @@ namespace Point.Audio
             {
                 for (int i = 0; i < m_OnEnter.Length; i++)
                 {
-                    m_OnEnter[i].Execute();
+                    //m_OnEnter[i].Execute();
+                    ExecuteParam(m_OnEnter[i]);
                 }
 
                 m_IsEntered = true;
@@ -95,11 +100,25 @@ namespace Point.Audio
             {
                 for (int i = 0; i < m_OnExit.Length; i++)
                 {
-                    m_OnExit[i].Execute();
+                    //m_OnExit[i].Execute();
+                    ExecuteParam(m_OnExit[i]);
                 }
 
                 m_IsEntered = false;
                 return;
+            }
+        }
+        private void ExecuteParam(ParamField param)
+        {
+            if (param.IsGlobal)
+            {
+                param.Execute();
+                return;
+            }
+
+            for (int i = 0; i < m_Emitters.Length; i++)
+            {
+                param.Execute(m_Emitters[i].EventInstance);
             }
         }
         void Update()

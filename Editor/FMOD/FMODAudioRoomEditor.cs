@@ -34,6 +34,7 @@ namespace Point.Audio.FMODEditor
         private SerializedProperty reverbTime = null;
         private SerializedProperty size = null;
 
+        private SerializedProperty emitters;
         private SerializedProperty onEnter, onExit;
 
         private GUIContent surfaceMaterialsLabel = new GUIContent("Surface Materials",
@@ -68,6 +69,7 @@ namespace Point.Audio.FMODEditor
             reverbTime = serializedObject.FindProperty("reverbTime");
             size = serializedObject.FindProperty("size");
 
+            emitters = serializedObject.FindProperty("m_Emitters");
             onEnter = serializedObject.FindProperty("m_OnEnter");
             onExit = serializedObject.FindProperty("m_OnExit");
         }
@@ -111,6 +113,8 @@ namespace Point.Audio.FMODEditor
             EditorGUILayout.Separator();
 
             EditorGUILayout.PropertyField(size, sizeLabel);
+
+            EditorGUILayout.PropertyField(emitters);
 
             EditorGUILayout.PropertyField(onEnter);
             EditorGUILayout.PropertyField(onExit);
