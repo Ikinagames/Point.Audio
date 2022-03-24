@@ -75,6 +75,7 @@ private:
 	int m_buffer_size;
 	// channel count
 	unsigned int m_channel_count;
+
 	float** m_buffer;
 	float** m_rd_ptr;
 	float** m_wr_ptr;
