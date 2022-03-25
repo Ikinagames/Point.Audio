@@ -15,12 +15,13 @@
 
 using UnityEngine;
 using UnityEditor;
+using Point.Collections.Editor;
 
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODAudioRoom))]
     [CanEditMultipleObjects]
-    public sealed class FMODAudioRoomEditor : Editor
+    public sealed class FMODAudioRoomEditor : InspectorEditor<FMODAudioRoom>
     {
         private SerializedProperty leftWall = null;
         private SerializedProperty rightWall = null;

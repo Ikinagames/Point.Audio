@@ -66,7 +66,7 @@ namespace Point.Audio
         /// </summary>
         /// <param name="ev"></param>
         [Obsolete("Do not use. This method is intended to use only at AnimationClip events.", true)]
-        public override void TriggerAction(AnimationEvent ev)
+        public override sealed void TriggerAction(AnimationEvent ev)
         {
             Hash hash = new Hash(ev.stringParameter);
 
