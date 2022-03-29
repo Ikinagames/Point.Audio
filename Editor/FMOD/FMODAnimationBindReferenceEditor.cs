@@ -95,11 +95,9 @@ namespace Point.Audio.FMODEditor
             EditorGUI.PropertyField(autoRect.Pop(), parameters);
         }
 
-        public override void OnInspectorGUI()
+        public override string GetHeaderName() => "Animation Bind Reference";
+        protected override void OnInspectorGUIContents()
         {
-            EditorUtilities.StringHeader("Animation Bind Reference");
-            EditorUtilities.Line();
-
             //m_EventList.DoLayoutList();
             EditorGUILayout.PropertyField(m_Events);
 

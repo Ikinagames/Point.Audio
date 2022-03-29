@@ -76,7 +76,7 @@ namespace Point.Audio.FMODEditor
         }
 
         /// @cond
-        public override void OnInspectorGUI()
+        protected override void OnInspectorGUIContents()
         {
             serializedObject.Update();
 
