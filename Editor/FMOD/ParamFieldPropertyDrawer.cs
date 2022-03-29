@@ -74,13 +74,22 @@ namespace Point.Audio.FMODEditor
         {
             if (string.IsNullOrEmpty(label.text)) label = new GUIContent(property.displayName);
 
-            AutoRect rect = new AutoRect(position);
             PropertyDrawerHelper.DrawBlock(position, Color.black);
+            AutoRect rect = new AutoRect(position);
 
             using (var change = new EditorGUI.ChangeCheckScope())
             using (new EditorGUI.PropertyScope(position, null, property))
             {
-                property.isExpanded = EditorGUI.Foldout(rect.Pop(), property.isExpanded, label, true);
+                {
+                    Rect foldRect;
+                    if (PropertyDrawerHelper.IsPropertyInArray(property))
+                    {
+                        foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
+                    }
+                    else foldRect = rect.Pop();
+                    property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
+                }
+                
                 if (!property.isExpanded)
                 {
                     return;

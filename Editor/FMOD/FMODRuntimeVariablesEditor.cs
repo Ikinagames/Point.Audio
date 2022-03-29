@@ -37,6 +37,8 @@ namespace Point.Audio.FMODEditor
             EditorGUILayout.PropertyField(m_SceneDependencies);
 
             //base.OnInspectorGUIContents();
+
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

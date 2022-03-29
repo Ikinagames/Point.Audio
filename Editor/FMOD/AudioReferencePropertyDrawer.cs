@@ -82,11 +82,19 @@ namespace Point.Audio.FMODEditor
             using (var change = new EditorGUI.ChangeCheckScope())
             using (new EditorGUI.PropertyScope(position, null, property))
             {
-                property.isExpanded = EditorGUI.Foldout(rect.Pop(), property.isExpanded, label, true);
+                {
+                    Rect foldRect;
+                    if (PropertyDrawerHelper.IsPropertyInArray(property))
+                    {
+                        foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
+                    }
+                    else foldRect = rect.Pop();
+                    property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
+                }
+                
                 if (!property.isExpanded) return;
                 EditorGUI.indentLevel++;
 
-                
                 EditorGUI.PropertyField(
                     rect.Pop(EditorGUI.GetPropertyHeight(ev)), 
                     ev, Helper.EventContent, true);
@@ -95,52 +103,6 @@ namespace Point.Audio.FMODEditor
                 EditorGUI.PropertyField(
                     rect.Pop(EditorGUI.GetPropertyHeight(param)),
                     param, Helper.ParametersContent, true);
-
-                //EditorGUI.PropertyField(PropertyDrawerHelper.GetRect(position), Helper.GetEventField(property));
-                //var eventField = Helper.GetEventField(property);
-                //int count = eventField.isExpanded ? 6 : 1;
-                //EditorGUI.PropertyField(PropertyDrawerHelper.GetRect(position, count), eventField);
-
-                //EditorUtilities.Line();
-
-                //var parameters = Helper.GetParametersField(property);
-                //parameters.isExpanded
-                //    = EditorGUI.Foldout(PropertyDrawerHelper.GetRect(position), parameters.isExpanded, Helper.ParametersContent);
-                //if (parameters.isExpanded)
-                //{
-                //    EditorGUI.indentLevel++;
-
-                //    var list = Helper.GetParamList(property);
-                //    list.drawHeaderCallback = (Rect rect) =>
-                //    {
-                //        EditorGUI.LabelField(rect, Helper.ParametersContent);
-                //    };
-                //    //list.elementHeightCallback = (int index) =>
-                //    //{
-                //    //    var element = parameters.GetArrayElementAtIndex(index);
-                //    //    var value = element.isExpanded ? 8 : 1;
-
-                //    //    return PropertyDrawerHelper.lineHeight * value;
-                //    //};
-                //    list.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
-                //    {
-                //        var element = parameters.GetArrayElementAtIndex(index);
-                //        //var value = element.isExpanded ? 7 : 0;
-                //        //rect.y -= (PropertyDrawerHelper.lineHeight * value) * .5f;
-
-                //        var name = ParamFieldPropertyDrawer.Helper.GetNameField(element);
-
-                //        EditorGUI.PropertyField(rect, element, new GUIContent(name.stringValue), false);
-                //        //EditorGUI.LabelField(rect, "test");
-                //    };
-
-                //    //property.serializedObject.Update();
-                //    list.DoLayoutList();
-
-                //    //list.DoList(PropertyDrawerHelper.GetRect(position, parameters.arraySize + 3));
-
-                //    EditorGUI.indentLevel--;
-                //}
 
                 if (change.changed)
                 {
