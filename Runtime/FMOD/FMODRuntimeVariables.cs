@@ -30,14 +30,14 @@ namespace Point.Audio
         [Serializable]
         internal sealed class SceneContainer
         {
-            [SerializeField] private string m_SceneName;
+            [SerializeField] private SceneReference m_Scene;
 
             [SerializeField] public ParamField[] m_GlobalParameters = Array.Empty<ParamField>();
             [SerializeField] public AudioReference[] m_GlobalAudios = Array.Empty<AudioReference>();
 
             public bool IsTargetScene(Scene scene)
             {
-                return m_SceneName.Equals(scene.name);
+                return m_Scene.Equals(scene);
             }
         }
 

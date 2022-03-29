@@ -19,6 +19,7 @@
 #endif
 #define UNITYENGINE
 
+using Point.Collections;
 using Point.Collections.Editor;
 using UnityEditor;
 using UnityEditorInternal;
@@ -30,17 +31,17 @@ namespace Point.Audio.FMODEditor
     public sealed class FMODAnimationBindReferenceEditor : InspectorEditor<FMODAnimationBindReference>
     {
         private SerializedProperty m_Events;
-        private ReorderableList m_EventList;
+        //private ReorderableList m_EventList;
 
         private void OnEnable()
         {
             m_Events = GetSerializedProperty("m_Events");
 
-            m_EventList = new ReorderableList(serializedObject, m_Events);
+            //m_EventList = new ReorderableList(serializedObject, m_Events);
             
-            m_EventList.drawHeaderCallback = DrawEventHeader;
-            m_EventList.elementHeightCallback = EventElementHeight;
-            m_EventList.drawElementCallback = DrawEventElement;
+            //m_EventList.drawHeaderCallback = DrawEventHeader;
+            //m_EventList.elementHeightCallback = EventElementHeight;
+            //m_EventList.drawElementCallback = DrawEventElement;
         }
 
         private static void DrawEventHeader(Rect rect) => EditorGUI.LabelField(rect, "Events");
@@ -48,8 +49,17 @@ namespace Point.Audio.FMODEditor
         {
             SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
 
-            if (element.isExpanded) return PropertyDrawerHelper.GetPropertyHeight(7);
-            return PropertyDrawerHelper.GetPropertyHeight(1);
+            return PropertyDrawerHelper.GetPropertyHeight(serializedObject, element);
+            //if (element.isExpanded)
+            //{
+            //    if (GetSerializedProperty(element, "m_AudioReference.m_Parameters").isExpanded)
+            //    {
+            //        return PropertyDrawerHelper.GetPropertyHeight(14);
+            //    }
+
+            //    return PropertyDrawerHelper.GetPropertyHeight(7);
+            //}
+            //return PropertyDrawerHelper.GetPropertyHeight(1);
         }
         private void DrawEventElement(Rect rect, int index, bool isActive, bool isFocused)
         {
@@ -58,35 +68,31 @@ namespace Point.Audio.FMODEditor
 
             SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
 
-            //Rect targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
             element.isExpanded =
                 EditorGUI.Foldout(autoRect.Pop(), element.isExpanded, element.displayName, true);
             if (!element.isExpanded) return;
             autoRect.Indent(14);
 
             element.Next(true);
-            //targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
             EditorGUI.PropertyField(autoRect.Pop(), element);
 
             element.Next(false); // audio reference
             SerializedProperty ev = GetSerializedProperty(element, "m_Event");
-            //targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
             EditorGUI.PropertyField(autoRect.Pop(), ev);
 
             SerializedProperty overrides = GetSerializedProperty(element, "m_AllowFadeOut");
-            //targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
             overrides.boolValue = EditorGUI.Toggle(autoRect.Pop(), "Allow Fade-Out", overrides.boolValue);
 
             overrides.Next(false);
-            //targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
             EditorGUI.PropertyField(autoRect.Pop(), overrides);
 
             SerializedProperty minDis = GetSerializedProperty(element, "m_OverrideMinDistance");
             SerializedProperty maxDis = GetSerializedProperty(element, "m_OverrideMaxDistance");
-            //targetRect = PropertyDrawerHelper.UseRect(ref rect, PropertyDrawerHelper.GetPropertyHeight(1));
+
             EditorUtilities.MinMaxSlider(autoRect.Pop(), "Override Distance", minDis, maxDis, 1, 300);
 
-
+            SerializedProperty parameters = GetSerializedProperty(element, "m_Parameters");
+            EditorGUI.PropertyField(autoRect.Pop(), parameters);
         }
 
         public override void OnInspectorGUI()
@@ -94,12 +100,13 @@ namespace Point.Audio.FMODEditor
             EditorUtilities.StringHeader("Animation Bind Reference");
             EditorUtilities.Line();
 
-            m_EventList.DoLayoutList();
+            //m_EventList.DoLayoutList();
+            EditorGUILayout.PropertyField(m_Events);
 
             EditorGUILayout.Space();
 
             serializedObject.ApplyModifiedProperties();
-            base.OnInspectorGUI();
+            //base.OnInspectorGUI();
         }
     }
 }

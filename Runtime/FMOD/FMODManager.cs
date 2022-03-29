@@ -46,7 +46,8 @@ namespace Point.Audio
         internal static ResonanceAudioHelper ResonanceAudio => Instance.m_ResonanceAudioHelper;
 
         public const string
-            BusPrefix = "bus:/";
+            BusPrefix = "bus:/",
+            SnapshotPrefix = "snapshot:/";
 
         private ResonanceAudioHelper m_ResonanceAudioHelper;
         private IUserPropertyProcessor[] m_GlobalPropertyProcesors = Array.Empty<IUserPropertyProcessor>();
@@ -387,6 +388,13 @@ namespace Point.Audio
             PointHelper.Log(Channel.Audio,
                 $"Global parameter({(string)parameter.description.name}) has set to {parameter.value}.");
 #endif
+        }
+
+        public static Snapshot GetSnapshot(in string name)
+        {
+            var result = StudioSystem.getEvent(SnapshotPrefix + name, out var ev);
+
+            return new Snapshot(ev);
         }
 
         public static bool IsBankLoaded(string name) => FMODUnity.RuntimeManager.HasBankLoaded(name);
