@@ -64,6 +64,12 @@ namespace Point.Audio.FMODEditor
         {
             if (property.isExpanded)
             {
+                var paramAtt = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
+                if (paramAtt != null)
+                {
+                    return PropertyDrawerHelper.GetPropertyHeight(4);
+                }
+
                 return PropertyDrawerHelper.GetPropertyHeight(6);
             }
 
@@ -72,7 +78,26 @@ namespace Point.Audio.FMODEditor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (string.IsNullOrEmpty(label.text)) label = new GUIContent(property.displayName);
+            bool isInArray = PropertyDrawerHelper.IsPropertyInArray(property);
+            if (!isInArray)
+            {
+                if (string.IsNullOrEmpty(label.text)) label = new GUIContent(property.displayName);
+            }
+            else
+            {
+                const string c_NameFormat = "{0}\t: {1}";
+
+                string valueName = property.FindPropertyRelative("m_Name").stringValue;
+                if (string.IsNullOrEmpty(valueName))
+                {
+                    label = new GUIContent(property.displayName);
+                }
+                else
+                {
+                    float value = property.FindPropertyRelative("m_Value").floatValue;
+                    label = new GUIContent(string.Format(c_NameFormat, valueName, value));
+                }
+            }
 
             PropertyDrawerHelper.DrawBlock(position, Color.black);
             AutoRect rect = new AutoRect(position);
@@ -82,7 +107,7 @@ namespace Point.Audio.FMODEditor
             {
                 {
                     Rect foldRect;
-                    if (PropertyDrawerHelper.IsPropertyInArray(property))
+                    if (isInArray)
                     {
                         foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
                     }
@@ -99,12 +124,18 @@ namespace Point.Audio.FMODEditor
                 EditorGUI.indentLevel++;
 
                 var isGlobal = Helper.GetIsGlobalField(property);
-                var paramSetting = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
-                if (paramSetting != null && paramSetting.GlobalParameter)
+                FMODParamAttribute paramSetting = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
+
+                if (paramSetting != null)
                 {
-                    if (!isGlobal.boolValue)
+                    if (paramSetting.GlobalParameter && !isGlobal.boolValue)
                     {
                         isGlobal.boolValue = true;
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
+                    else if (!paramSetting.GlobalParameter && isGlobal.boolValue)
+                    {
+                        isGlobal.boolValue = false;
                         property.serializedObject.ApplyModifiedProperties();
                     }
                 }

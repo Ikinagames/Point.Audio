@@ -28,6 +28,7 @@ namespace Point.Audio
     public sealed class AudioReference
     {
         [SerializeField] private EventReference m_Event;
+        [FMODParam(false, DisableReflection = true)]
         [SerializeField] private ParamField[] m_Parameters = Array.Empty<ParamField>();
 
         [Space]
