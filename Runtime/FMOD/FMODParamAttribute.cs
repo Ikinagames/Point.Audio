@@ -38,5 +38,10 @@ namespace Point.Audio
         {
             GlobalParameter = isGlobalParameter;
         }
+        public FMODParamAttribute(bool isGlobalParameter, bool disableReflection)
+        {
+            GlobalParameter = isGlobalParameter;
+            DisableReflection = disableReflection;
+        }
     }
 }

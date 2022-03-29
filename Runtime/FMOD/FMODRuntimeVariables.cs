@@ -32,6 +32,7 @@ namespace Point.Audio
         {
             [SerializeField] private SceneReference m_Scene;
 
+            [FMODParam(true, true)]
             [SerializeField] public ParamField[] m_GlobalParameters = Array.Empty<ParamField>();
             [SerializeField] public AudioReference[] m_GlobalAudios = Array.Empty<AudioReference>();
 

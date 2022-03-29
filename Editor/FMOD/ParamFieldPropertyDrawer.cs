@@ -67,10 +67,22 @@ namespace Point.Audio.FMODEditor
                 var paramAtt = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
                 if (paramAtt != null)
                 {
-                    return PropertyDrawerHelper.GetPropertyHeight(4);
+                    float height = PropertyDrawerHelper.GetPropertyHeight(4) + 3;
+                    if (!paramAtt.DisableReflection)
+                    {
+                        height += EditorGUIUtility.standardVerticalSpacing + 5;
+                        height += PropertyDrawerHelper.GetPropertyHeight(1);
+                    }
+
+                    if (Helper.GetEnableReflectionField(property).boolValue)
+                    {
+                        height += PropertyDrawerHelper.GetPropertyHeight(2);
+                    }
+
+                    return height;
                 }
 
-                return PropertyDrawerHelper.GetPropertyHeight(6);
+                return PropertyDrawerHelper.GetPropertyHeight(5) + 8;
             }
 
             return PropertyDrawerHelper.GetPropertyHeight(1);
@@ -167,12 +179,19 @@ namespace Point.Audio.FMODEditor
                 ignoreSeekSpeed.boolValue
                     = EditorGUI.Toggle(rect.Pop(), Helper.IgnoreSeekSpeedContent, ignoreSeekSpeed.boolValue);
 
-                if (paramSetting != null && !paramSetting.DisableReflection)
+                var enableReflection = Helper.GetEnableReflectionField(property);
+
+                if (paramSetting != null && paramSetting.DisableReflection && enableReflection.boolValue)
+                {
+                    enableReflection.boolValue = false;
+                    property.serializedObject.ApplyModifiedProperties();
+                }
+                else if (paramSetting != null && !paramSetting.DisableReflection)
                 {
                     rect.Pop(EditorGUIUtility.standardVerticalSpacing);
-                    EditorUtilities.Line(rect.Pop(EditorGUIUtility.singleLineHeight));
+                    EditorUtilities.Line(rect.Pop(5));
 
-                    var enableReflection = Helper.GetEnableReflectionField(property);
+                    
                     enableReflection.boolValue
                         = EditorGUI.ToggleLeft(rect.Pop(), Helper.EnableValueReflectionContent, enableReflection.boolValue);
 
