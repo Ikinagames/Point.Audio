@@ -84,11 +84,11 @@ namespace Point.Audio.FMODEditor
             {
                 {
                     Rect foldRect;
-                    if (PropertyDrawerHelper.IsPropertyInArray(property))
+                    //if (PropertyDrawerHelper.IsPropertyInArray(property))
                     {
                         foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
                     }
-                    else foldRect = rect.Pop();
+                    //else foldRect = rect.Pop();
                     property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
                 }
                 

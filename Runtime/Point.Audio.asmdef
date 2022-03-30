@@ -5,7 +5,9 @@
         "Point.Collections",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst"
+        "Unity.Burst",
+        "Arbor",
+        "Arbor.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

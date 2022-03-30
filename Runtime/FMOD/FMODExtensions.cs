@@ -106,5 +106,22 @@ namespace Point.Audio
         {
             return FMODManager.SetupListenerWeight(t, value);
         }
+
+        /// <inheritdoc cref="ParamField.Execute"/>
+        public static void Execute(this ParamField[] arr)
+        {
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i].Execute();
+            }
+        }
+        /// <inheritdoc cref="ParamField.Execute(FMOD.Studio.EventInstance)"/>
+        public static void Execute(this ParamField[] arr, FMOD.Studio.EventInstance ev)
+        {
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i].Execute(ev);
+            }
+        }
     }
 }

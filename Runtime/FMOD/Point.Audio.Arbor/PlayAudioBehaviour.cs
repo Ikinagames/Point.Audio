@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,38 +13,35 @@ using Arbor;
 namespace Point.Audio.Arbor
 {
     [AddComponentMenu("")]
-    [AddBehaviourMenu("Audio/Point/Play Audio")]
+    [AddBehaviourMenu("Point/Audio/Play")]
     public sealed class PlayAudioBehaviour : StateBehaviour
     {
-        [SerializeField] private EventReference m_Event;
-        [SerializeField] private ParamField[] m_Parameters = Array.Empty<ParamField>();
+        [SerializeField] private AudioReference m_AudioReference;
 
-        [SerializeField] FlexibleField<Audio> m_AudioField;
+        //[SerializeField] FlexibleField<Audio> m_AudioField;
 
-        private ParamReference[] m_ParsedParameters;
         private Audio m_Audio;
 
-        protected override void OnCreated()
-        {
-            m_Audio = m_AudioField.value;
-            FMODManager.GetAudio(m_Event, ref m_Audio);
+        //protected override void OnCreated()
+        //{
+        //    //if (!m_Event.IsNull) return;
 
-            if (m_Parameters.Length > 0)
-            {
-                m_ParsedParameters = new ParamReference[m_Parameters.Length];
-                for (int i = 0; i < m_Parameters.Length; i++)
-                {
-                    m_ParsedParameters[i] = m_Parameters[i].GetParamReference(m_Audio.eventDescription);
-                }
-            }
-            else m_ParsedParameters = Array.Empty<ParamReference>();
-        }
+        //    //m_Audio = m_AudioField.value;
+        //    //FMODManager.GetAudio(m_Event, ref m_Audio);
+
+        //    //if (m_Parameters.Length > 0)
+        //    //{
+        //    //    m_ParsedParameters = new ParamReference[m_Parameters.Length];
+        //    //    for (int i = 0; i < m_Parameters.Length; i++)
+        //    //    {
+        //    //        m_ParsedParameters[i] = m_Parameters[i].GetParamReference(m_Audio.eventDescription);
+        //    //    }
+        //    //}
+        //    //else m_ParsedParameters = Array.Empty<ParamReference>();
+        //}
         public override void OnStateAwake()
         {
-            for (int i = 0; i < m_ParsedParameters.Length; i++)
-            {
-                m_Audio.SetParameter(m_ParsedParameters[i]);
-            }
+            m_Audio = m_AudioReference.GetAudio();
         }
         public override void OnStateBegin()
         {
