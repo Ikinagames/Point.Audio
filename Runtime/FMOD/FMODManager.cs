@@ -393,7 +393,13 @@ namespace Point.Audio
         public static Snapshot GetSnapshot(in string name)
         {
             var result = StudioSystem.getEvent(SnapshotPrefix + name, out var ev);
-
+#if DEBUG_MODE
+            if ((result & FMOD.RESULT.OK) != FMOD.RESULT.OK)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"Could not retriving information of snapshot({name}).");
+            }
+#endif
             return new Snapshot(ev);
         }
 
@@ -573,7 +579,6 @@ namespace Point.Audio
                     m_GlobalPropertyProcesors[i].OnProcess(ref audio, in item);
                 }
             }
-            
         }
         /// <summary>
         /// 오디오를 재생합니다.
@@ -828,4 +833,16 @@ namespace Point.Audio
             }
         }
     }
+
+    //internal sealed class DefaultUserPropertyProcessor : IUserPropertyProcessor
+    //{
+    //    public void OnProcess(ref Audio audio, in USER_PROPERTY property)
+    //    {
+    //        string name = property.name;
+    //        if (name.StartsWith("p_"))
+    //        {
+
+    //        }
+    //    }
+    //}
 }
