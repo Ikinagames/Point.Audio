@@ -181,17 +181,20 @@ namespace Point.Audio.FMODEditor
 
                 var enableReflection = Helper.GetEnableReflectionField(property);
 
-                if (paramSetting != null && paramSetting.DisableReflection && enableReflection.boolValue)
+                if (paramSetting != null)
                 {
-                    enableReflection.boolValue = false;
-                    property.serializedObject.ApplyModifiedProperties();
+                    if (paramSetting.DisableReflection && enableReflection.boolValue)
+                    {
+                        enableReflection.boolValue = false;
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
                 }
-                else if (paramSetting != null && !paramSetting.DisableReflection)
+                
+                if (paramSetting != null && !paramSetting.DisableReflection)
                 {
                     rect.Pop(EditorGUIUtility.standardVerticalSpacing);
                     EditorUtilities.Line(rect.Pop(5));
 
-                    
                     enableReflection.boolValue
                         = EditorGUI.ToggleLeft(rect.Pop(), Helper.EnableValueReflectionContent, enableReflection.boolValue);
 

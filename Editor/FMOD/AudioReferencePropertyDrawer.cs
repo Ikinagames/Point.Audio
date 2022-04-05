@@ -20,8 +20,8 @@ using UnityEngine;
 
 namespace Point.Audio.FMODEditor
 {
-    [CustomPropertyDrawer(typeof(AudioReference), true)]
-    public sealed class AudioReferencePropertyDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(AudioReference))]
+    public sealed class AudioReferencePropertyDrawer : PropertyDrawer<AudioReference>
     {
         private sealed class Helper
         {
@@ -39,20 +39,6 @@ namespace Point.Audio.FMODEditor
                 => property.FindPropertyRelative(c_Event);
             public static SerializedProperty GetParametersField(SerializedProperty property)
                 => property.FindPropertyRelative(c_Parameters);
-
-            //public static ReorderableList GetParamList(SerializedProperty property)
-            //{
-            //    //if (s_ParamList == null)
-            //    {
-            //        //s_ParamList = new ReorderableList(property.serializedObject, property);
-            //        return new ReorderableList(
-            //            property.serializedObject,
-            //            GetParametersField(property),
-            //            true, true, true, true);
-            //    }
-
-            //    //return s_ParamList;
-            //}
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -62,12 +48,10 @@ namespace Point.Audio.FMODEditor
             var ev = Helper.GetEventField(property);
             var param = Helper.GetParametersField(property);
 
-            return EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param) + PropertyDrawerHelper.GetPropertyHeight(1);
-
-            //return base.GetPropertyHeight(property, label);
+            return EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param, true) + PropertyDrawerHelper.GetPropertyHeight(5);
         }
 
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
         {
             var ev = Helper.GetEventField(property);
             {
@@ -76,41 +60,22 @@ namespace Point.Audio.FMODEditor
                 else label = new GUIContent(labelName.stringValue);
             }
 
-            AutoRect rect = new AutoRect(position);
-            PropertyDrawerHelper.DrawBlock(position, Color.black);
-
-            using (var change = new EditorGUI.ChangeCheckScope())
-            using (new EditorGUI.PropertyScope(position, null, property))
             {
-                {
-                    Rect foldRect;
-                    //if (PropertyDrawerHelper.IsPropertyInArray(property))
-                    {
-                        foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
-                    }
-                    //else foldRect = rect.Pop();
-                    property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
-                }
-                
-                if (!property.isExpanded) return;
-                EditorGUI.indentLevel++;
-
-                EditorGUI.PropertyField(
-                    rect.Pop(EditorGUI.GetPropertyHeight(ev)), 
-                    ev, Helper.EventContent, true);
-
-                var param = Helper.GetParametersField(property);
-                EditorGUI.PropertyField(
-                    rect.Pop(EditorGUI.GetPropertyHeight(param)),
-                    param, Helper.ParametersContent, true);
-
-                if (change.changed)
-                {
-                    property.serializedObject.ApplyModifiedProperties();
-                }
+                Rect foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
+                property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
             }
 
-            EditorGUI.indentLevel--;
+            if (!property.isExpanded) return;
+            EditorGUI.indentLevel++;
+
+            EditorGUI.PropertyField(
+                rect.Pop(EditorGUI.GetPropertyHeight(ev)),
+                ev, Helper.EventContent, true);
+
+            var param = Helper.GetParametersField(property);
+            EditorGUI.PropertyField(
+                rect.Pop(EditorGUI.GetPropertyHeight(param)),
+                param, Helper.ParametersContent, true);
         }
     }
 }

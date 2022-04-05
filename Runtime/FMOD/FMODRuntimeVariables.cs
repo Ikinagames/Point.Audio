@@ -42,8 +42,8 @@ namespace Point.Audio
             }
         }
 
-        [SerializeField] private AudioReference[] m_PlayOnStart = Array.Empty<AudioReference>();
-        [SerializeField] private SceneContainer[] m_SceneDependencies = Array.Empty<SceneContainer>();
+        [SerializeField] private ArrayWrapper<AudioReference> m_PlayOnStart = Array.Empty<AudioReference>();
+        [SerializeField] private ArrayWrapper<SceneContainer> m_SceneDependencies = Array.Empty<SceneContainer>();
 
         private readonly List<Audio> m_GlobalAudios = new List<Audio>();
 

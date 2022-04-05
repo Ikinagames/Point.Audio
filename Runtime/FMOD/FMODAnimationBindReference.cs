@@ -27,7 +27,8 @@ namespace Point.Audio
     [CreateAssetMenu(menuName = "Point/Audio/Create Animation Bind Reference", fileName = "NewAnimBindRef")]
     public sealed class FMODAnimationBindReference : ScriptableObject
     {
-        [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
+        [SerializeField]
+        private ArrayWrapper<FMODAnimationEvent> m_Events = Array.Empty<FMODAnimationEvent>();
 
         internal void AddToHashMap(ref Dictionary<Hash, AudioReference> hashMap)
         {

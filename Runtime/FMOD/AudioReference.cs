@@ -21,6 +21,7 @@ using UnityEngine;
 using System;
 using FMODUnity;
 using Unity.Mathematics;
+using Point.Collections;
 
 namespace Point.Audio
 {
