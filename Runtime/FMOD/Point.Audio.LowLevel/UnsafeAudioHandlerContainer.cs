@@ -202,5 +202,11 @@ namespace Point.Audio.LowLevel
         }
 
         #endregion
+
+        [UnityEngine.Scripting.Preserve]
+        static void AOTCodeGenerator()
+        {
+            TypeHelper.AOTCodeGenerator<UnsafeAudioHandler>();
+        }
     }
 }

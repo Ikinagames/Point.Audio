@@ -468,7 +468,7 @@ namespace Point.Audio
             PointHelper.AssertMainThread();
 
             var result = StudioSystem.getEventByID(eventRef.Guid, out FMOD.Studio.EventDescription ev);
-#if DEBUG_MODE
+#if UNITY_EDITOR
             if (result != FMOD.RESULT.OK)
             {
                 PointHelper.LogError(Channel.Audio,
