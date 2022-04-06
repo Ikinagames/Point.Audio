@@ -5,6 +5,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using Point.Collections.Editor;
+using UnityEditor.AnimatedValues;
 
 namespace Point.Audio.FMODEditor
 {
@@ -60,14 +61,17 @@ namespace Point.Audio.FMODEditor
                 => property.FindPropertyRelative(c_ValueFieldName);
         }
 
+        private AnimFloat m_Height;
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            float height = 0;
             if (property.isExpanded)
             {
                 var paramAtt = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
                 if (paramAtt != null)
                 {
-                    float height = PropertyDrawerHelper.GetPropertyHeight(4) + 3;
+                    height = PropertyDrawerHelper.GetPropertyHeight(4) + 3;
                     if (!paramAtt.DisableReflection)
                     {
                         height += EditorGUIUtility.standardVerticalSpacing + 5;
@@ -78,14 +82,24 @@ namespace Point.Audio.FMODEditor
                     {
                         height += PropertyDrawerHelper.GetPropertyHeight(2);
                     }
-
-                    return height;
                 }
+                else
+                {
+                    height = PropertyDrawerHelper.GetPropertyHeight(5) + 8;
+                }
+            }
+            else height = PropertyDrawerHelper.GetPropertyHeight(1);
 
-                return PropertyDrawerHelper.GetPropertyHeight(5) + 8;
+            if (m_Height == null)
+            {
+                m_Height = new AnimFloat(height);
+            }
+            else
+            {
+                m_Height.target = height;
             }
 
-            return PropertyDrawerHelper.GetPropertyHeight(1);
+            return m_Height.value;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

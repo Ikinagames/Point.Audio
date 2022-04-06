@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Ikina Games
+﻿// Copyright 2022 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    public class FMODWhileStateBehaviour : StateMachineBehaviour
+    public class FMODWhileStateBehaviour : FMODStateBehaviour
     {
         [SerializeField] private AudioReference m_AudioReference;
 
@@ -66,6 +66,10 @@ namespace Point.Audio
             }
         }
         private void OnDisable()
+        {
+            StopAudio();
+        }
+        private void OnDestroy()
         {
             StopAudio();
         }
