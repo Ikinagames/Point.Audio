@@ -22,11 +22,11 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace Point.Audio
+namespace Point.Audio.StateMachine
 {
     public class FMODWhileStateBehaviour : FMODStateBehaviour
     {
-        [SerializeField] private AudioReference m_AudioReference;
+        [SerializeField] private FMODEventReference m_AudioReference;
 
         [Space]
         [SerializeField] private ParamField[] m_OnExitParameters = Array.Empty<ParamField>();

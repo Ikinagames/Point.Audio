@@ -18,6 +18,7 @@
 #endif
 
 using FMOD.Studio;
+using Point.Collections;
 using System;
 
 namespace Point.Audio
@@ -25,10 +26,12 @@ namespace Point.Audio
     /// <summary>
     /// FMOD snapshot
     /// </summary>
-    public readonly struct Snapshot : IDisposable
+    public readonly struct Snapshot : IFMODEvent, IValidation, IDisposable
     {
         private readonly EventDescription m_Description;
         private readonly EventInstance m_Instance;
+
+        public EventDescription EventDescription => m_Description;
 
         internal Snapshot(EventDescription desc)
         {
@@ -42,7 +45,9 @@ namespace Point.Audio
             m_Instance.clearHandle();
         }
 
-        public void Start()
+        public bool IsValid() => m_Description.isValid() && m_Instance.isValid();
+
+        public void Play()
         {
             m_Instance.start();
         }

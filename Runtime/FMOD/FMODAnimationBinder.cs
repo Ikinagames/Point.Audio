@@ -39,7 +39,7 @@ namespace Point.Audio
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
 
         // Parameter 가 많을 경우, 배열을 전체 탐색하기 보다는 Hashing 을 통해 속도 개선을 합니다.
-        private Dictionary<Hash, AudioReference> m_Parsed;
+        private Dictionary<Hash, FMODEventReference> m_Parsed;
 
         /// <summary>
         /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
@@ -48,7 +48,7 @@ namespace Point.Audio
 
         private void Awake()
         {
-            m_Parsed = new Dictionary<Hash, AudioReference>();
+            m_Parsed = new Dictionary<Hash, FMODEventReference>();
 
             if (m_BindReference != null)
             {
@@ -70,7 +70,7 @@ namespace Point.Audio
         {
             Hash hash = new Hash(ev.stringParameter);
 
-            if (!m_Parsed.TryGetValue(hash, out AudioReference animEv)) return;
+            if (!m_Parsed.TryGetValue(hash, out FMODEventReference animEv)) return;
 
             Audio audio = animEv.GetAudio(OnProcessParameter);
 

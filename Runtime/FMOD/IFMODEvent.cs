@@ -1,4 +1,4 @@
-﻿// Copyright 2022 Ikina Games
+﻿// Copyright 2021 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +17,15 @@
 #define DEBUG_MODE
 #endif
 
-using FMODUnity;
-using System;
-using UnityEngine;
+using Point.Collections;
 
 namespace Point.Audio
 {
-    [AddComponentMenu("Point/FMOD/Room Event")]
-    public sealed class FMODRoomEvent : MonoBehaviour
+    public interface IFMODEvent : IValidation
     {
-        [SerializeField] private StudioEventEmitter[] m_Emitters = Array.Empty<StudioEventEmitter>();
-        [SerializeField] private string m_RoomName = string.Empty;
-        
+        FMOD.Studio.EventDescription EventDescription { get; }
 
+        void Play();
+        void Stop();
     }
 }

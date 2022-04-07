@@ -26,7 +26,7 @@ using Point.Collections;
 namespace Point.Audio
 {
     [Serializable]
-    public sealed class AudioReference
+    public sealed class FMODEventReference
     {
         [SerializeField] private EventReference m_Event;
         [FMODParam(false, DisableReflection = true)]
@@ -37,6 +37,20 @@ namespace Point.Audio
         [SerializeField] private bool m_OverrideAttenuation;
         [SerializeField] private float m_OverrideMinDistance = -1, m_OverrideMaxDistance = -1;
 
+        public IFMODEvent GetEvent()
+        {
+            if (m_Event.IsSnapshot()) return GetSnapshot();
+            else if (m_Event.IsEvent()) return GetAudio();
+
+            return null;
+        }
+
+        public Snapshot GetSnapshot()
+        {
+            Snapshot snapshot = new Snapshot(FMODManager.GetEventDescription(m_Event));
+
+            return snapshot;
+        }
         public Audio GetAudio()
         {
             Audio boxed = FMODManager.GetAudio(m_Event);

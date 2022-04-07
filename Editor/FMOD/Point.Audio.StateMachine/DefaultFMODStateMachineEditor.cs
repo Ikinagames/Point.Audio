@@ -15,6 +15,7 @@
 
 using UnityEditor;
 using Point.Collections.Editor;
+using Point.Audio.StateMachine;
 
 namespace Point.Audio.FMODEditor
 {

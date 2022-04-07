@@ -69,12 +69,14 @@ namespace Point.Audio
         public AABB Bounds => new AABB(transform.position, size);
         private bool m_IsEntered = false;
 
+        public event Action OnEntered;
+        public event Action OnExited;
+
         void OnEnable()
         {
             ExecuteTriggerAction(FMODExtensions.IsListenerInsideRoom(this));
             FMODManager.ResonanceAudio.UpdateAudioRoom(this, m_IsEntered);
         }
-
         void OnDisable()
         {
             if (PointApplication.IsShutdown) return;
@@ -89,22 +91,24 @@ namespace Point.Audio
             {
                 for (int i = 0; i < m_OnEnter.Length; i++)
                 {
-                    //m_OnEnter[i].Execute();
                     ExecuteParam(m_OnEnter[i]);
                 }
 
                 m_IsEntered = true;
+                OnEntered?.Invoke();
+
                 return;
             }
             else if (!entered && m_IsEntered)
             {
                 for (int i = 0; i < m_OnExit.Length; i++)
                 {
-                    //m_OnExit[i].Execute();
                     ExecuteParam(m_OnExit[i]);
                 }
 
                 m_IsEntered = false;
+                OnExited?.Invoke();
+
                 return;
             }
         }

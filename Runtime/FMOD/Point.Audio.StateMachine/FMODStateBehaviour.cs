@@ -19,7 +19,7 @@
 
 using UnityEngine;
 
-namespace Point.Audio
+namespace Point.Audio.StateMachine
 {
     public abstract class FMODStateBehaviour : StateMachineBehaviour
     {

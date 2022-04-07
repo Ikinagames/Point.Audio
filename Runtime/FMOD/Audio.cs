@@ -29,7 +29,7 @@ using Unity.Mathematics;
 namespace Point.Audio
 {
     [BurstCompatible]
-    public struct Audio : IValidation
+    public struct Audio : IFMODEvent, IValidation
     {
         internal UnsafeReference<LowLevel.UnsafeAudioHandler> audioHandler;
 
@@ -119,6 +119,7 @@ namespace Point.Audio
             set => overrideMaxDistance = value;
         }
 
+        public FMOD.Studio.EventDescription EventDescription => eventDescription;
         public float3 position
         {
             get

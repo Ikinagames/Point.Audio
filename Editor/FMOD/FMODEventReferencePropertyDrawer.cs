@@ -20,8 +20,8 @@ using UnityEngine;
 
 namespace Point.Audio.FMODEditor
 {
-    [CustomPropertyDrawer(typeof(AudioReference))]
-    public sealed class AudioReferencePropertyDrawer : PropertyDrawer<AudioReference>
+    [CustomPropertyDrawer(typeof(FMODEventReference))]
+    public sealed class FMODEventReferencePropertyDrawer : PropertyDrawer<FMODEventReference>
     {
         private sealed class Helper
         {
@@ -66,7 +66,6 @@ namespace Point.Audio.FMODEditor
             }
 
             if (!property.isExpanded) return;
-            EditorGUI.indentLevel++;
 
             EditorGUI.PropertyField(
                 rect.Pop(EditorGUI.GetPropertyHeight(ev)),

@@ -26,9 +26,9 @@ namespace Point.Audio
     public sealed class FMODAnimationEvent
     {
         [SerializeField] private string m_Name;
-        [SerializeField] private AudioReference m_AudioReference;
+        [SerializeField] private FMODEventReference m_AudioReference;
 
         public string Name => m_Name;
-        public AudioReference AudioReference => m_AudioReference;
+        public FMODEventReference AudioReference => m_AudioReference;
     }
 }

@@ -390,6 +390,10 @@ namespace Point.Audio
 #endif
         }
 
+        public static EventDescription GetEventDescription(FMODUnity.EventReference ev)
+        {
+            return FMODUnity.RuntimeManager.GetEventDescription(ev);
+        }
         public static Snapshot GetSnapshot(in string name)
         {
             var result = StudioSystem.getEvent(SnapshotPrefix + name, out var ev);

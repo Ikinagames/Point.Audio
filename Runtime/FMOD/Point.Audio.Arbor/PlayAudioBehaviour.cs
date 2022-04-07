@@ -16,7 +16,7 @@ namespace Point.Audio.Arbor
     [AddBehaviourMenu("Point/Audio/Play")]
     public sealed class PlayAudioBehaviour : StateBehaviour
     {
-        [SerializeField] private AudioReference m_AudioReference;
+        [SerializeField] private FMODEventReference m_AudioReference;
 
         //[SerializeField] FlexibleField<Audio> m_AudioField;
 

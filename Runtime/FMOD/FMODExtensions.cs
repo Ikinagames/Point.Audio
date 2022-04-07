@@ -123,5 +123,62 @@ namespace Point.Audio
                 arr[i].Execute(ev);
             }
         }
+
+        public static bool IsSnapshot(this IFMODEvent t)
+        {
+#if DEBUG_MODE
+            if (t == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"err.");
+                return false;
+            }
+#endif
+            var result = t.EventDescription.isSnapshot(out bool snapshot);
+            return snapshot;
+        }
+        public static bool IsSnapshot(this FMODUnity.EventReference t)
+        {
+            const string c_Snapshot = "snapshot:/";
+
+            return t.Path.StartsWith(c_Snapshot);
+        }
+        public static bool IsEvent(this FMODUnity.EventReference t)
+        {
+            const string c_Event = "event:/";
+
+            return t.Path.StartsWith(c_Event);
+        }
+
+        public static IFMODEvent[] Play(this FMODEventReference[] t)
+        {
+            IFMODEvent[] array = new IFMODEvent[t.Length];
+            for (int i = 0; i < t.Length; i++)
+            {
+                array[i] = t[i].GetEvent();
+                array[i].Play();
+            }
+
+            return array;
+        }
+        public static void Play(this FMODEventReference[] t, IFMODEvent[] result = null)
+        {
+            if (result == null)
+            {
+                for (int i = 0; i < t.Length; i++)
+                {
+                    t[i].GetEvent().Play();
+                }
+                return;
+            }
+
+            for (int i = 0; i < t.Length && i < result.Length; i++)
+            {
+                IFMODEvent temp = t[i].GetEvent();
+                temp.Play();
+
+                result[i] = temp;
+            }
+        }
     }
 }

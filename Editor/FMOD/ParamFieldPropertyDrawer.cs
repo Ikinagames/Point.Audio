@@ -10,7 +10,7 @@ using UnityEditor.AnimatedValues;
 namespace Point.Audio.FMODEditor
 {
     [CustomPropertyDrawer(typeof(ParamField), true)]
-    public sealed class ParamFieldPropertyDrawer : PropertyDrawer
+    public sealed class ParamFieldPropertyDrawer : PropertyDrawer<ParamField>
     {
         public sealed class Helper
         {
@@ -61,11 +61,9 @@ namespace Point.Audio.FMODEditor
                 => property.FindPropertyRelative(c_ValueFieldName);
         }
 
-        private AnimFloat m_Height;
-
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            float height = 0;
+            float height;
             if (property.isExpanded)
             {
                 var paramAtt = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
@@ -90,19 +88,19 @@ namespace Point.Audio.FMODEditor
             }
             else height = PropertyDrawerHelper.GetPropertyHeight(1);
 
-            if (m_Height == null)
-            {
-                m_Height = new AnimFloat(height);
-            }
-            else
-            {
-                m_Height.target = height;
-            }
+            //if (m_Height == null)
+            //{
+            //    m_Height = new AnimFloat(height);
+            //}
+            //else
+            //{
+            //    m_Height.target = height;
+            //}
 
-            return m_Height.value;
+            return height;
         }
 
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
         {
             bool isInArray = PropertyDrawerHelper.IsPropertyInArray(property);
             if (!isInArray)
@@ -120,121 +118,107 @@ namespace Point.Audio.FMODEditor
                 }
                 else
                 {
-                    float value = property.FindPropertyRelative("m_Value").floatValue;
-                    label = new GUIContent(string.Format(c_NameFormat, valueName, value));
+                    float valueTemp = property.FindPropertyRelative("m_Value").floatValue;
+                    label = new GUIContent(string.Format(c_NameFormat, valueName, valueTemp));
                 }
             }
 
-            PropertyDrawerHelper.DrawBlock(position, Color.black);
-            AutoRect rect = new AutoRect(position);
-
-            using (var change = new EditorGUI.ChangeCheckScope())
-            using (new EditorGUI.PropertyScope(position, null, property))
+            PropertyDrawerHelper.DrawBlock(rect.TotalRect, Color.black);
             {
+                Rect foldRect;
+                if (isInArray)
                 {
-                    Rect foldRect;
-                    if (isInArray)
-                    {
-                        foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
-                    }
-                    else foldRect = rect.Pop();
-                    property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
+                    foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
                 }
-                
-                if (!property.isExpanded)
+                else foldRect = rect.Pop();
+                property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
+            }
+
+            if (!property.isExpanded)
+            {
+                //RepaintInspector(property.serializedObject);
+                return;
+            }
+            rect.Pop(EditorGUIUtility.standardVerticalSpacing);
+            rect.SetLeftPadding(5);
+
+            var isGlobal = Helper.GetIsGlobalField(property);
+            FMODParamAttribute paramSetting = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
+
+            if (paramSetting != null)
+            {
+                if (paramSetting.GlobalParameter && !isGlobal.boolValue)
                 {
-                    return;
+                    isGlobal.boolValue = true;
+                    property.serializedObject.ApplyModifiedProperties();
                 }
+                else if (!paramSetting.GlobalParameter && isGlobal.boolValue)
+                {
+                    isGlobal.boolValue = false;
+                    property.serializedObject.ApplyModifiedProperties();
+                }
+            }
+            else
+            {
+                isGlobal.boolValue
+                    = EditorGUI.ToggleLeft(rect.Pop(), Helper.IsGlobalContent, isGlobal.boolValue);
+
                 rect.Pop(EditorGUIUtility.standardVerticalSpacing);
+                EditorUtilities.Line(rect.Pop(5));
+            }
 
-                EditorGUI.indentLevel++;
+            var name = Helper.GetNameField(property);
+            if (isGlobal.boolValue)
+            {
+                EditorGUI.PropertyField(rect.Pop(), name, Helper.NameContent);
+            }
+            else
+            {
+                name.stringValue
+                    = EditorGUI.TextField(rect.Pop(), Helper.NameContent, name.stringValue);
+            }
 
-                var isGlobal = Helper.GetIsGlobalField(property);
-                FMODParamAttribute paramSetting = fieldInfo.GetCustomAttribute<FMODParamAttribute>();
+            var value = Helper.GetValueField(property);
+            value.floatValue
+                = EditorGUI.FloatField(rect.Pop(), Helper.ValueContent, value.floatValue);
 
-                if (paramSetting != null)
+            var ignoreSeekSpeed = Helper.GetIgnoreSeekSpeedField(property);
+            ignoreSeekSpeed.boolValue
+                = EditorGUI.Toggle(rect.Pop(), Helper.IgnoreSeekSpeedContent, ignoreSeekSpeed.boolValue);
+
+            var enableReflection = Helper.GetEnableReflectionField(property);
+
+            if (paramSetting != null)
+            {
+                if (paramSetting.DisableReflection && enableReflection.boolValue)
                 {
-                    if (paramSetting.GlobalParameter && !isGlobal.boolValue)
-                    {
-                        isGlobal.boolValue = true;
-                        property.serializedObject.ApplyModifiedProperties();
-                    }
-                    else if (!paramSetting.GlobalParameter && isGlobal.boolValue)
-                    {
-                        isGlobal.boolValue = false;
-                        property.serializedObject.ApplyModifiedProperties();
-                    }
-                }
-                else
-                {
-                    isGlobal.boolValue
-                        = EditorGUI.ToggleLeft(rect.Pop(), Helper.IsGlobalContent, isGlobal.boolValue);
-
-                    rect.Pop(EditorGUIUtility.standardVerticalSpacing);
-                    EditorUtilities.Line(rect.Pop(5));
-                }
-                
-                var name = Helper.GetNameField(property);
-                if (isGlobal.boolValue)
-                {
-                    EditorGUI.PropertyField(rect.Pop(), name, Helper.NameContent);
-                }
-                else
-                {
-                    name.stringValue
-                        = EditorGUI.TextField(rect.Pop(), Helper.NameContent, name.stringValue);
-                }
-
-                var value = Helper.GetValueField(property);
-                value.floatValue
-                    = EditorGUI.FloatField(rect.Pop(), Helper.ValueContent, value.floatValue);
-
-                var ignoreSeekSpeed = Helper.GetIgnoreSeekSpeedField(property);
-                ignoreSeekSpeed.boolValue
-                    = EditorGUI.Toggle(rect.Pop(), Helper.IgnoreSeekSpeedContent, ignoreSeekSpeed.boolValue);
-
-                var enableReflection = Helper.GetEnableReflectionField(property);
-
-                if (paramSetting != null)
-                {
-                    if (paramSetting.DisableReflection && enableReflection.boolValue)
-                    {
-                        enableReflection.boolValue = false;
-                        property.serializedObject.ApplyModifiedProperties();
-                    }
-                }
-                
-                if (paramSetting != null && !paramSetting.DisableReflection)
-                {
-                    rect.Pop(EditorGUIUtility.standardVerticalSpacing);
-                    EditorUtilities.Line(rect.Pop(5));
-
-                    enableReflection.boolValue
-                        = EditorGUI.ToggleLeft(rect.Pop(), Helper.EnableValueReflectionContent, enableReflection.boolValue);
-
-                    if (enableReflection.boolValue)
-                    {
-                        EditorGUI.indentLevel++;
-
-                        var refObj = Helper.GetReferenceObjectField(property);
-                        EditorGUI.PropertyField(rect.Pop(), refObj, Helper.ReferenceObjectContent);
-
-                        var fieldname = Helper.GetValueFieldNameField(property);
-                        fieldname.stringValue
-                            = EditorGUI.TextField(rect.Pop(), Helper.ValueFieldNameContent, fieldname.stringValue);
-
-                        EditorGUI.indentLevel--;
-                    }
-                }
-
-                if (change.changed)
-                {
+                    enableReflection.boolValue = false;
                     property.serializedObject.ApplyModifiedProperties();
                 }
             }
 
-            EditorGUI.indentLevel--;
-            //EditorGUI.EndFoldoutHeaderGroup();
+            if (paramSetting != null && !paramSetting.DisableReflection)
+            {
+                rect.Pop(EditorGUIUtility.standardVerticalSpacing);
+                EditorUtilities.Line(rect.Pop(5));
+
+                enableReflection.boolValue
+                    = EditorGUI.ToggleLeft(rect.Pop(), Helper.EnableValueReflectionContent, enableReflection.boolValue);
+
+                if (enableReflection.boolValue)
+                {
+                    //EditorGUI.indentLevel++;
+
+                    var refObj = Helper.GetReferenceObjectField(property);
+                    EditorGUI.PropertyField(rect.Pop(), refObj, Helper.ReferenceObjectContent);
+
+                    var fieldname = Helper.GetValueFieldNameField(property);
+                    fieldname.stringValue
+                        = EditorGUI.TextField(rect.Pop(), Helper.ValueFieldNameContent, fieldname.stringValue);
+
+                    //EditorGUI.indentLevel--;
+                }
+            }
         }
     }
 }
