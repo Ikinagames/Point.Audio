@@ -177,6 +177,7 @@ namespace Point.Audio
             for (int i = 0; i < t.Count && i < result.Length; i++)
             {
                 IFMODEvent temp = t[i].GetEvent();
+                if (temp == null) continue;
                 temp.Play();
 
                 result[i] = temp;

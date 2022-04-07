@@ -50,7 +50,11 @@ namespace Point.Audio.FMODEditor
 
             float height = EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param, true);
 
-            height += PropertyDrawerHelper.GetPropertyHeight(2);
+            height += PropertyDrawerHelper.GetPropertyHeight(1);
+            if (!property.IsInArray())
+            {
+                height += PropertyDrawerHelper.GetPropertyHeight(1);
+            }
 
             //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
             //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
@@ -69,12 +73,11 @@ namespace Point.Audio.FMODEditor
                 else label = new GUIContent(labelName.stringValue);
             }
 
+            if (!property.IsInArray())
             {
-                Rect foldRect = PropertyDrawerHelper.FixedIndentForList(rect.Pop());
-                property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
+                property.isExpanded = EditorGUI.Foldout(rect.Pop(), property.isExpanded, label, true);
+                if (!property.isExpanded) return;
             }
-
-            if (!property.isExpanded) return;
 
             EditorGUI.PropertyField(
                 rect.Pop(EditorGUI.GetPropertyHeight(ev)),

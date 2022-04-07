@@ -39,11 +39,10 @@ namespace Point.Audio
         private void Awake()
         {
             m_AudioRoom = GetComponent<FMODAudioRoom>();
-
-            m_PlayedEvents = new IFMODEvent[m_PlayOnEnter.Length];
         }
         private void OnEnable()
         {
+            m_PlayedEvents = new IFMODEvent[m_PlayOnEnter.Length];
             m_AudioRoom.OnEntered += OnEnteredHandler;
         }
         private void OnDisable()
