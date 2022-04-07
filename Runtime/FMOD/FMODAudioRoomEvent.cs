@@ -29,10 +29,12 @@ namespace Point.Audio
     public sealed class FMODAudioRoomEvent : FMODBehaviour
     {
         [SerializeField]
+        private string m_DebugName = string.Empty;
+        [SerializeField]
         private ArrayWrapper<FMODEventReference> m_PlayOnEnter = Array.Empty<FMODEventReference>();
 
         private FMODAudioRoom m_AudioRoom;
-        private IFMODEvent[] m_PlayedEvents;
+        private IFMODEvent[] m_PlayedEvents = Array.Empty<IFMODEvent>();
 
         #region Monobehaviour Messages
 
@@ -43,11 +45,15 @@ namespace Point.Audio
         private void OnEnable()
         {
             m_PlayedEvents = new IFMODEvent[m_PlayOnEnter.Length];
+
             m_AudioRoom.OnEntered += OnEnteredHandler;
+            m_AudioRoom.OnExited += OnExitedHandler;
         }
+
         private void OnDisable()
         {
             m_AudioRoom.OnEntered -= OnEnteredHandler;
+            m_AudioRoom.OnExited -= OnExitedHandler;
         }
 
         #endregion
@@ -55,6 +61,24 @@ namespace Point.Audio
         private void OnEnteredHandler()
         {
             m_PlayOnEnter.Play(m_PlayedEvents);
+#if DEBUG_MODE
+            PointHelper.Log(Channel.Audio,
+                $"Play events({m_PlayedEvents.Length}) on enter at {(string.IsNullOrEmpty(m_DebugName) ? gameObject.name : m_DebugName)}");
+#endif
+        }
+        private void OnExitedHandler()
+        {
+            for (int i = 0; i < m_PlayedEvents.Length; i++)
+            {
+                if (m_PlayedEvents[i].IsValid())
+                {
+                    m_PlayedEvents[i].Stop();
+                }
+            }
+#if DEBUG_MODE
+            PointHelper.Log(Channel.Audio,
+                $"Stop events({m_PlayedEvents.Length}) on enter at {(string.IsNullOrEmpty(m_DebugName) ? gameObject.name : m_DebugName)}");
+#endif
         }
     }
 }

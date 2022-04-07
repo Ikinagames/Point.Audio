@@ -39,6 +39,18 @@ namespace Point.Audio.FMODEditor
                 => property.FindPropertyRelative(c_Event);
             public static SerializedProperty GetParametersField(SerializedProperty property)
                 => property.FindPropertyRelative(c_Parameters);
+
+            const string c_Snapshot = "snapshot:/", c_Path = "Path";
+
+            public static bool IsEventEmpty(SerializedProperty property)
+            {
+                return string.IsNullOrEmpty(GetEventField(property).FindPropertyRelative(c_Path).stringValue);
+            }
+            public static bool IsSnapshot(SerializedProperty property)
+            {
+                string path = GetEventField(property).FindPropertyRelative(c_Path).stringValue;
+                return path.StartsWith(c_Snapshot);
+            }
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -46,11 +58,18 @@ namespace Point.Audio.FMODEditor
             if (!property.isExpanded) return PropertyDrawerHelper.GetPropertyHeight(1);
 
             var ev = Helper.GetEventField(property);
-            var param = Helper.GetParametersField(property);
 
-            float height = EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param, true);
-
+            float height = EditorGUI.GetPropertyHeight(ev);
             height += PropertyDrawerHelper.GetPropertyHeight(1);
+
+            if (Helper.IsEventEmpty(property)) return height;
+
+            if (!Helper.IsSnapshot(property))
+            {
+                var param = Helper.GetParametersField(property);
+                height += EditorGUI.GetPropertyHeight(param, true);
+            }
+
             if (!property.IsInArray())
             {
                 height += PropertyDrawerHelper.GetPropertyHeight(1);
@@ -83,10 +102,15 @@ namespace Point.Audio.FMODEditor
                 rect.Pop(EditorGUI.GetPropertyHeight(ev)),
                 ev, Helper.EventContent, true);
 
-            var param = Helper.GetParametersField(property);
-            EditorGUI.PropertyField(
-                rect.Pop(EditorGUI.GetPropertyHeight(param)),
-                param, Helper.ParametersContent, true);
+            if (Helper.IsEventEmpty(property)) return;
+
+            if (!Helper.IsSnapshot(property))
+            {
+                var param = Helper.GetParametersField(property);
+                EditorGUI.PropertyField(
+                    rect.Pop(EditorGUI.GetPropertyHeight(param)),
+                    param, Helper.ParametersContent, true);
+            }
         }
     }
 }
