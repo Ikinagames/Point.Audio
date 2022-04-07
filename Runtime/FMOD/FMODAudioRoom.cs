@@ -26,7 +26,7 @@ namespace Point.Audio
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("Point/FMOD/Audio Room")]
-    public sealed class FMODAudioRoom : MonoBehaviour
+    public sealed class FMODAudioRoom : FMODBehaviour
     {
         /// Room surface material in negative x direction.
         public SurfaceMaterial leftWall = SurfaceMaterial.ConcreteBlockCoarse;

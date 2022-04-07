@@ -18,6 +18,8 @@
 #endif
 
 using Point.Collections;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Burst.CompilerServices;
 using UnityEngine;
@@ -150,10 +152,10 @@ namespace Point.Audio
             return t.Path.StartsWith(c_Event);
         }
 
-        public static IFMODEvent[] Play(this FMODEventReference[] t)
+        public static IFMODEvent[] Play(this IList<FMODEventReference> t)
         {
-            IFMODEvent[] array = new IFMODEvent[t.Length];
-            for (int i = 0; i < t.Length; i++)
+            IFMODEvent[] array = new IFMODEvent[t.Count];
+            for (int i = 0; i < t.Count; i++)
             {
                 array[i] = t[i].GetEvent();
                 array[i].Play();
@@ -161,18 +163,18 @@ namespace Point.Audio
 
             return array;
         }
-        public static void Play(this FMODEventReference[] t, IFMODEvent[] result = null)
+        public static void Play(this IList<FMODEventReference> t, IFMODEvent[] result)
         {
             if (result == null)
             {
-                for (int i = 0; i < t.Length; i++)
+                for (int i = 0; i < t.Count; i++)
                 {
                     t[i].GetEvent().Play();
                 }
                 return;
             }
 
-            for (int i = 0; i < t.Length && i < result.Length; i++)
+            for (int i = 0; i < t.Count && i < result.Length; i++)
             {
                 IFMODEvent temp = t[i].GetEvent();
                 temp.Play();

@@ -48,7 +48,16 @@ namespace Point.Audio.FMODEditor
             var ev = Helper.GetEventField(property);
             var param = Helper.GetParametersField(property);
 
-            return EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param, true) + PropertyDrawerHelper.GetPropertyHeight(1);
+            float height = EditorGUI.GetPropertyHeight(ev) + EditorGUI.GetPropertyHeight(param, true);
+
+            height += PropertyDrawerHelper.GetPropertyHeight(2);
+
+            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
+            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
+            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
+            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
+
+            return height;
         }
 
         protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)

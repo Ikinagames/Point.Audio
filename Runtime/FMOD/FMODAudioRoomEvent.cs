@@ -18,6 +18,7 @@
 #endif
 
 using FMODUnity;
+using Point.Collections;
 using System;
 using UnityEngine;
 
@@ -25,10 +26,10 @@ namespace Point.Audio
 {
     [AddComponentMenu("Point/FMOD/Audio Room Event")]
     [RequireComponent(typeof(FMODAudioRoom))]
-    public sealed class FMODAudioRoomEvent : MonoBehaviour
+    public sealed class FMODAudioRoomEvent : FMODBehaviour
     {
         [SerializeField]
-        private FMODEventReference[] m_PlayOnEnter = Array.Empty<FMODEventReference>();
+        private ArrayWrapper<FMODEventReference> m_PlayOnEnter = Array.Empty<FMODEventReference>();
 
         private FMODAudioRoom m_AudioRoom;
         private IFMODEvent[] m_PlayedEvents;
