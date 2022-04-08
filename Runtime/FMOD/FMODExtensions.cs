@@ -157,11 +157,25 @@ namespace Point.Audio
         }
         public static bool IsSnapshot(this FMODUnity.EventReference t)
         {
+#if UNITY_EDITOR
             return t.Path.StartsWith(FMODManager.SnapshotPrefix);
+#else
+            var desc = FMODUnity.RuntimeManager.GetEventDescription(t.Guid);
+            desc.isSnapshot(out bool isSnapshot);
+
+            return isSnapshot;
+#endif
         }
         public static bool IsEvent(this FMODUnity.EventReference t)
         {
+#if UNITY_EDITOR
             return t.Path.StartsWith(FMODManager.EventPrefix);
+#else
+            var desc = FMODUnity.RuntimeManager.GetEventDescription(t.Guid);
+            desc.isSnapshot(out bool isSnapshot);
+
+            return !isSnapshot;
+#endif
         }
 
         public static IFMODEvent[] Play(this IList<FMODEventReference> t)
