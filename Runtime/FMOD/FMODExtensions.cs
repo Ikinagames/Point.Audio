@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -81,6 +82,7 @@ namespace Point.Audio
         }
 
         public static bool IsFMODEnum<TEnum>()
+            where TEnum : struct, IConvertible
         {
             if (!TypeHelper.TypeOf<TEnum>.Type.IsEnum)
             {
@@ -93,15 +95,29 @@ namespace Point.Audio
 
             return true;
         }
+        private static readonly Dictionary<Type, string> s_ParsedFMODEnumNames = new Dictionary<Type, string>();
         public static string ConvertToName<TEnum>()
+            where TEnum : struct, IConvertible
         {
-            var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
-            return att.ConvertToName();
-        }
-        public static string ConvertToName<TEnumAttribute>(this TEnumAttribute att)
-            where TEnumAttribute : FMODEnumAttribute
-        {
-            return string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnumAttribute>.Name : att.Name;
+#if DEBUG_MODE
+            if (!IsFMODEnum<TEnum>())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"");
+                Debug.Break();
+
+                return null;
+            }
+#endif
+            if (!s_ParsedFMODEnumNames.TryGetValue(TypeHelper.TypeOf<TEnum>.Type, out string name))
+            {
+                var att = TypeHelper.TypeOf<TEnum>.Type.GetCustomAttribute<FMODEnumAttribute>();
+                name = string.IsNullOrEmpty(att.Name) ? TypeHelper.TypeOf<TEnum>.Name : att.Name;
+
+                s_ParsedFMODEnumNames.Add(TypeHelper.TypeOf<TEnum>.Type, name);
+            }
+
+            return name;
         }
 
         public static FMOD.RESULT SetWeight(this FMODUnity.StudioListener t, [AssumeRange(0, 1)] in float value)
