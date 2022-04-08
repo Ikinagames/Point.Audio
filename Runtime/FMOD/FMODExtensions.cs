@@ -141,15 +141,11 @@ namespace Point.Audio
         }
         public static bool IsSnapshot(this FMODUnity.EventReference t)
         {
-            const string c_Snapshot = "snapshot:/";
-
-            return t.Path.StartsWith(c_Snapshot);
+            return t.Path.StartsWith(FMODManager.SnapshotPrefix);
         }
         public static bool IsEvent(this FMODUnity.EventReference t)
         {
-            const string c_Event = "event:/";
-
-            return t.Path.StartsWith(c_Event);
+            return t.Path.StartsWith(FMODManager.EventPrefix);
         }
 
         public static IFMODEvent[] Play(this IList<FMODEventReference> t)

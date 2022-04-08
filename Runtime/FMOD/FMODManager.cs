@@ -32,6 +32,7 @@ using Point.Collections.Buffer.LowLevel;
 using System;
 using System.Reflection;
 using Point.Collections.Buffer;
+using Sirenix.Utilities;
 
 namespace Point.Audio
 {
@@ -46,11 +47,15 @@ namespace Point.Audio
         internal static ResonanceAudioHelper ResonanceAudio => Instance.m_ResonanceAudioHelper;
 
         public const string
+            EventPrefix = "event:/",
             BusPrefix = "bus:/",
             SnapshotPrefix = "snapshot:/";
 
         private ResonanceAudioHelper m_ResonanceAudioHelper;
+        
         private IUserPropertyProcessor[] m_GlobalPropertyProcesors = Array.Empty<IUserPropertyProcessor>();
+        private GlobalParameterLinker[] m_GlobalParameterLinkers = Array.Empty<GlobalParameterLinker>();
+
         private AtomicSafeBoolen m_IsFocusing;
 
         private ObjectPool<FMODUnity.StudioListener> m_ListenerPool;
@@ -136,7 +141,7 @@ namespace Point.Audio
         private void RegisterUserPropertyProcessors()
         {
             List<IUserPropertyProcessor> global = new List<IUserPropertyProcessor>();
-            foreach (var item in TypeHelper.GetTypesIter(t => TypeHelper.TypeOf<IUserPropertyProcessor>.Type.IsAssignableFrom(t)))
+            foreach (var item in TypeHelper.GetTypesIter(t => !t.IsAbstract && !t.IsInterface && TypeHelper.TypeOf<IUserPropertyProcessor>.Type.IsAssignableFrom(t)))
             {
                 global.Add((IUserPropertyProcessor)Activator.CreateInstance(item));
 
@@ -147,6 +152,29 @@ namespace Point.Audio
             }
 
             m_GlobalPropertyProcesors = global.ToArray();
+        }
+        private void RegisterGlobalParameterProcessors()
+        {
+            List<GlobalParameterLinker> linkers = new List<GlobalParameterLinker>();
+
+            foreach (var item in TypeHelper.GetTypesIter(t => !t.IsAbstract && !t.IsInterface && TypeHelper.InheritsFrom<IGlobalParameterProcessor>(t)))
+            {
+                //Type[] interfaces = TypeHelper.GetInterfacesWithOpenGenericInterface<IGlobalParameterProcessor>(item);
+
+                //foreach (var interfaceType in interfaces)
+                //{
+                //    interfaceType
+                //}
+                IGlobalParameterProcessor processor 
+                    = (IGlobalParameterProcessor)Activator.CreateInstance(item);
+
+                if (processor is IGlobalParameterUpdate updater)
+                {
+                    linkers.Add(new GlobalParameterUpdateLinker(updater));
+                }
+            }
+
+            m_GlobalParameterLinkers = linkers.ToArray();
         }
 
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
@@ -202,10 +230,20 @@ namespace Point.Audio
 
             //PauseAllEvents(UnityEditor.EditorUtility.audioMasterMute);
 #endif
+            for (int i = 0; i < m_GlobalParameterLinkers.Length; i++)
+            {
+                m_GlobalParameterLinkers[i].Update();
+            }
+
+
+            #region Jobs
+
             m_GlobalJobHandle.Complete();
 
             JobHandle handlerJob = m_Handlers.ScheduleUpdate();
             m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, handlerJob);
+
+            #endregion
         }
 
         private void OnApplicationFocus(bool focus)
@@ -642,7 +680,9 @@ namespace Point.Audio
         {
             ResonanceAudio.SetRoomTarget(tr);
         }
-        
+
+        #region Inner Classes
+
         public sealed class ResonanceAudioHelper : IDisposable
         {
             public const float
@@ -836,17 +876,54 @@ namespace Point.Audio
                 m_TempRoomBuffer.Dispose();
             }
         }
+
+        private abstract class GlobalParameterLinker
+        {
+            public abstract void Update();
+        }
+        private sealed class GlobalParameterUpdateLinker : GlobalParameterLinker
+        {
+            private IGlobalParameterUpdate m_Updater;
+            private ParamReference m_Parameter;
+
+            public GlobalParameterUpdateLinker(IGlobalParameterUpdate t)
+            {
+                m_Updater = t;
+                m_Parameter = GetGlobalParameter(t.Name);
+            }
+
+            public override void Update()
+            {
+                if (!m_Updater.Enable) return;
+
+                m_Parameter.value = m_Updater.Update();
+                SetGlobalParameter(m_Parameter);
+            }
+        }
+
+        #endregion
     }
 
-    //internal sealed class DefaultUserPropertyProcessor : IUserPropertyProcessor
+    public interface IGlobalParameterProcessor
+    {
+        
+    }
+    public interface IGlobalParameterUpdate : IGlobalParameterProcessor
+    {
+        string Name { get; }
+        bool Enable { get; }
+        float Update();
+    }
+    //struct DefaultParameterProcessor : IGlobalParameterUpdate
     //{
-    //    public void OnProcess(ref Audio audio, in USER_PROPERTY property)
-    //    {
-    //        string name = property.name;
-    //        if (name.StartsWith("p_"))
-    //        {
+    //    private readonly FixedString512Bytes m_Name;
 
-    //        }
+    //    bool IGlobalParameterUpdate.EnableUpdate => true;
+    //    string IGlobalParameterName.Name => m_Name.ToString();
+
+    //    public float Update()
+    //    {
+    //        throw new NotImplementedException();
     //    }
     //}
 }
