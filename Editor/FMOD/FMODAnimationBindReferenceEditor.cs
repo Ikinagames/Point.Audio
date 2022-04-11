@@ -89,7 +89,7 @@ namespace Point.Audio.FMODEditor
             SerializedProperty minDis = GetSerializedProperty(element, "m_OverrideMinDistance");
             SerializedProperty maxDis = GetSerializedProperty(element, "m_OverrideMaxDistance");
 
-            EditorUtilities.MinMaxSlider(autoRect.Pop(), "Override Distance", minDis, maxDis, 1, 300);
+            CoreGUI.MinMaxSlider(autoRect.Pop(), "Override Distance", minDis, maxDis, 1, 300);
 
             SerializedProperty parameters = GetSerializedProperty(element, "m_Parameters");
             EditorGUI.PropertyField(autoRect.Pop(), parameters);
