@@ -61,7 +61,7 @@ namespace Point.Audio.FMODEditor
                 => property.FindPropertyRelative(c_ValueFieldName);
         }
 
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        protected override float PropertyHeight(SerializedProperty property, GUIContent label)
         {
             float height;
             if (property.isExpanded)
