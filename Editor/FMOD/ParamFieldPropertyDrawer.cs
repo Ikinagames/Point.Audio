@@ -123,7 +123,7 @@ namespace Point.Audio.FMODEditor
                 }
             }
 
-            PropertyDrawerHelper.DrawBlock(rect.TotalRect, Color.black);
+            PropertyDrawerHelper.DrawBlock(EditorGUI.IndentedRect(rect.TotalRect), Color.black);
             {
                 Rect foldRect;
                 if (isInArray)

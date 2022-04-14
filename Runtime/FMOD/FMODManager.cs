@@ -240,7 +240,7 @@ namespace Point.Audio
 
             m_GlobalJobHandle.Complete();
 
-            JobHandle handlerJob = m_Handlers.ScheduleUpdate();
+            JobHandle handlerJob = m_Handlers.Data.ScheduleUpdate();
             m_GlobalJobHandle = JobHandle.CombineDependencies(m_GlobalJobHandle, handlerJob);
 
             #endregion
@@ -501,7 +501,7 @@ namespace Point.Audio
                 throw new System.Exception();
             }
 #endif
-            Audio audio = new Audio(ev);
+            Audio audio = new Audio(Instance.m_Handlers, ev);
 
             return audio;
         }
@@ -531,7 +531,7 @@ namespace Point.Audio
                 throw new System.Exception();
             }
 #endif
-            Audio audio = new Audio(ev);
+            Audio audio = new Audio(Instance.m_Handlers, ev);
 
             return audio;
         }
@@ -571,7 +571,6 @@ namespace Point.Audio
         public static void CreateInstance(ref Audio audio)
         {
             PointHelper.AssertMainThread();
-
 #if DEBUG_MODE
             if (!audio.IsValidID())
             {
@@ -582,12 +581,15 @@ namespace Point.Audio
                 return;
             }
 #endif
+            UnsafeReference<UnsafeAudioHandler> handler = Instance.m_Handlers.Data.GetUnusedHandler();
+            handler.Value.instanceHash = audio.hash;
+            handler.Value.translation = audio._translation;
+            handler.Value.rotation = audio._rotation;
+            handler.Value.generation = unchecked(handler.Value.generation + 1);
 
-            unsafe
-            {
-                UnsafeAudioHandler* handler = Instance.m_Handlers.Insert(ref audio);
-                handler->CreateInstance(ref audio);
-            }
+            audio.SetAudioHandler(handler);
+
+            handler.Value.CreateInstance(ref audio);
         }
         public struct FindInstanceEnumerator : IEnumerable<EventInstance>
         {
@@ -609,7 +611,7 @@ namespace Point.Audio
         }
         public static FindInstanceEnumerator FindEventInstancesOf(EventDescription description)
         {
-            return new FindInstanceEnumerator(Instance.m_Handlers.FindEventInstancesOf(description));
+            return new FindInstanceEnumerator(Instance.m_Handlers.Data.FindEventInstancesOf(description));
         }
 
         private void ProcessUserProperty(ref Audio audio)

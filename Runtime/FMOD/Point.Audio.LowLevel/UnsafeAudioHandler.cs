@@ -106,13 +106,13 @@ namespace Point.Audio.LowLevel
                     audio.parameters[i].description.id,
                     audio.parameters[i].value,
                     audio.parameters[i].ignoreSeekSpeed);
-
+#if DEBUG_MODE
                 if (result != FMOD.RESULT.OK)
                 {
                     PointHelper.LogError(Channel.Audio,
                         $"Parameter({(string)audio.parameters[i].description.name}) set failed with {result}");
                 }
-
+#endif
                 //paramsString += audio.parameters[i].ToString() + " ";
             }
 

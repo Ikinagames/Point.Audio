@@ -17,6 +17,7 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Audio.LowLevel;
 using Point.Collections;
 using Point.Collections.Buffer.LowLevel;
 using System;
@@ -31,11 +32,33 @@ namespace Point.Audio
     [BurstCompatible]
     public struct Audio : IFMODEvent, IValidation
     {
-        internal UnsafeReference<LowLevel.UnsafeAudioHandler> audioHandler;
+        private readonly UnsafeAudioHandlerContainer audioHandlerBuffer;
+        private Hash audioHandlerHash;
+        internal UnsafeReference<UnsafeAudioHandler> audioHandler
+        {
+            get
+            {
+                if (audioHandlerHash.IsEmpty())
+                {
+                    return default(UnsafeReference<UnsafeAudioHandler>);
+                }
+                UnsafeReference<UnsafeAudioHandler> handler 
+                    = audioHandlerBuffer.Data.GetAudioHandler(audioHandlerHash);
+#if DEBUG_MODE
+                if (!handler.Value.hash.Equals(audioHandlerHash))
+                {
+                    PointHelper.LogError(Channel.Audio,
+                        $"Assertion faild. Handler is not same. {handler.Value.hash.Value} != {audioHandlerHash.Value}");
+                }
+#endif
+                return handler;
+            }
+        }
+
 
         internal FMOD.Studio.EventDescription eventDescription;
         internal FixedList4096Bytes<ParamReference> parameters;
-        internal Hash hash;
+        internal readonly Hash hash;
 
         private bool allowFadeout;
         private bool overrideAttenuation;
@@ -154,7 +177,7 @@ namespace Point.Audio
         {
             set
             {
-                if (!IsValid())
+                if (!IsValid(true))
                 {
                     PointHelper.LogError(Channel.Audio,
                         $"This audio is invalid. " +
@@ -203,9 +226,10 @@ namespace Point.Audio
         #region Constructors
 
         [BurstCompatible]
-        internal unsafe Audio(FMOD.Studio.EventDescription desc)
+        internal unsafe Audio(UnsafeAudioHandlerContainer handlerBuffer, FMOD.Studio.EventDescription desc)
         {
-            audioHandler = default(UnsafeReference<LowLevel.UnsafeAudioHandler>);
+            audioHandlerBuffer = handlerBuffer;
+            audioHandlerHash = Hash.Empty;
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
@@ -232,16 +256,15 @@ namespace Point.Audio
 
         internal unsafe void SetEvent(in FMOD.Studio.EventDescription desc)
         {
-            if (!audioHandler.IsCreated)
+            if (!audioHandlerHash.IsEmpty())
             {
                 throw new Exception();
             }
 
-            audioHandler = default(UnsafeReference<LowLevel.UnsafeAudioHandler>);
+            audioHandlerHash = Hash.Empty;
 
             eventDescription = desc;
             parameters = new FixedList4096Bytes<ParamReference>();
-            hash = Hash.NewHash();
         }
 
         #endregion
@@ -433,22 +456,43 @@ namespace Point.Audio
         /// </summary>
         /// <returns></returns>
         public bool IsValidID() => eventDescription.isValid();
+        public bool IsValid() => IsValid(false);
         /// <summary>
         /// 이 오디오가 유효한 ID를 가지고있고, 핸들러에 의해 관리되고 있는지 반환합니다.
         /// </summary>
         /// <returns></returns>
-        public bool IsValid()
+        public bool IsValid(bool log)
         {
             unsafe
             {
-                if (!eventDescription.isValid()) return false;
-                else if (!audioHandler.IsCreated) return false;
+                if (!eventDescription.isValid())
+                {
+                    if (log) "desc not valid".ToLog();
+                    return false;
+                }
+                else if (!audioHandler.IsCreated)
+                {
+                    if (log) "handler is not valid".ToLog();
+                    return false;
+                }
 
-                //var targetHash = audioHandler.Value.instanceHash;
-                return audioHandler.Value.ValidateAudio(in this);
-                //return
-                //    hash.Equals(targetHash);
+                bool result = audioHandler.Value.ValidateAudio(in this);
+                if (!result && log)
+                {
+                    $"not valid handler {audioHandler.Value.instanceHash.Value} != {hash.Value}".ToLog();
+                    $"{audioHandler.Value.hash.Value} :: {audioHandlerHash.Value}".ToLog();
+                }
+                return result;
             }
+        }
+
+        #endregion
+
+        #region Internal
+
+        internal void SetAudioHandler(UnsafeReference<UnsafeAudioHandler> handler)
+        {
+            audioHandlerHash = handler.Value.hash;
         }
 
         #endregion

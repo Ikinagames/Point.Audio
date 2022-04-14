@@ -29,7 +29,7 @@ namespace Point.Audio.StateMachine
         [SerializeField] private FMODEventReference m_AudioReference;
 
         [Space]
-        [SerializeField] private ParamField[] m_OnExitParameters = Array.Empty<ParamField>();
+        [SerializeField] private ArrayWrapper<ParamField> m_OnExitParameters = Array.Empty<ParamField>();
         [SerializeField] private bool m_StopAudioOnExit = false;
 
         [NonSerialized] private Audio m_Audio;
@@ -49,6 +49,11 @@ namespace Point.Audio.StateMachine
             }
 
             m_Audio.Play();
+#if DEBUG_MODE
+            m_Audio.EventDescription.getPath(out var path);
+            PointHelper.Log(Channel.Audio,
+                $"Playing audio({path} :: {m_Audio.hash.Value}:: {m_Audio.audioHandler.Value.instanceHash.Value})");
+#endif
 
             if (is3D) m_Audio.bindTransform = animator.transform;
         }
@@ -75,9 +80,18 @@ namespace Point.Audio.StateMachine
         }
         private void StopAudio()
         {
-            if (!m_Audio.IsValid()) return;
+            if (!m_Audio.IsValid(true))
+            {
+                "not valid retn".ToLog();
+                return;
+            }
 
             m_Audio.Stop();
+#if DEBUG_MODE
+            m_Audio.EventDescription.getPath(out var path);
+            PointHelper.Log(Channel.Audio,
+                $"Stop audio({path})");
+#endif
         }
 
         protected ParamReference GetParamReference<TEnum>()
@@ -87,7 +101,7 @@ namespace Point.Audio.StateMachine
             if (!FMODExtensions.IsFMODEnum<TEnum>())
             {
                 PointHelper.LogError(Channel.Audio,
-                    $"");
+                    $"Enum({TypeHelper.TypeOf<TEnum>.ToString()}) is not fmod enum which has {nameof(FMODEnumAttribute)}.");
 
                 return default(ParamReference);
             }
