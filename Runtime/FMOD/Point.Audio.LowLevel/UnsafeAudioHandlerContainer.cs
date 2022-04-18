@@ -36,13 +36,14 @@ namespace Point.Audio.LowLevel
         #region Inner Classes
 
         [BurstCompatible]
-        internal unsafe struct Buffer : IDisposable
+        internal unsafe struct Buffer : IValidation, IDisposable
         {
             [NativeDisableUnsafePtrRestriction]
             private UnsafeAllocator<UnsafeAudioHandler> m_Buffer;
             private UnsafeHashMap<Hash, int> m_HandlerHashMap;
 
             private JobHandle m_JobHandle;
+            private bool m_Disposed;
 
             public Buffer(int length)
             {
@@ -55,10 +56,25 @@ namespace Point.Audio.LowLevel
                 }
 
                 m_JobHandle = default(JobHandle);
+                m_Disposed = false;
+            }
+            public bool IsValid() => !m_Disposed;
+            private bool LogMessageIfNotValid()
+            {
+                if (IsValid()) return true;
+
+                PointHelper.LogError(Channel.Audio,
+                        $"You are accessing {nameof(UnsafeAudioHandlerContainer)} that already disposed. This is not allowed.");
+                return false;
             }
 
             public UnsafeReference<UnsafeAudioHandler> GetAudioHandler(Hash hash)
             {
+                if (!LogMessageIfNotValid())
+                {
+                    return default(UnsafeReference<UnsafeAudioHandler>);
+                }
+                
                 var temp = m_Buffer.ElementAt(m_HandlerHashMap[hash]);
                 if (!temp.Value.hash.Equals(hash))
                 {
@@ -75,9 +91,13 @@ namespace Point.Audio.LowLevel
 
                 return temp;
             }
-
             public UnsafeReference<UnsafeAudioHandler> GetUnusedHandler()
             {
+                if (!LogMessageIfNotValid())
+                {
+                    return default(UnsafeReference<UnsafeAudioHandler>);
+                }
+
                 int index = GetUnusedHandlerIndex();
 
                 return m_Buffer.ElementAt(index);
@@ -121,6 +141,11 @@ namespace Point.Audio.LowLevel
             /// <returns></returns>
             public FindEventEnumerator FindEventInstancesOf(FMOD.Studio.EventDescription desc)
             {
+                if (!LogMessageIfNotValid())
+                {
+                    return default(FindEventEnumerator);
+                }
+
                 return new FindEventEnumerator(m_Buffer, desc);
             }
 
@@ -130,6 +155,8 @@ namespace Point.Audio.LowLevel
 
                 m_Buffer.Dispose();
                 m_HandlerHashMap.Dispose();
+
+                m_Disposed = true;
             }
 
             #region Jobs
@@ -143,6 +170,11 @@ namespace Point.Audio.LowLevel
             public void CompleteAllJobs() => m_JobHandle.Complete();
             public JobHandle ScheduleUpdate()
             {
+                if (!LogMessageIfNotValid())
+                {
+                    return default(JobHandle);
+                }
+
                 CompleteAllJobs();
 
                 TranslationUpdateJob trJob = new TranslationUpdateJob

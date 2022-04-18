@@ -44,6 +44,12 @@ namespace Point.Audio
                 }
                 UnsafeReference<UnsafeAudioHandler> handler 
                     = audioHandlerBuffer.Data.GetAudioHandler(audioHandlerHash);
+                if (!handler.IsCreated)
+                {
+                    PointHelper.LogError(Channel.Audio,
+                        $"Cannot retrieve {nameof(UnsafeAudioHandler)}.");
+                    return handler;
+                }
 #if DEBUG_MODE
                 if (!handler.Value.hash.Equals(audioHandlerHash))
                 {
@@ -465,7 +471,11 @@ namespace Point.Audio
         {
             unsafe
             {
-                if (!eventDescription.isValid())
+                if (PointApplication.IsShutdown)
+                {
+                    return false;
+                }
+                else if (!eventDescription.isValid())
                 {
                     if (log) "desc not valid".ToLog();
                     return false;
