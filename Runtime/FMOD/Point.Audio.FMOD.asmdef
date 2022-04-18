@@ -1,6 +1,6 @@
 {
     "name": "Point.Audio.FMOD",
-    "rootNamespace": "Point.Audio.FMOD",
+    "rootNamespace": "Point.Audio",
     "references": [
         "FMODUnity",
         "Point.Collections",

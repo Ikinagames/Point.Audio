@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using log4net.Filter;
 using Point.Collections.Editor;
 using UnityEditor;
 using UnityEditorInternal;
@@ -53,64 +54,23 @@ namespace Point.Audio.FMODEditor
             }
         }
 
-        protected override float PropertyHeight(SerializedProperty property, GUIContent label)
-        {
-            if (!property.isExpanded) return PropertyDrawerHelper.GetPropertyHeight(1);
-
-            var ev = Helper.GetEventField(property);
-
-            float height = EditorGUI.GetPropertyHeight(ev);
-            height += PropertyDrawerHelper.GetPropertyHeight(1);
-
-            if (Helper.IsEventEmpty(property)) return height;
-
-            if (!Helper.IsSnapshot(property))
-            {
-                var param = Helper.GetParametersField(property);
-                height += EditorGUI.GetPropertyHeight(param, true);
-            }
-
-            if (!property.IsInArray())
-            {
-                height += PropertyDrawerHelper.GetPropertyHeight(1);
-            }
-
-            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
-            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none);
-            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
-            //height += EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
-
-            return height;
-        }
-
         protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
         {
-            var ev = Helper.GetEventField(property);
-            {
-                var labelName = ev.FindPropertyRelative("Path");
-                if (string.IsNullOrEmpty(labelName.stringValue)) label = new GUIContent(property.displayName);
-                else label = new GUIContent(labelName.stringValue);
-            }
+            Rect block = rect.TotalRect;
+            block.x = rect.Current.x;
+            block.height = rect.Current.height;
+            CoreGUI.DrawBlock(EditorGUI.IndentedRect(block), Color.black);
 
-            if (!property.IsInArray())
-            {
-                property.isExpanded = EditorGUI.Foldout(rect.Pop(), property.isExpanded, label, true);
-                if (!property.isExpanded) return;
-            }
+            property.isExpanded = LabelToggle(ref rect, property.isExpanded, label, 15, TextAnchor.MiddleLeft);
 
-            EditorGUI.PropertyField(
-                rect.Pop(EditorGUI.GetPropertyHeight(ev)),
-                ev, Helper.EventContent, true);
+            if (!property.isExpanded) return;
 
-            if (Helper.IsEventEmpty(property)) return;
+            var parameterProp = Helper.GetParametersField(property);
 
-            if (!Helper.IsSnapshot(property))
-            {
-                var param = Helper.GetParametersField(property);
-                EditorGUI.PropertyField(
-                    rect.Pop(EditorGUI.GetPropertyHeight(param)),
-                    param, Helper.ParametersContent, true);
-            }
+            EditorGUI.indentLevel++;
+            PropertyField(ref rect, Helper.GetEventField(property));
+            PropertyField(ref rect, parameterProp, parameterProp.isExpanded);
+            EditorGUI.indentLevel--;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Ikina Games
+﻿// Copyright 2022 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,21 +17,13 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections.Graphs;
 using System;
-using UnityEngine;
 
 namespace Point.Audio
 {
     [Serializable]
-    public sealed class FMODAnimationEvent
+    public abstract class FMODVisualGraph : PointVisualGraph
     {
-        [SerializeField] private string m_Name;
-        [SerializeField] private FMODEventReference m_AudioReference;
-
-        //[Space]
-        //[SerializeField] private 
-
-        public string Name => m_Name;
-        public FMODEventReference AudioReference => m_AudioReference;
     }
 }
