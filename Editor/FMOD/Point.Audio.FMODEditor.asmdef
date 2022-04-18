@@ -6,7 +6,9 @@
         "Point.Collections",
         "Point.Collections.Editor",
         "Unity.Collections",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "com.alelievr.NodeGraphProcessor.Runtime",
+        "com.alelievr.NodeGraphProcessor.Editor"
     ],
     "includePlatforms": [
         "Editor"

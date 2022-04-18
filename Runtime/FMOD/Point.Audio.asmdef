@@ -9,7 +9,8 @@
         "Unity.Burst",
         "Unity.Addressables",
         "Arbor",
-        "Arbor.Core"
+        "Arbor.Core",
+        "com.alelievr.NodeGraphProcessor.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
