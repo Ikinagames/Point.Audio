@@ -34,6 +34,8 @@ namespace Point.Audio
         {
             for (int i = 0; i < m_Events.Length; i++)
             {
+                m_Events[i].Initialize();
+
                 hashMap.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }

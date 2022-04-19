@@ -33,8 +33,18 @@ namespace Point.Audio
         [Space]
         [SerializeField] private VisualLogicGraph m_VisualGraph;
 
+        [NonSerialized] internal VisualGraphLogicProcessor m_Processor = null;
+
         public string Name => m_Name;
         public FMODEventReference AudioReference => m_AudioReference;
         public VisualLogicGraph VisualGraph => m_VisualGraph;
+
+        public void Initialize()
+        {
+            if (m_VisualGraph != null)
+            {
+                m_Processor = new VisualGraphLogicProcessor(m_VisualGraph);
+            }
+        }
     }
 }

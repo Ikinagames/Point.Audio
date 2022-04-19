@@ -44,7 +44,8 @@ namespace Point.Audio
 
         // Parameter 가 많을 경우, 배열을 전체 탐색하기 보다는 Hashing 을 통해 속도 개선을 합니다.
         private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
-        private VisualLogicGraph m_LogicGraph;
+        
+        private Audio m_CurrentAudio;
 
         /// <summary>
         /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
@@ -62,6 +63,8 @@ namespace Point.Audio
             
             for (int i = 0; i < m_Events.Length; i++)
             {
+                m_Events[i].Initialize();
+
                 m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }
@@ -77,19 +80,21 @@ namespace Point.Audio
 
             if (!m_Parsed.TryGetValue(hash, out FMODAnimationEvent animEv)) return;
 
+            m_CurrentAudio = animEv.AudioReference.GetAudio(OnProcessParameter);
+
+            m_CurrentAudio.position = transform.position;
+            m_CurrentAudio.rotation = transform.rotation;
+
             // Visual Logic Graph
+            if (animEv.VisualGraph != null)
             {
-                animEv.VisualGraph.Execute(m_OverrideRoot != null ? m_OverrideRoot : gameObject);
+                animEv.VisualGraph.Execute(
+                    m_OverrideRoot != null ? m_OverrideRoot : gameObject, animEv.m_Processor);
             }
 
-            Audio audio = animEv.AudioReference.GetAudio(OnProcessParameter);
+            m_CurrentAudio.Play();
 
-            audio.position = transform.position;
-            audio.rotation = transform.rotation;
-
-            audio.Play();
-
-            audio.bindTransform = transform;
+            m_CurrentAudio.bindTransform = transform;
         }
 
         /// <summary>
