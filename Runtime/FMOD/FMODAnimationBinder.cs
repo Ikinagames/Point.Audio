@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.Graphs;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -38,8 +39,12 @@ namespace Point.Audio
         [SerializeField] private FMODAnimationBindReference m_BindReference;
         [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
 
+        [Space]
+        [SerializeField] private GameObject m_OverrideRoot = null;
+
         // Parameter 가 많을 경우, 배열을 전체 탐색하기 보다는 Hashing 을 통해 속도 개선을 합니다.
-        private Dictionary<Hash, FMODEventReference> m_Parsed;
+        private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
+        private VisualLogicGraph m_LogicGraph;
 
         /// <summary>
         /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
@@ -48,7 +53,7 @@ namespace Point.Audio
 
         private void Awake()
         {
-            m_Parsed = new Dictionary<Hash, FMODEventReference>();
+            m_Parsed = new Dictionary<Hash, FMODAnimationEvent>();
 
             if (m_BindReference != null)
             {
@@ -57,7 +62,7 @@ namespace Point.Audio
             
             for (int i = 0; i < m_Events.Length; i++)
             {
-                m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i].AudioReference);
+                m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }
 
@@ -70,9 +75,14 @@ namespace Point.Audio
         {
             Hash hash = new Hash(ev.stringParameter);
 
-            if (!m_Parsed.TryGetValue(hash, out FMODEventReference animEv)) return;
+            if (!m_Parsed.TryGetValue(hash, out FMODAnimationEvent animEv)) return;
 
-            Audio audio = animEv.GetAudio(OnProcessParameter);
+            // Visual Logic Graph
+            {
+                animEv.VisualGraph.Execute(m_OverrideRoot != null ? m_OverrideRoot : gameObject);
+            }
+
+            Audio audio = animEv.AudioReference.GetAudio(OnProcessParameter);
 
             audio.position = transform.position;
             audio.rotation = transform.rotation;

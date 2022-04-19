@@ -20,6 +20,7 @@ using UnityEngine.UIElements;
 
 namespace Point.Audio.FMODEditor
 {
+    [System.Obsolete("", true)]
     [CustomEditor(typeof(FMODVisualGraph), true)]
     public class FMODVisualGraphAssetInspector : GraphInspector
     {

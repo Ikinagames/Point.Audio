@@ -17,15 +17,15 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
 using Point.Collections.Graphs;
 using System;
 using UnityEngine;
 
 namespace Point.Audio.Graphs
 {
-    [Serializable]
-    [CreateAssetMenu(menuName = "Point/Graphs/FMOD Visual Graph")]
-    public sealed class FMODVisualGraph : VisualGraph
+    [Serializable, Obsolete("", true)]
+    public class FMODVisualGraph : VisualGraph
     {
     }
 }

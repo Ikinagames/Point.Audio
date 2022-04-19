@@ -18,6 +18,7 @@
 #endif
 
 using Point.Audio.Graphs;
+using Point.Collections.Graphs;
 using System;
 using UnityEngine;
 
@@ -30,9 +31,10 @@ namespace Point.Audio
         [SerializeField] private FMODEventReference m_AudioReference;
 
         [Space]
-        [SerializeField] private FMODVisualGraph m_VisualGraph;
+        [SerializeField] private VisualLogicGraph m_VisualGraph;
 
         public string Name => m_Name;
         public FMODEventReference AudioReference => m_AudioReference;
+        public VisualLogicGraph VisualGraph => m_VisualGraph;
     }
 }

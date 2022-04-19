@@ -19,6 +19,7 @@
 #endif
 #define UNITYENGINE
 
+using GraphProcessor;
 using Point.Collections;
 using Point.Collections.Editor;
 using UnityEditor;
@@ -28,7 +29,7 @@ using UnityEngine;
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODAnimationBindReference))]
-    public sealed class FMODAnimationBindReferenceEditor : InspectorEditor<FMODAnimationBindReference>
+    internal sealed class FMODAnimationBindReferenceEditor : InspectorEditor<FMODAnimationBindReference>
     {
         private SerializedProperty m_Events;
         //private ReorderableList m_EventList;
