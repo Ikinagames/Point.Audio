@@ -72,34 +72,4 @@ namespace Point.Audio.FMODEditor
             evt.menu.AppendAction("Create Stack", (e) => AddStackNode(new BaseStackNode(position)), DropdownMenuAction.AlwaysEnabled);
         }
     }
-
-    [CustomEditor(typeof(FMODVisualGraph), true)]
-    public class FMODVisualGraphAssetInspector : GraphInspector
-    {
-        // protected override void CreateInspector()
-        // {
-        // }
-
-        protected override void CreateInspector()
-        {
-            base.CreateInspector();
-
-            root.Add(new Button(() => EditorWindow.GetWindow<FMODVisualGraphWindow>().InitializeGraph(target as BaseGraph))
-            {
-                text = "Open base graph window"
-            });
-            //root.Add(new Button(() => EditorWindow.GetWindow<CustomContextMenuGraphWindow>().InitializeGraph(target as BaseGraph))
-            //{
-            //    text = "Open custom context menu graph window"
-            //});
-            //root.Add(new Button(() => EditorWindow.GetWindow<CustomToolbarGraphWindow>().InitializeGraph(target as BaseGraph))
-            //{
-            //    text = "Open custom toolbar graph window"
-            //});
-            //root.Add(new Button(() => EditorWindow.GetWindow<ExposedPropertiesGraphWindow>().InitializeGraph(target as BaseGraph))
-            //{
-            //    text = "Open exposed properties graph window"
-            //});
-        }
-    }
 }

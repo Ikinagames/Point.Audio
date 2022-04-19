@@ -17,6 +17,7 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Audio.Graphs;
 using System;
 using UnityEngine;
 
@@ -28,8 +29,8 @@ namespace Point.Audio
         [SerializeField] private string m_Name;
         [SerializeField] private FMODEventReference m_AudioReference;
 
-        //[Space]
-        //[SerializeField] private 
+        [Space]
+        [SerializeField] private FMODVisualGraph m_VisualGraph;
 
         public string Name => m_Name;
         public FMODEventReference AudioReference => m_AudioReference;

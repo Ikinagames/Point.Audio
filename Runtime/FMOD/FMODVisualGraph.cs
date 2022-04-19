@@ -19,11 +19,13 @@
 
 using Point.Collections.Graphs;
 using System;
+using UnityEngine;
 
-namespace Point.Audio
+namespace Point.Audio.Graphs
 {
     [Serializable]
-    public abstract class FMODVisualGraph : PointVisualGraph
+    [CreateAssetMenu(menuName = "Point/Graphs/FMOD Visual Graph")]
+    public sealed class FMODVisualGraph : VisualGraph
     {
     }
 }
