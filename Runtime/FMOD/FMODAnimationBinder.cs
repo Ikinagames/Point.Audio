@@ -46,6 +46,7 @@ namespace Point.Audio
         private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
         
         private Audio m_CurrentAudio;
+        private IFMODEvent[] m_PlayedOnActives = Array.Empty<IFMODEvent>();
 
         /// <summary>
         /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
@@ -66,6 +67,17 @@ namespace Point.Audio
                 m_Events[i].Initialize();
 
                 m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i]);
+            }
+        }
+        private void OnEnable()
+        {
+            m_PlayedOnActives = m_BindReference.PlayOnActive(transform);
+        }
+        private void OnDisable()
+        {
+            for (int i = 0; i < m_PlayedOnActives.Length; i++)
+            {
+                m_PlayedOnActives[i].Stop();
             }
         }
 

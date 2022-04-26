@@ -31,12 +31,13 @@ namespace Point.Audio.FMODEditor
     [CustomEditor(typeof(FMODAnimationBindReference))]
     internal sealed class FMODAnimationBindReferenceEditor : InspectorEditor<FMODAnimationBindReference>
     {
-        private SerializedProperty m_Events;
+        private SerializedProperty m_Events, m_PlayWhileActive;
         //private ReorderableList m_EventList;
 
         private void OnEnable()
         {
             m_Events = GetSerializedProperty("m_Events");
+            m_PlayWhileActive = GetSerializedProperty("m_PlayWhileActive");
 
             //m_EventList = new ReorderableList(serializedObject, m_Events);
             
@@ -101,6 +102,7 @@ namespace Point.Audio.FMODEditor
         {
             //m_EventList.DoLayoutList();
             EditorGUILayout.PropertyField(m_Events);
+            EditorGUILayout.PropertyField(m_PlayWhileActive);
 
             EditorGUILayout.Space();
 

@@ -30,6 +30,9 @@ namespace Point.Audio
         [SerializeField]
         private ArrayWrapper<FMODAnimationEvent> m_Events = Array.Empty<FMODAnimationEvent>();
 
+        [SerializeField]
+        private ArrayWrapper<FMODEventReference> m_PlayWhileActive = Array.Empty<FMODEventReference>();
+
         internal void AddToHashMap(ref Dictionary<Hash, FMODAnimationEvent> hashMap)
         {
             for (int i = 0; i < m_Events.Length; i++)
@@ -38,6 +41,27 @@ namespace Point.Audio
 
                 hashMap.Add(new Hash(m_Events[i].Name), (FMODAnimationEvent)m_Events[i].Clone());
             }
+        }
+
+        internal IFMODEvent[] PlayOnActive(Transform caller)
+        {
+            if (m_PlayWhileActive.Count == 0) return Array.Empty<IFMODEvent>();
+
+            IFMODEvent[] temp = new IFMODEvent[m_PlayWhileActive.Count];
+            for (int i = 0; i < m_PlayWhileActive.Count; i++)
+            {
+                temp[i] = m_PlayWhileActive[i].GetEvent();
+                temp[i].Play();
+
+                if (temp[i] is Audio audio && audio.Is3D)
+                {
+                    audio.position = caller.position;
+                    audio.rotation = caller.rotation;
+                    audio.bindTransform = caller;
+                }
+            }
+
+            return temp;
         }
     }
 }

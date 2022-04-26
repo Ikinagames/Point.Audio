@@ -540,11 +540,12 @@ namespace Point.Audio
         /// <inheritdoc cref="FMODManager.Stop(ref Audio)"/>
         public void Stop()
         {
+            if (PointApplication.IsShutdown) return;
 #if DEBUG_MODE
             if (!IsValid())
             {
                 PointHelper.LogError(Channel.Audio,
-                    $"This audio has an invalid but trying to play. " +
+                    $"This audio is invalid but trying to stop. " +
                     $"This is not allowed.");
 
                 return;
