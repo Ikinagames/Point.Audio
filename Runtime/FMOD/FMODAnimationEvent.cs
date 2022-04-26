@@ -25,7 +25,7 @@ using UnityEngine;
 namespace Point.Audio
 {
     [Serializable]
-    public sealed class FMODAnimationEvent
+    public sealed class FMODAnimationEvent : ICloneable
     {
         [SerializeField] private string m_Name;
         [SerializeField] private FMODEventReference m_AudioReference;
@@ -41,10 +41,26 @@ namespace Point.Audio
 
         public void Initialize()
         {
-            if (m_VisualGraph != null)
+            if (m_Processor == null && m_VisualGraph != null)
             {
                 m_Processor = new VisualGraphLogicProcessor(m_VisualGraph);
             }
+        }
+
+        public object Clone()
+        {
+            FMODAnimationEvent ev = (FMODAnimationEvent)MemberwiseClone();
+
+            ev.m_Name = string.Copy(m_Name);
+            ev.m_AudioReference = (FMODEventReference)m_AudioReference.Clone();
+
+            if (m_VisualGraph != null)
+            {
+                ev.m_VisualGraph = UnityEngine.Object.Instantiate(m_VisualGraph);
+                ev.m_Processor = new VisualGraphLogicProcessor(ev.m_VisualGraph);
+            }
+
+            return ev;
         }
     }
 }

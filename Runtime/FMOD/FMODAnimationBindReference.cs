@@ -36,7 +36,7 @@ namespace Point.Audio
             {
                 m_Events[i].Initialize();
 
-                hashMap.Add(new Hash(m_Events[i].Name), m_Events[i]);
+                hashMap.Add(new Hash(m_Events[i].Name), (FMODAnimationEvent)m_Events[i].Clone());
             }
         }
     }

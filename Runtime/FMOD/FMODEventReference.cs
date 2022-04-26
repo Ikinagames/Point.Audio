@@ -26,7 +26,7 @@ using Point.Collections;
 namespace Point.Audio
 {
     [Serializable]
-    public sealed class FMODEventReference
+    public sealed class FMODEventReference : ICloneable
     {
         [SerializeField] private EventReference m_Event;
         [FMODParam(false, DisableReflection = true)]
@@ -85,6 +85,19 @@ namespace Point.Audio
             }
 
             return boxed;
+        }
+
+        public object Clone()
+        {
+            FMODEventReference ev = (FMODEventReference)MemberwiseClone();
+
+            ParamField[] tempParams = new ParamField[m_Parameters.Length];
+            for (int i = 0; i < tempParams.Length; i++)
+            {
+                tempParams[i] = (ParamField)m_Parameters[i].Clone();
+            }
+
+            return ev; ;
         }
     }
 }

@@ -25,22 +25,9 @@ using UnityEngine;
 namespace Point.Audio.Graphs
 {
     [Serializable, NodeMenuItem("Logic/Unity/Get FMOD Animation Binder")]
-    public sealed class GetFMODAnimationBinderNode : BaseNode
+    public sealed class GetFMODAnimationBinderNode : GetComponentNode<FMODAnimationBinder>
     {
         [Input("Link")]
         public ConditionalLink link;
-        [Input("In")]
-        public object input;
-
-        [Output("Out")]
-        public FMODAnimationBinder output = null;
-
-        protected override void Process()
-        {
-            if (input != null && input is GameObject gameObject)
-            {
-                output = gameObject.GetComponentInChildren<FMODAnimationBinder>();
-            }
-        }
     }
 }

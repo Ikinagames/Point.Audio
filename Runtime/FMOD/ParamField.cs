@@ -24,7 +24,7 @@ using System.Reflection;
 namespace Point.Audio
 {
     [System.Serializable]
-    public sealed class ParamField
+    public sealed class ParamField : ICloneable
     {
         [UnityEngine.SerializeField] private bool m_IsGlobal = true;
         [FMODUnity.ParamRef]
@@ -210,6 +210,16 @@ namespace Point.Audio
                     $"Fatal error. Could\'nt set parameter to fmod.");
             }
 #endif
+        }
+
+        public object Clone()
+        {
+            ParamField field = (ParamField)MemberwiseClone();
+
+            field.m_Name = string.Copy(m_Name);
+            field.m_ValueFieldName = string.Copy(m_ValueFieldName);
+
+            return field;
         }
     }
 }
