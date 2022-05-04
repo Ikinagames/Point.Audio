@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Ikina Games
+﻿// Copyright 2022 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,19 +17,12 @@
 #define DEBUG_MODE
 #endif
 
-using Point.Collections;
-using System;
-using UnityEngine;
-using UnityEngine.Audio;
 
 namespace Point.Audio
 {
-    public sealed class PointAudioSettings : StaticScriptableObject<PointAudioSettings>
+    public enum AudioPlayOption
     {
-        [Tooltip("별도 프리팹이 설정되지 않은 AudioClip에 할당될 기본 프리팹입니다.")]
-        [SerializeField] internal AudioSource m_DefaultAudioSourcePrefab;
-        [Tooltip("별도 그룹이 설정되지 않은 AudioClip에 할당될 기본 그룹입니다.")]
-        [SerializeField] internal AudioMixerGroup m_MasterGroup;
-        [SerializeField] internal AudioList[] m_AudioLists = Array.Empty<AudioList>();
+        Sequential,
+        Random
     }
 }

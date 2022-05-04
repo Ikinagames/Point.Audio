@@ -1,4 +1,4 @@
-﻿// Copyright 2021 Ikina Games
+﻿// Copyright 2022 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,15 +18,27 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.Events;
+using System;
+using UnityEngine;
 
 namespace Point.Audio
 {
-    /// <summary>
-    /// <see cref="AudioClip"/> 의 에셋 경로를 담는 필드입니다.
-    /// </summary>
-    [System.Serializable]
-    public sealed class AudioClipPathField : AssetPathField<UnityEngine.AudioClip>
+    public sealed class AudioAnimationBinder : AnimationEventBinder
     {
-        public AudioClipPathField(string path) : base(path) { }
+        [SerializeField]
+        private Transform m_Transform;
+
+        private void Awake()
+        {
+            if (m_Transform == null) m_Transform = transform;
+        }
+
+        [Obsolete]
+        public override void TriggerAction(AnimationEvent ev)
+        {
+            EventBroadcaster.PostEvent(
+                PlayAudioEvent.GetEvent(ev.stringParameter, m_Transform.position));
+        }
     }
 }

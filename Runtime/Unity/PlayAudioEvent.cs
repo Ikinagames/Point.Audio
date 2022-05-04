@@ -18,33 +18,41 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.Events;
 using UnityEngine;
 
 namespace Point.Audio
 {
-    public struct AudioKey
+    public sealed class PlayAudioEvent : SynchronousEvent<PlayAudioEvent>
     {
-        private readonly Hash m_Key;
+        protected override bool EnableLog => false;
 
-        private AudioKey(Hash hash)
-        {
-            m_Key = hash;
-        }
+        public const string Unhandled = "UNHANDLED";
 
-        public static implicit operator AudioKey(AssetPathField<AudioClip> t)
-        {
-            return new AudioKey(new Hash(t.AssetPath));
-        }
-        public static implicit operator AudioKey(string t)
-        {
-            return new AudioKey(new Hash(t));
-        }
-        public static implicit operator AudioKey(Hash t)
-        {
-            return new AudioKey(t);
-        }
-        public static implicit operator Hash(AudioKey t) => t.m_Key;
+        public AudioKey Key { get; private set; }
+        public Vector3 Position { get; private set; }
 
-        public override string ToString() => m_Key.ToString();
+        public static PlayAudioEvent GetEvent(AudioKey key)
+        {
+            var ev = Dequeue();
+
+            ev.Key = key;
+
+            return ev;
+        }
+        public static PlayAudioEvent GetEvent(AudioKey key, Vector3 position)
+        {
+            var ev = Dequeue();
+
+            ev.Key = key;
+            ev.Position = position;
+
+            return ev;
+        }
+        protected override void OnReserve()
+        {
+            Key = Hash.Empty;
+            Position = Vector3.zero;
+        }
     }
 }

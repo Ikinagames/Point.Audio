@@ -1,4 +1,4 @@
-癤�// Copyright 2021 Ikina Games
+// Copyright 2022 Ikina Games
 // Author : Seung Ha Kim (Syadeu)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,332 +17,418 @@
 #define DEBUG_MODE
 #endif
 
-using UnityEngine;
 using Point.Collections;
-using Point.Collections.ResourceControl;
-using Unity.Collections;
-using System.Collections.Generic;
-using UnityEngine.Jobs;
-using Unity.Jobs;
-using Unity.Burst;
+using Point.Collections.Actions;
 using Point.Collections.Buffer;
-using UnityEngine.SceneManagement;
-using Point.Collections.SceneManagement;
-using UnityEngine.Audio;
-using Point.Collections.Buffer.LowLevel;
+using Point.Collections.Events;
+using Point.Collections.ResourceControl;
 using System;
+using System.Collections.Generic;
+using Unity.Collections;
+using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.Jobs;
 
 namespace Point.Audio
 {
     [AddComponentMenu("")]
-    public sealed class AudioManager : StaticMonobehaviour<AudioManager>
-        , IStaticInitializer
+    public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
     {
-        private const int c_InitialCount = 128;
+        protected override bool EnableLog => base.EnableLog;
 
-        protected override bool EnableLog => false;
-        protected override bool HideInInspector => true;
+        [NonSerialized] private AudioSettings m_Settings;
+        [NonSerialized] private int EntryCount;
+        [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
+        [NonSerialized] private NativeHashMap<Hash, CompressedAudioData> m_DataHashMap;
+        [NonSerialized] private Dictionary<Hash, ManagedAudioData> m_GroupMap;
 
-        private static int s_InstanceCount = 0;
-        private static Transform s_Folder = null;
+        //
+        [NonSerialized] AssetBundleInfo m_AudioBundle;
+        [NonSerialized] ObjectPool<AudioSource> m_DefaultAudioPool;
 
-//#if DEBUG_MODE
-//        private HashSet<AssetBundle> m_RegisteredAssetBundles;
-//#endif
+        [NonSerialized] readonly Dictionary<Hash, AssetInfo> m_CachedAssetInfo = new Dictionary<Hash, AssetInfo>();
+        [NonSerialized] readonly Dictionary<Hash, PrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, PrefabInfo>();
 
-        private NativeList<AssetBundleInfo> m_AudioBundles;
+        private TransformAccessArray m_PlayedAudioTransforms;
 
-        private JobHandle 
-            m_GlobalJobHandle,
-            m_UpdateTransformationJobHandle;
+        #region Initialize
 
-        private TransformScene<AudioSceneHandler> m_AudioScene;
-        private Dictionary<AudioKey, AudioList.AudioSetting> m_RuntimeAudioSettings;
-
-        private ObjectPool<Transform> m_AudioTransformPool;
-
-        //private NativeArray<Audio> m_Audios;
-        private UnsafeLinearHashMap<RuntimeAudioKey, UnsafeAudio> m_Audios;
-        private Transform[] m_AudioTransforms;
-        private TransformAccessArray m_TransformAccessArray;
-
-        private struct AudioSceneHandler : ITransformSceneHandler
+        protected override void OnInitialize()
         {
-            public void OnInitialize()
+            m_Settings = AudioSettings.Instance;
+
+            EntryCount = m_Settings.CalculateEntryCount();
+            m_FriendlyNameMap = new Dictionary<Hash, Hash>();
+            m_DataHashMap = new NativeHashMap<Hash, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
+            m_GroupMap = new Dictionary<Hash, ManagedAudioData>();
+
+            m_Settings.RegisterFriendlyNames(m_FriendlyNameMap);
+            foreach (var data in m_Settings.GetAudioData())
             {
+                var temp = data.GetAudioData();
+
+                m_DataHashMap.Add(temp.AudioKey, temp);
+                m_GroupMap.Add(temp.AudioKey, 
+                    new ManagedAudioData
+                    {
+                        audioMixerGroup = data.GetAudioMixerGroup(),
+                        onPlayConstAction = data.GetOnPlayConstAction(),
+
+                        childs = data.GetChilds(),
+                        playOption = data.GetPlayOption(),
+                    });
             }
 
-            public void OnTransformAdded(in NativeTransform transform)
-            {
-            }
+            m_DefaultAudioPool = new ObjectPool<AudioSource>(
+                DefaultAudioFactory,
+                DefaultAudioOnGet,
+                DefaultAudioOnReserve,
+                null
+                );
 
-            public void OnTransformRemove(in NativeTransform transform)
-            {
-            }
+            EventBroadcaster.AddEvent<PlayAudioEvent>(PlayAudioEventHandler);
 
-            public void Dispose()
-            {
-            }
+            m_PlayedAudioTransforms = new TransformAccessArray(1024);
+            
         }
-        private struct UpdateTransformationJob : IJobParallelForTransform
-        {
-            [ReadOnly] 
-            public UnsafeAllocator<KeyValue<RuntimeAudioKey, UnsafeAudio>>.ReadOnly m_Audios;
-
-            public void Execute(int i, TransformAccess transform)
-            {
-                if (!m_Audios[i].Value.beingUsed) return;
-
-                transform.position = m_Audios[i].Value.translation;
-                transform.rotation = m_Audios[i].Value.rotation;
-            }
-        }
-
-        protected override void OnInitialze()
-        {
-//#if DEBUG_MODE
-//            m_RegisteredAssetBundles = new HashSet<AssetBundle>();
-//#endif
-
-            //m_Audios = new NativeArray<Audio>(c_InitialCount, Allocator.Persistent);
-            m_AudioTransforms = new Transform[c_InitialCount];
-            m_TransformAccessArray = new TransformAccessArray(m_AudioTransforms);
-            m_AudioTransformPool = new ObjectPool<Transform>(AudioTransformFactory, null, null, null);
-
-            //FMODUnity.EventReference
-            GameObject audioFolder = new GameObject("Audio");
-            s_Folder = audioFolder.transform;
-
-            m_AudioScene = new TransformScene<AudioSceneHandler>();
-        }
-        private static Transform AudioTransformFactory()
-        {
-            GameObject obj = new GameObject($"Audio_{s_InstanceCount}");
-            s_InstanceCount++;
-            //obj.AddComponent<AudioSource>();
-
-            return obj.transform;
-        }
-        private void Awake()
-        {
-            m_RuntimeAudioSettings = new Dictionary<AudioKey, AudioList.AudioSetting>();
-
-            var list = PointAudioSettings.Instance.m_AudioLists;
-            for (int i = 0; i < list.Length; i++)
-            {
-                list[i].Initialize(m_RuntimeAudioSettings);
-            }
-        }
-
         protected override void OnShutdown()
         {
-            m_GlobalJobHandle.Complete();
+            EventBroadcaster.RemoveEvent<PlayAudioEvent>(PlayAudioEventHandler);
+            m_DataHashMap.Dispose();
 
-            //if (m_AudioBundles.IsCreated)
-            //{
-            //    for (int i = 0; i < m_AudioBundles.Length; i++)
-            //    {
-            //        m_AudioBundles[i].Unload(true);
-            //    }
-
-            //    m_AudioBundles.Dispose();
-            //}
-
-            m_TransformAccessArray.Dispose();
-            //m_Audios.Dispose();
-            m_AudioTransforms = null;
-        }
-
-        private void FixedUpdate()
-        {
-            UpdateTransformations();
-        }
-        private void UpdateTransformations()
-        {
-            m_UpdateTransformationJobHandle.Complete();
-
+            if (m_AudioBundle.IsValid())
             {
-                UpdateTransformationJob updateTransformation
-                    = new UpdateTransformationJob()
-                    {
-                        m_Audios = m_Audios.Buffer
-                    };
-
-                JobHandle job = updateTransformation.Schedule(m_TransformAccessArray);
-                m_UpdateTransformationJobHandle
-                    = JobHandle.CombineDependencies(m_UpdateTransformationJobHandle, job);
-
-                m_GlobalJobHandle
-                    = JobHandle.CombineDependencies(m_GlobalJobHandle, m_UpdateTransformationJobHandle);
+                m_AudioBundle.Unload(true);
             }
         }
 
-        internal AudioList.AudioSetting GetAudioSetting(AudioKey audioKey)
-        {
-#if DEBUG_MODE
-            if (!m_RuntimeAudioSettings.ContainsKey(audioKey))
-            {
-                PointHelper.LogError(Channel.Audio,
-                    $"You are trying to get an invalid audio setting(clipHash: \"{audioKey}\"). This is not allowed.");
+        #endregion
 
-                return null;
+        public static void Initialize(AssetBundle audioBundle)
+        {
+            Instance.m_AudioBundle = ResourceManager.RegisterAssetBundle(audioBundle);
+#if DEBUG_MODE
+            foreach (var item in Instance.m_DataHashMap)
+            {
+                if (!Instance.m_AudioBundle.HasAsset(item.Key))
+                {
+                    $"?? {item.Value.AudioKey} does not exist from assetbundle {audioBundle.name}".ToLogError();
+                }
             }
 #endif
-            var setting = m_RuntimeAudioSettings[audioKey];
-            setting.IncrementIndex();
-
-            if (setting.CurrentIndex > 0 && setting.Keys.Length > 1)
-            {
-                AudioKey newKey = setting.Keys[setting.CurrentIndex];
-                setting = m_RuntimeAudioSettings[newKey];
-            }
-
-            return setting;
         }
 
-        private Transform GetAudioTransform(in RuntimeAudioKey key)
+        #region Default Pool
+
+        private static AudioSource DefaultAudioFactory()
         {
-            if (!m_Audios.TryGetIndex(key, out var index))
+            GameObject obj = new GameObject();
+            AudioSource source = obj.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+
+            return source;
+        }
+        private static void DefaultAudioOnGet(AudioSource t)
+        {
+            t.volume = 1;
+            t.pitch = 1;
+            t.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+        }
+        private static void DefaultAudioOnReserve(AudioSource t)
+        {
+            t.volume = 0;
+            t.Stop();
+        }
+
+        #endregion
+
+        #region Event Handlers
+
+        private void PlayAudioEventHandler(PlayAudioEvent ev)
+        {
+            Play(ev.Key);
+        }
+
+        #endregion
+
+        #region Internal
+
+        private static AssetInfo LoadAsset(Hash key)
+        {
+            if (!Instance.m_AudioBundle.TryLoadAsset(key, out var asset))
             {
-                PointHelper.LogError(Channel.Audio, "");
+
+            }
+            return asset;
+        }
+        private static AudioSource GetAudioSource(Hash prefabKey)
+        {
+            if (!Instance.m_AudioBundle.IsValid() || prefabKey.IsEmpty())
+            {
+                return Instance.m_DefaultAudioPool.Get();
+            }
+
+            if (!Instance.m_CachedAssetInfo.TryGetValue(prefabKey, out AssetInfo prefabAsset))
+            {
+                if (Instance.m_AudioBundle.TryLoadAsset(prefabKey, out prefabAsset))
+                {
+                    Instance.m_CachedAssetInfo.Add(prefabKey, prefabAsset);
+                }
+                // 프리팹이 없다?
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            if (!Instance.m_CachedPrefabInfo.TryGetValue(prefabKey, out var info))
+            {
+                info = new PrefabInfo(prefabAsset);
+                Instance.m_CachedPrefabInfo.Add(prefabKey, info);
+            }
+
+            return info.pool.Get();
+        }
+        private static AudioClip GetAudioClip(Hash audioKey)
+        {
+            ManagedAudioData managedData; int index;
+            AudioManager ins = Instance;
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /*                                   Critical Section                                   */
+            //////////////////////////////////////////////////////////////////////////////////////////
+            if (audioKey.IsEmpty())
+            {
+                return null;
+            }
+            else if (!ins.m_AudioBundle.IsValid())
+            {
+#if UNITY_EDITOR
+                Hash targetKey;
+                if (!Instance.m_FriendlyNameMap.TryGetValue(audioKey, out targetKey))
+                {
+                    targetKey = audioKey;
+                }
+                $"Audio AssetBundle is not loaded. This is not allowed. Please register AssetBundle with AudioManager.Initialize(AssetBundle)\nThis request({targetKey}) will be accepted only in Editor with {nameof(UnityEditor.AssetDatabase)}.".ToLogError(Channel.Audio);
+
+                if (!ins.m_GroupMap.TryGetValue(targetKey, out managedData) ||
+                    managedData.childs.Length == 0)
+                {
+                    return UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(targetKey.Key);
+                }
+
+                index = managedData.GetIndex();
+                if (index == 0) return UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(targetKey.Key);
+
+                return GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath));
+#else
+                throw new Exception("Audio AssetBundle is not loaded. This is not allowed.");
+#endif
+            }
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /*                                                                                      */
+            //////////////////////////////////////////////////////////////////////////////////////////
+
+            if (!ins.m_CachedAssetInfo.TryGetValue(audioKey, out AssetInfo clipAsset))
+            {
+                clipAsset = ins.m_AudioBundle.LoadAsset(audioKey);
+                ins.m_CachedAssetInfo.Add(audioKey, clipAsset);
+            }
+
+            if (!ins.m_GroupMap.TryGetValue(audioKey, out managedData) ||
+                managedData.childs.Length == 0)
+            {
+                return clipAsset.Asset as AudioClip;
+            }
+
+            index = managedData.GetIndex();
+            if (index == 0) return clipAsset.Asset as AudioClip;
+
+            return GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath));
+        }
+        private static bool TryGetCompressedAudioData(AudioKey key, out CompressedAudioData data)
+        {
+            if (Instance.m_DataHashMap.TryGetValue(key, out data))
+            {
+                return true;
+            }
+            
+            if (!Instance.m_FriendlyNameMap.TryGetValue(key, out Hash temp) ||
+                !Instance.m_DataHashMap.TryGetValue(temp, out data))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        #endregion
+
+        #region Play
+
+        private static AudioSource InternalPlay(AudioKey audioKey)
+        {
+            AudioClip clip = GetAudioClip(audioKey);
+            if (clip == null)
+            {
+                $"Could\'nt find audio clip {audioKey}.".ToLogError();
                 return null;
             }
 
-            return m_AudioTransforms[index];
-        }
-        private UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> AddKey(in RuntimeAudioKey key)
-        {
-            int index = m_Audios.Add(key, new UnsafeAudio());
-            UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p = m_Audios.PointerAt(index);
-            p.Value.Value.beingUsed = true;
-
-            if (m_AudioTransforms.Length != m_Audios.Capacity)
+            AudioSource insAudio;
+            
+            /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
+            if (!TryGetCompressedAudioData(audioKey, out CompressedAudioData data))
             {
-                Array.Resize(ref m_AudioTransforms, m_Audios.Capacity);
+                insAudio = Instance.m_DefaultAudioPool.Get();
+                insAudio.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+                insAudio.clip = clip;
+
+                return insAudio;
             }
 
-            Transform tr = m_AudioTransformPool.Get();
-            m_AudioTransforms[index] = tr;
+            ManagedAudioData managedData = Instance.m_GroupMap[data.AudioKey];
+            insAudio = GetAudioSource(data.PrefabKey);
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /*                                                                                      */
+            //////////////////////////////////////////////////////////////////////////////////////////
+            insAudio.outputAudioMixerGroup = managedData.audioMixerGroup;
+            insAudio.clip = clip;
 
-            m_TransformAccessArray.SetTransforms(m_AudioTransforms);
+            insAudio.volume = data.GetVolume();
+            insAudio.pitch = data.GetPitch();
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /*                                                                                      */
+            //////////////////////////////////////////////////////////////////////////////////////////
+            for (int i = 0; i < managedData.onPlayConstAction.Count; i++)
+            {
+                managedData.onPlayConstAction[i].Execute(insAudio);
+            }
 
-            return p;
+            return insAudio;
         }
-        private void RemoveKey(in RuntimeAudioKey key)
+        public static void Play(AudioKey audioKey)
         {
-            if (!m_Audios.TryGetIndex(key, out var index))
+            AudioSource insAudio = InternalPlay(audioKey);
+            if (insAudio == null)
             {
                 return;
             }
 
-            Transform tr = m_AudioTransforms[index];
-            m_AudioTransformPool.Reserve(tr);
-            m_AudioTransforms[index] = null;
-            
-            AudioSource audioSource = tr.GetComponentInChildren<AudioSource>();
-            audioSource.Stop();
-            audioSource.clip = null;
-
-            m_TransformAccessArray.SetTransforms(m_AudioTransforms);
-
-            m_Audios.ElementAt(index).Value.beingUsed = false;
-            m_Audios.Remove(key);
+            insAudio.Play();
+#if UNITY_EDITOR
+            $"Playing AudioClip:{insAudio.clip.name} | Key:{audioKey}".ToLog(Channel.Audio);
+#endif
         }
-        internal void InternalPlay(in Audio audio, AudioClip clip)
+        public static void Play(AudioKey audioKey, Vector3 position)
         {
-            Transform tr = GetAudioTransform(in audio.m_Key);
-            AudioSource audioSource = tr.GetComponentInChildren<AudioSource>(true);
+            AudioSource insAudio = InternalPlay(audioKey);
+            if (insAudio == null)
+            {
+                return;
+            }
 
-            audioSource.clip = clip;
-            audioSource.Play();
+            insAudio.transform.position = position;
+            insAudio.Play();
+#if UNITY_EDITOR
+            $"Playing {audioKey}".ToLog(Channel.Audio);
+#endif
         }
 
-        public static Audio GetAudio(in string key)
+        #endregion
+
+        #region Inner Classes
+
+        private sealed class ManagedAudioData
         {
-            AssetInfo assetInfo = ResourceManager.LoadAsset(key);
-            RuntimeAudioKey runtimeKey = RuntimeAudioKey.NewKey();
-            RuntimeAudioSetting runtimeSetting = new RuntimeAudioSetting(key);
+            public AudioMixerGroup audioMixerGroup;
+            public IReadOnlyList<ConstActionReference> onPlayConstAction;
 
-            UnsafeReference<KeyValue<RuntimeAudioKey, UnsafeAudio>> p = Instance.AddKey(runtimeKey);
+            private int currentIndex = 0;
+            public AssetPathField<AudioClip>[] childs;
+            public AudioPlayOption playOption;
 
-            p.Value.Value = new UnsafeAudio(/*runtimeKey, */runtimeSetting, assetInfo);
+            public int GetIndex()
+            {
+                if (playOption == AudioPlayOption.Sequential)
+                {
+                    currentIndex++;
+                    if (currentIndex > childs.Length)
+                    {
+                        currentIndex = 0;
+                    }
 
-            return new Audio(p);
+                    return currentIndex;
+                }
+
+                currentIndex = UnityEngine.Random.Range(0, childs.Length + 1);
+                return currentIndex;
+            }
         }
-        public static void ReserveAudio(in Audio audio)
+        private sealed class PrefabInfo
         {
-            Instance.RemoveKey(in audio.m_Key);
+            public AssetInfo prefab;
+            public ObjectPool<AudioSource> pool;
+
+            public PrefabInfo(AssetInfo prefab)
+            {
+                this.prefab = prefab;
+                pool = new ObjectPool<AudioSource>(
+                    Factory,
+                    OnGet,
+                    OnReserve,
+                    null
+                    );
+            }
+
+            private AudioSource Factory()
+            {
+                AudioSource prefabAudio = prefab.Asset as AudioSource;
+
+                GameObject ins = Instantiate(prefabAudio.gameObject);
+                AudioSource insAudio = ins.GetComponent<AudioSource>();
+                insAudio.playOnAwake = false;
+
+                return insAudio;
+            }
+            private static void OnGet(AudioSource t)
+            {
+
+            }
+            private static void OnReserve(AudioSource t)
+            {
+                t.Stop();
+            }
         }
 
-        public static void Play(in Audio audio)
-        {
-            Transform tr = Instance.GetAudioTransform(audio.m_Key);
-        }
-        public static void Stop()
-        {
+        #endregion
+    }
 
+    [Obsolete("", true)]
+    public static class AudioTestUsages
+    {
+        [Obsolete("", true)]
+        public static void Test()
+        {
+            // 에셋 번들 등록
+            AudioManager.Initialize(null);
+
+            // 오디오 재생
+            AudioManager.Play(
+                ///<see cref="AudioList.FriendlyName"/>
+                "Soundtrack01"
+                ///<see cref="AudioList.Data"/>
+                //"Assets/test/test.wav"
+                );
+            EventBroadcaster.PostEvent<PlayAudioEvent>(PlayAudioEvent.GetEvent("Soundtrack01"));
         }
     }
 
-    [BurstCompatible]
-    public struct RuntimeAudioKey : IEmpty, IEquatable<RuntimeAudioKey>
+    public struct Audio : IDisposable
     {
-        internal static RuntimeAudioKey NewKey() => new RuntimeAudioKey() { m_Hash = CollectionUtility.CreateHashCode2() };
+        private readonly int m_Index;
 
-        internal short m_Hash;
-
-        public bool IsEmpty() => m_Hash == 0;
-        public bool Equals(RuntimeAudioKey other) => m_Hash == other.m_Hash;
-    }
-    [BurstCompatible]
-    public struct RuntimeAudioSetting
-    {
-        public AudioKey AudioKey;
-        public AudioList.AudioOptions AudioOptions;
-        public float 
-            Volume,
-            
-            MinPitch, MaxPitch;
-        public int MaximumPlayCount;
-        public FixedList4096Bytes<AudioKey> VariationKeys;
-        public int CurrentIndex;
-
-        [NotBurstCompatible]
-        public AudioSource Prefab
+        public void Dispose()
         {
-            get
-            {
-                var setting = AudioManager.Instance.GetAudioSetting(AudioKey);
-                return setting.Prefab;
-            }
-        }
-        [NotBurstCompatible]
-        public AudioMixerGroup AudioMixerGroup
-        {
-            get
-            {
-                var setting = AudioManager.Instance.GetAudioSetting(AudioKey);
-                return setting.Group;
-            }
-        }
-
-        [NotBurstCompatible]
-        public RuntimeAudioSetting(AudioKey audioKey)
-        {
-            var setting = AudioManager.Instance.GetAudioSetting(audioKey);
-
-            this.AudioKey = audioKey;
-            this.AudioOptions = setting.Options;
-            this.Volume = setting.Volume;
-            this.MinPitch = setting.m_MinPitch;
-            this.MaxPitch = setting.m_MaxPitch;
-            this.MaximumPlayCount = setting.m_MaximumPlayCount;
-            this.VariationKeys = new FixedList4096Bytes<AudioKey>();
-            for (int i = 0; i < setting.Keys.Length; i++)
-            {
-                this.VariationKeys.Add(setting.Keys[i]);
-            }
-            this.CurrentIndex = setting.CurrentIndex;
         }
     }
 }
