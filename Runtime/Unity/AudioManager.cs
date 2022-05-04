@@ -20,6 +20,7 @@
 using Point.Collections;
 using Point.Collections.Actions;
 using Point.Collections.Buffer;
+using Point.Collections.Buffer.LowLevel;
 using Point.Collections.Events;
 using Point.Collections.ResourceControl;
 using System;
@@ -49,7 +50,57 @@ namespace Point.Audio
         [NonSerialized] readonly Dictionary<Hash, AssetInfo> m_CachedAssetInfo = new Dictionary<Hash, AssetInfo>();
         [NonSerialized] readonly Dictionary<Hash, PrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, PrefabInfo>();
 
-        private TransformAccessArray m_PlayedAudioTransforms;
+        private InternalAudioContainer m_AudioContainer;
+
+        private sealed class InternalAudioContainer : IDisposable
+        {
+            private AudioSource[] m_PlayedAudio;
+            private Transform[] m_PlayedAudioTransforms;
+            private TransformAccessArray m_PlayedAudioTransformAccess;
+            private int m_Count;
+
+            public InternalAudioContainer(int capacity)
+            {
+                m_PlayedAudio = new AudioSource[capacity];
+                m_PlayedAudioTransforms = new Transform[capacity];
+                m_PlayedAudioTransformAccess = new TransformAccessArray(capacity);
+            }
+
+            public void Add(AudioSource audioSource)
+            {
+                if (m_Count >= m_PlayedAudio.Length)
+                {
+                    int targetLength = m_PlayedAudio.Length * 2;
+                    Array.Resize(ref m_PlayedAudio, targetLength);
+                    Array.Resize(ref m_PlayedAudioTransforms, targetLength);
+                }
+
+                m_PlayedAudio[m_Count] = audioSource;
+                m_PlayedAudioTransforms[m_Count] = audioSource.transform;
+
+                m_PlayedAudioTransformAccess.SetTransforms(m_PlayedAudioTransforms);
+                m_Count++;
+            }
+            public void Remove(AudioSource audioSource)
+            {
+                int index = Array.IndexOf(m_PlayedAudio, audioSource);
+                if (index < 0) return;
+
+                UnsafeBufferUtility.RemoveAtSwapBack(m_PlayedAudio, index);
+                UnsafeBufferUtility.RemoveAtSwapBack(m_PlayedAudioTransforms, index);
+
+                m_PlayedAudioTransformAccess.SetTransforms(m_PlayedAudioTransforms);
+                m_Count--;
+            }
+
+            public void Dispose()
+            {
+                m_PlayedAudio = null;
+                m_PlayedAudioTransforms = null;
+                m_PlayedAudioTransformAccess.Dispose();
+            }
+        }
+        
 
         #region Initialize
 
@@ -88,7 +139,7 @@ namespace Point.Audio
 
             EventBroadcaster.AddEvent<PlayAudioEvent>(PlayAudioEventHandler);
 
-            m_PlayedAudioTransforms = new TransformAccessArray(1024);
+            m_AudioContainer = new InternalAudioContainer(1024);
             
         }
         protected override void OnShutdown()
