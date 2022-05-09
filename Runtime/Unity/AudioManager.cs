@@ -54,6 +54,9 @@ namespace Point.Audio
         [NonSerialized] readonly Dictionary<Hash, PrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, PrefabInfo>();
 
         private InternalAudioContainer m_AudioContainer;
+#if UNITY_EDITOR
+        private static bool s_AudioBundleIsNotLoadedErrorSended = false;
+#endif
 
         private sealed class InternalAudioContainer : IDisposable
         {
@@ -390,7 +393,13 @@ namespace Point.Audio
                 {
                     targetKey = audioKey;
                 }
-                $"Audio AssetBundle is not loaded. This is not allowed. Please register AssetBundle with AudioManager.Initialize(AssetBundle)\nThis request({targetKey}) will be accepted only in Editor with {nameof(UnityEditor.AssetDatabase)}.".ToLogError(Channel.Audio);
+                if (!s_AudioBundleIsNotLoadedErrorSended)
+                {
+                    PointHelper.LogError(Channel.Audio,
+                        $"Audio AssetBundle is not loaded. This is not allowed. Please register AssetBundle with AudioManager.Initialize(AssetBundle)\nThis request({targetKey}) will be accepted only in Editor with {nameof(UnityEditor.AssetDatabase)}.");
+
+                    s_AudioBundleIsNotLoadedErrorSended = true;
+                }
 
                 if (!ins.m_GroupMap.TryGetValue(targetKey, out managedData) ||
                     managedData.childs.Length == 0)
@@ -559,9 +568,9 @@ namespace Point.Audio
 
         #region Process
 
-        private static bool ProcessIsPlayable(in Audio audio)
+        private static bool ProcessIsPlayable(in AudioKey audio)
         {
-            AudioKey audioKey = GetConcreteKey(in audio.m_AudioKey);
+            AudioKey audioKey = GetConcreteKey(in audio);
 
             if (!Instance.m_GroupMap.TryGetValue(audioKey, out ManagedAudioData managedData) ||
                 !Instance.m_DataHashMap.TryGetValue(audioKey, out var data))
@@ -631,7 +640,7 @@ namespace Point.Audio
             }
             else
             {
-                if (!ProcessIsPlayable(in audio))
+                if (!ProcessIsPlayable(in audio.m_AudioKey))
                 {
                     //"ignored".ToLog();
                     return;
@@ -645,13 +654,20 @@ namespace Point.Audio
         }
         private static AudioSource InternalPlay(in AudioKey audioKey, out Audio audio)
         {
-            AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
-            if (insAudio == null) return null;
-            else if (!ProcessIsPlayable(in audio))
+#if DEBUG_MODE
+            const string c_IgnoredLogFormat = "Ignored AudioKey({0})";
+#endif
+            if (!ProcessIsPlayable(in audioKey))
             {
-                //"ignored".ToLog();
+                PointHelper.Log(Channel.Audio,
+                    string.Format(c_IgnoredLogFormat, audioKey.ToString()));
+
+                audio = default(Audio);
                 return null;
             }
+
+            AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
+            if (insAudio == null) return null;
 
             ProcessOnPlay(in audio, insAudio);
             return insAudio;
@@ -659,6 +675,9 @@ namespace Point.Audio
 
         public static Audio Play(AudioKey audioKey)
         {
+#if DEBUG_MODE
+            const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
+#endif
             AudioSource insAudio = InternalPlay(audioKey, out var audio);
             if (insAudio == null)
             {
@@ -666,13 +685,17 @@ namespace Point.Audio
             }
 
             insAudio.Play();
-#if UNITY_EDITOR
-            $"Playing AudioClip:{insAudio.clip.name} | Key:{audioKey}".ToLog(Channel.Audio);
+#if DEBUG_MODE
+            PointHelper.Log(Channel.Audio,
+                string.Format(c_LogFormat, insAudio.clip.name, audioKey.ToString()));
 #endif
             return audio;
         }
         public static Audio Play(AudioKey audioKey, Vector3 position)
         {
+#if DEBUG_MODE
+            const string c_LogFormat = "Playing AudioClip({0}) at {1} with AudioKey({2})";
+#endif
             AudioSource insAudio = InternalPlay(audioKey, out var audio);
             if (insAudio == null)
             {
@@ -681,8 +704,9 @@ namespace Point.Audio
 
             insAudio.transform.position = position;
             insAudio.Play();
-#if UNITY_EDITOR
-            $"Playing {audioKey}".ToLog(Channel.Audio);
+#if DEBUG_MODE
+            PointHelper.Log(Channel.Audio,
+                string.Format(c_LogFormat, insAudio.clip.name, position.ToString(), audioKey.ToString()));
 #endif
             return audio;
         }
