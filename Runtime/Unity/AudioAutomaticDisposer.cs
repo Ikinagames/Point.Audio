@@ -18,38 +18,36 @@
 #endif
 
 using Point.Collections;
-using Unity.Collections;
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace Point.Audio
 {
-    [BurstCompatible]
-    public struct AudioKey
+    internal sealed class AudioAutomaticDisposer : StaticMonobehaviour<AudioAutomaticDisposer>
     {
-        private readonly Hash m_Key;
+        private readonly List<Audio> m_Audios = new List<Audio>();
 
-        private AudioKey(Hash hash)
+        public void Register(in Audio audio)
         {
-            m_Key = hash;
+            if (!audio.IsValid())
+            {
+                return;
+            }
+
+            m_Audios.Add(audio);
         }
 
-        [NotBurstCompatible]
-        public static implicit operator AudioKey(AssetPathField<AudioClip> t)
+        private void LateUpdate()
         {
-            return new AudioKey(new Hash(t.AssetPath));
-        }
-        [NotBurstCompatible]
-        public static implicit operator AudioKey(string t)
-        {
-            return new AudioKey(new Hash(t));
-        }
-        public static implicit operator AudioKey(Hash t)
-        {
-            return new AudioKey(t);
-        }
-        public static implicit operator Hash(AudioKey t) => t.m_Key;
+#if UNITY_EDITOR
+            if (UnityEditor.EditorApplication.isPaused) return;
+#endif
+            for (int i = m_Audios.Count - 1; i >= 0; i--)
+            {
+                if (m_Audios[i].isPlaying) continue;
 
-        [NotBurstCompatible]
-        public override string ToString() => m_Key.ToString();
+                m_Audios[i].Reserve();
+                m_Audios.RemoveAt(i);
+            }
+        }
     }
 }
