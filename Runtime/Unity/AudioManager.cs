@@ -28,7 +28,6 @@ using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Jobs;
@@ -44,8 +43,8 @@ namespace Point.Audio
         [NonSerialized] private AudioSettings m_Settings;
         [NonSerialized] private int EntryCount;
         [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
-        [NonSerialized] private NativeHashMap<Hash, CompressedAudioData> m_DataHashMap;
-        [NonSerialized] private Dictionary<Hash, ManagedAudioData> m_GroupMap;
+        [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+        [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_GroupMap;
 
         //
         [NonSerialized] AssetBundleInfo m_AudioBundle;
@@ -98,6 +97,10 @@ namespace Point.Audio
                 }
 
                 return new Audio(audioKey, index, audioSource.GetInstanceID(), transformations);
+            }
+            public Audio GetEmptyAudio(in AudioKey audioKey)
+            {
+                return new Audio(audioKey, transformations);
             }
 
             public void Register(AudioSource audioSource)
@@ -173,8 +176,8 @@ namespace Point.Audio
 
             EntryCount = m_Settings.CalculateEntryCount();
             m_FriendlyNameMap = new Dictionary<Hash, Hash>();
-            m_DataHashMap = new NativeHashMap<Hash, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
-            m_GroupMap = new Dictionary<Hash, ManagedAudioData>();
+            m_DataHashMap = new NativeHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
+            m_GroupMap = new Dictionary<AudioKey, ManagedAudioData>();
 
             m_Settings.RegisterFriendlyNames(m_FriendlyNameMap);
             foreach (var data in m_Settings.GetAudioData())
@@ -304,6 +307,11 @@ namespace Point.Audio
 
         #endregion
 
+        public static Audio GetAudio(in AudioKey audioKey)
+        {
+            //GetAudio(in audioKey, out Audio audio, out _, out _);
+            return Instance.m_AudioContainer.GetEmptyAudio(in audioKey);
+        }
         public static bool IsPlaying(in Audio audio)
         {
             if (!audio.IsValid())
@@ -354,6 +362,14 @@ namespace Point.Audio
             return Instance.m_AudioContainer.GetAudioSource(in audio);
         }
 
+        private static AudioKey GetConcreteKey(in AudioKey audioKey)
+        {
+            if (Instance.m_FriendlyNameMap.TryGetValue(audioKey, out var key))
+            {
+                return key;
+            }
+            return audioKey;
+        }
         private static AudioClip GetAudioClip(Hash audioKey)
         {
             ManagedAudioData managedData; int index;
@@ -521,25 +537,6 @@ namespace Point.Audio
             return insAudio;
         }
 
-        internal static void PlayAudio(ref Audio audio)
-        {
-            AudioSource audioSource;
-            if (audio.RequireSetup())
-            {
-                if (!audio.IsValid())
-                {
-                    "not valid".ToLogError();
-                    return;
-                }
-
-                AudioKey key = audio.m_AudioKey;
-                audio = Play(key);
-                return;
-            }
-            else audioSource = GetAudioSource(audio);
-
-            audioSource.Play();
-        }
         internal static void StopAudio(in Audio audio)
         {
             AudioSource audioSource = GetAudioSource(audio);
@@ -560,11 +557,40 @@ namespace Point.Audio
 
         #endregion
 
-        public static Audio GetAudio(in AudioKey audioKey)
+        #region Process
+
+        private static bool ProcessIsPlayable(in Audio audio)
         {
-            GetAudio(in audioKey, out Audio audio, out _, out _);
-            return audio;
+            AudioKey audioKey = GetConcreteKey(in audio.m_AudioKey);
+
+            if (!Instance.m_GroupMap.TryGetValue(audioKey, out ManagedAudioData managedData) ||
+                !Instance.m_DataHashMap.TryGetValue(audioKey, out var data))
+            {
+                return true;
+            }
+
+            if (!managedData.lastPlayedTime.IsExceeded(data.IgnoreTime)) return false;
+
+            return true;
         }
+        private static void ProcessOnPlay(in Audio audio, AudioSource audioSource)
+        {
+            AudioKey audioKey = GetConcreteKey(in audio.m_AudioKey);
+
+            if (Instance.m_GroupMap.TryGetValue(audioKey, out ManagedAudioData managedData))
+            {
+                for (int i = 0; i < managedData.onPlayConstAction.Count; i++)
+                {
+                    managedData.onPlayConstAction[i].Execute(audioSource);
+                }
+
+                managedData.lastPlayedTime = Timer.Start();
+            }
+            
+            AddToPlaylist(audio);
+        }
+
+        #endregion
 
         #region Play
 
@@ -587,22 +613,50 @@ namespace Point.Audio
             Instance.m_PlayedAudios.RemoveAt(index);
             Instance.m_PlayedAudioHashSet.Remove(audio);
         }
-        
-        private static AudioSource InternalPlay(in AudioKey audioKey, out Audio audio)
+
+        internal static void PlayAudio(ref Audio audio)
         {
-            AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out var managedData);
-            if (insAudio != null)
+            AudioSource audioSource;
+            if (audio.RequireSetup())
             {
-                for (int i = 0; i < managedData.onPlayConstAction.Count; i++)
+                if (!audio.IsValid())
                 {
-                    managedData.onPlayConstAction[i].Execute(insAudio);
+                    "not valid".ToLogError();
+                    return;
                 }
 
-                AddToPlaylist(audio);
+                AudioKey key = audio.m_AudioKey;
+                audio = Play(key);
+                return;
+            }
+            else
+            {
+                if (!ProcessIsPlayable(in audio))
+                {
+                    //"ignored".ToLog();
+                    return;
+                }
+
+                audioSource = GetAudioSource(audio);
+                ProcessOnPlay(in audio, audioSource);
             }
 
+            audioSource.Play();
+        }
+        private static AudioSource InternalPlay(in AudioKey audioKey, out Audio audio)
+        {
+            AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
+            if (insAudio == null) return null;
+            else if (!ProcessIsPlayable(in audio))
+            {
+                //"ignored".ToLog();
+                return null;
+            }
+
+            ProcessOnPlay(in audio, insAudio);
             return insAudio;
         }
+
         public static Audio Play(AudioKey audioKey)
         {
             AudioSource insAudio = InternalPlay(audioKey, out var audio);
@@ -645,6 +699,8 @@ namespace Point.Audio
             private int currentIndex = 0;
             public AssetPathField<AudioClip>[] childs;
             public AudioPlayOption playOption;
+
+            public Timer lastPlayedTime;
 
             public int GetIndex()
             {
@@ -727,98 +783,6 @@ namespace Point.Audio
                 //"Assets/test/test.wav"
                 );
             EventBroadcaster.PostEvent<PlayAudioEvent>(PlayAudioEvent.GetEvent("Soundtrack01"));
-        }
-    }
-
-    [BurstCompatible]
-    public struct Audio : IValidation
-    {
-        public static Audio Invalid => new Audio();
-
-        internal readonly AudioKey m_AudioKey;
-        internal int m_Index, m_InstanceID;
-        private UnsafeAllocator<Transformation> m_Allocator;
-
-#pragma warning disable IDE1006 // Naming Styles
-        [NotBurstCompatible]
-        public AudioClip clip
-        {
-            get
-            {
-                AudioSource audioSource = AudioManager.GetAudioSource(in this);
-                return audioSource.clip;
-            }
-            set
-            {
-                AudioSource audioSource = AudioManager.GetAudioSource(in this);
-                audioSource.clip = value;
-            }
-        }
-        [NotBurstCompatible]
-        public bool isPlaying => AudioManager.IsPlaying(in this);
-
-        public float3 position
-        {
-            get => m_Allocator[m_Index].localPosition;
-            set
-            {
-                m_Allocator[m_Index].localPosition = value;
-            }
-        }
-        public quaternion rotation
-        {
-            get => m_Allocator[m_Index].localRotation;
-            set
-            {
-                m_Allocator[m_Index].localRotation = value;
-            }
-        }
-#pragma warning restore IDE1006 // Naming Styles
-
-        public Audio(AudioKey audioKey, UnsafeAllocator<Transformation> allocator)
-        {
-            this = default(Audio);
-
-            m_AudioKey = audioKey;
-            m_Allocator = allocator;
-        }
-        internal Audio(AudioKey audioKey, int index, int audioSource, UnsafeAllocator<Transformation> allocator)
-        {
-            m_AudioKey = audioKey;
-            m_Index = index;
-            m_InstanceID = audioSource;
-            m_Allocator = allocator;
-        }
-
-        internal bool RequireSetup() => m_InstanceID == 0;
-        public bool IsValid() => m_AudioKey.IsValid() && m_Allocator.IsCreated;
-
-        [NotBurstCompatible]
-        public void Play()
-        {
-            AudioManager.PlayAudio(ref this);
-        }
-        [NotBurstCompatible]
-        public void Stop()
-        {
-            AudioManager.StopAudio(in this);
-        }
-
-        /// <summary>
-        /// 오디오 인스턴스를 <see cref="AudioManager"/> 에게 반환합니다.
-        /// </summary>
-        [NotBurstCompatible]
-        public void Reserve()
-        {
-            AudioManager.ReserveAudio(ref this);
-
-            m_Allocator = default(UnsafeAllocator<Transformation>);
-        }
-
-        [NotBurstCompatible]
-        public override string ToString()
-        {
-            return m_AudioKey.ToString();
         }
     }
 }

@@ -29,32 +29,29 @@ namespace Point.Audio
     [StructLayout(LayoutKind.Sequential)]
     public struct CompressedAudioData
     {
-        [MarshalAs(UnmanagedType.U1)]
-        private readonly bool m_EnableStealing;
         private readonly float
             m_IgnoreTime, m_MasterVolume,
             m_MinVolume, m_MaxVolume,
             m_MinPitch, m_MaxPitch;
-        private readonly Hash 
-            m_AudioClipPath, m_PrefabPath;
+        private readonly AudioKey m_AudioClipPath;
+        private readonly Hash m_PrefabPath;
 
-        public Hash AudioKey => m_AudioClipPath;
+        public AudioKey AudioKey => m_AudioClipPath;
         public Hash PrefabKey => m_PrefabPath;
+
+        public float IgnoreTime => m_IgnoreTime;
 
         [NotBurstCompatible]
         internal CompressedAudioData(
             AssetPathField<AudioClip> audioClip,
             AssetPathField<AudioSource> prefab,
-            AudioMixerGroup group,
             
-            bool enableStealing,
             float ignoreTime,
             
             float masterVolume,
             float minVolume, float maxVolume,
             float minPitch, float maxPitch)
         {
-            m_EnableStealing = enableStealing;
             m_IgnoreTime = ignoreTime;
             m_MasterVolume = masterVolume;
             m_MinVolume = minVolume;

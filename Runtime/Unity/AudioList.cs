@@ -57,8 +57,6 @@ namespace Point.Audio
 
             [Space, Header("Options")]
             [SerializeField]
-            private bool m_EnableStealing = true;
-            [SerializeField]
             private float m_IgnoreTime = 0.2f;
 
             [Space]
@@ -85,7 +83,7 @@ namespace Point.Audio
             public AudioPlayOption GetPlayOption() => m_PlayOption;
 
             public CompressedAudioData GetAudioData() => new CompressedAudioData(
-                m_AudioClip, m_Prefab, m_Group, m_EnableStealing, m_IgnoreTime, m_MasterVolume,
+                m_AudioClip, m_Prefab, m_IgnoreTime, m_MasterVolume,
                 m_Volume.Min, m_Volume.Max, m_Pitch.Min, m_Pitch.Max);
         }
 
