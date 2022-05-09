@@ -25,7 +25,7 @@ namespace Point.Audio
         /// 오디오가 재생이 완료되면 자동으로 <see cref="AudioManager"/> 에게 반환합니다.
         /// </summary>
         /// <param name="t"></param>
-        public static void AutoDispose(in this Audio t)
+        public static void AutoDisposal(in this Audio t)
         {
             AudioAutomaticDisposer.Instance.Register(t);
         }

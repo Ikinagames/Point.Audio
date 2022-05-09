@@ -18,13 +18,14 @@
 #endif
 
 using Point.Collections;
+using System;
 using Unity.Collections;
 using UnityEngine;
 
 namespace Point.Audio
 {
     [BurstCompatible]
-    public struct AudioKey
+    public struct AudioKey : IValidation, IEquatable<AudioKey>
     {
         private readonly Hash m_Key;
 
@@ -51,5 +52,8 @@ namespace Point.Audio
 
         [NotBurstCompatible]
         public override string ToString() => m_Key.ToString();
+
+        public bool IsValid() => !m_Key.IsEmpty();
+        public bool Equals(AudioKey other) => m_Key.Equals(other.m_Key);
     }
 }

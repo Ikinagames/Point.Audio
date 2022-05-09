@@ -57,7 +57,7 @@ namespace Point.Audio
 
             for (int i = 0; i < m_Key.Length; i++)
             {
-                AudioManager.Play(m_Key[i], animator.transform.position).AutoDispose();
+                AudioManager.Play(m_Key[i], animator.transform.position).AutoDisposal();
             }
         }
     }

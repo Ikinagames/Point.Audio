@@ -24,6 +24,9 @@ namespace Point.Audio
 {
     internal sealed class AudioAutomaticDisposer : StaticMonobehaviour<AudioAutomaticDisposer>
     {
+        protected override bool EnableLog => false;
+        protected override bool HideInInspector => true;
+
         private readonly List<Audio> m_Audios = new List<Audio>();
 
         public void Register(in Audio audio)
