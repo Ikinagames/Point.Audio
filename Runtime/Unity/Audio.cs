@@ -19,6 +19,7 @@
 
 using Point.Collections;
 using Point.Collections.Buffer.LowLevel;
+using System;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -115,5 +116,23 @@ namespace Point.Audio
         {
             return m_AudioKey.ToString();
         }
+    }
+
+    [Flags]
+    public enum RESULT
+    {
+        OK      =   0,
+
+        //
+        AUDIOCLIP       =   0b0001,
+        ASSETBUNDLE     =   0b0010,
+        AUDIOKEY        =   0b0100,
+
+        //
+        NOTFOUND        =   0b0001 << 7,
+        NOTLOADED       =   0b0010 << 7,
+        NOTVALID        =   0b0100 << 7,
+
+        IGNORED         =   ~0
     }
 }

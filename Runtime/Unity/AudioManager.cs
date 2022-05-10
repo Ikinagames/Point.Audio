@@ -44,16 +44,17 @@ namespace Point.Audio
         [NonSerialized] private int EntryCount;
         [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
         [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
-        [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_GroupMap;
+        [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_CachedManagedDataMap;
 
         //
         [NonSerialized] AssetBundleInfo m_AudioBundle;
         [NonSerialized] ObjectPool<AudioSource> m_DefaultAudioPool;
 
-        [NonSerialized] readonly Dictionary<Hash, AssetInfo> m_CachedAssetInfo = new Dictionary<Hash, AssetInfo>();
+        [NonSerialized] readonly Dictionary<Hash, AssetInfo> m_CachedAssetInfoMap = new Dictionary<Hash, AssetInfo>();
         [NonSerialized] readonly Dictionary<Hash, PrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, PrefabInfo>();
 
-        private InternalAudioContainer m_AudioContainer;
+        [NonSerialized] private InternalAudioContainer m_AudioContainer;
+        [NonSerialized] private AudioListener m_MainListener = null;
 #if UNITY_EDITOR
         private static bool s_AudioBundleIsNotLoadedErrorSended = false;
 #endif
@@ -171,6 +172,11 @@ namespace Point.Audio
             }
         }
 
+        //////////////////////////////////////////////////////////////////////////////////////////
+        /*                                   Critical Section                                   */
+        /*                                       수정금지                                        */
+        //////////////////////////////////////////////////////////////////////////////////////////
+
         #region Initialize
 
         protected override void OnInitialize()
@@ -180,7 +186,7 @@ namespace Point.Audio
             EntryCount = m_Settings.CalculateEntryCount();
             m_FriendlyNameMap = new Dictionary<Hash, Hash>();
             m_DataHashMap = new NativeHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
-            m_GroupMap = new Dictionary<AudioKey, ManagedAudioData>();
+            m_CachedManagedDataMap = new Dictionary<AudioKey, ManagedAudioData>();
 
             m_Settings.RegisterFriendlyNames(m_FriendlyNameMap);
             foreach (var data in m_Settings.GetAudioData())
@@ -188,7 +194,7 @@ namespace Point.Audio
                 var temp = data.GetAudioData();
 
                 m_DataHashMap.Add(temp.AudioKey, temp);
-                m_GroupMap.Add(temp.AudioKey, 
+                m_CachedManagedDataMap.Add(temp.AudioKey, 
                     new ManagedAudioData
                     {
                         audioMixerGroup = data.GetAudioMixerGroup(),
@@ -199,16 +205,16 @@ namespace Point.Audio
                     });
             }
 
+            EventBroadcaster.AddEvent<PlayAudioEvent>(PlayAudioEventHandler);
+
+            m_AudioContainer = new InternalAudioContainer(1024);
             m_DefaultAudioPool = new ObjectPool<AudioSource>(
                 DefaultAudioFactory,
                 DefaultAudioOnGet,
                 DefaultAudioOnReserve,
                 null
                 );
-
-            EventBroadcaster.AddEvent<PlayAudioEvent>(PlayAudioEventHandler);
-
-            m_AudioContainer = new InternalAudioContainer(1024);
+            m_DefaultAudioPool.AddObjects(15);
         }
         protected override void OnShutdown()
         {
@@ -223,20 +229,6 @@ namespace Point.Audio
         }
 
         #endregion
-
-        public static void Initialize(AssetBundle audioBundle)
-        {
-            Instance.m_AudioBundle = ResourceManager.RegisterAssetBundle(audioBundle);
-#if DEBUG_MODE
-            foreach (var item in Instance.m_DataHashMap)
-            {
-                if (!Instance.m_AudioBundle.HasAsset(item.Key))
-                {
-                    $"?? {item.Value.AudioKey} does not exist from assetbundle {audioBundle.name}".ToLogError();
-                }
-            }
-#endif
-        }
 
         #region Default Pool
 
@@ -295,11 +287,64 @@ namespace Point.Audio
 
                 m_AudioContainer.Update();
             }
-            
+
             #endregion
         }
 
         #endregion
+
+        //////////////////////////////////////////////////////////////////////////////////////////
+        /*                                End of Critical Section                               */
+        //////////////////////////////////////////////////////////////////////////////////////////
+
+        public static void Initialize(AssetBundle audioBundle)
+        {
+            Instance.m_AudioBundle = ResourceManager.RegisterAssetBundle(audioBundle);
+#if DEBUG_MODE
+            foreach (var item in Instance.m_DataHashMap)
+            {
+                if (!Instance.m_AudioBundle.HasAsset(item.Key))
+                {
+                    $"?? {item.Value.AudioKey} does not exist from assetbundle {audioBundle.name}".ToLogError();
+                }
+            }
+#endif
+        }
+        public static void ValidateListener()
+        {
+            if (Instance.m_MainListener != null)
+            {
+                Instance.m_MainListener.enabled = true;
+                return;
+            }
+
+            AudioListener[] listeners = FindObjectsOfType<AudioListener>();
+            if (listeners.Length == 0)
+            {
+                GameObject listener = new GameObject();
+#if DEBUG_MODE
+                listener.name = "Default Listener";
+#endif
+                Instance.m_MainListener = listener.AddComponent<AudioListener>();
+
+                DontDestroyOnLoad(listener);
+                return;
+            }
+            else if (listeners.Length > 1)
+            {
+#if DEBUG_MODE
+                PointHelper.LogError(Channel.Audio,
+                    $"There\'s more then one {nameof(AudioListener)} in current scene. This is not allowed.");
+#endif
+                for (int i = listeners.Length - 1; i >= 1; i--)
+                {
+                    Destroy(listeners[i]);
+                }
+            }
+
+            listeners[0].enabled = true;
+            Instance.m_MainListener = listeners[0];
+        }
 
         #region Event Handlers
 
@@ -339,11 +384,11 @@ namespace Point.Audio
                 return m_DefaultAudioPool.Get();
             }
 
-            if (!m_CachedAssetInfo.TryGetValue(prefabKey, out AssetInfo prefabAsset))
+            if (!m_CachedAssetInfoMap.TryGetValue(prefabKey, out AssetInfo prefabAsset))
             {
                 if (m_AudioBundle.TryLoadAsset(prefabKey, out prefabAsset))
                 {
-                    m_CachedAssetInfo.Add(prefabKey, prefabAsset);
+                    m_CachedAssetInfoMap.Add(prefabKey, prefabAsset);
                 }
                 // 프리팹이 없다?
                 else
@@ -373,26 +418,24 @@ namespace Point.Audio
             }
             return audioKey;
         }
-        private static AudioClip GetAudioClip(Hash audioKey)
+        private static AudioClip GetAudioClip(AudioKey audioKey)
         {
             ManagedAudioData managedData; int index;
             AudioManager ins = Instance;
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                   Critical Section                                   */
+            /*                                       수정금지                                        */
             //////////////////////////////////////////////////////////////////////////////////////////
-            if (audioKey.IsEmpty())
+            if (!audioKey.IsValid())
             {
                 return null;
             }
             else if (!ins.m_AudioBundle.IsValid())
             {
 #if UNITY_EDITOR
-                Hash targetKey;
-                if (!Instance.m_FriendlyNameMap.TryGetValue(audioKey, out targetKey))
-                {
-                    targetKey = audioKey;
-                }
+                Hash targetKey = GetConcreteKey(in audioKey);
+
                 if (!s_AudioBundleIsNotLoadedErrorSended)
                 {
                     PointHelper.LogError(Channel.Audio,
@@ -401,7 +444,7 @@ namespace Point.Audio
                     s_AudioBundleIsNotLoadedErrorSended = true;
                 }
 
-                if (!ins.m_GroupMap.TryGetValue(targetKey, out managedData) ||
+                if (!ins.m_CachedManagedDataMap.TryGetValue(targetKey, out managedData) ||
                     managedData.childs.Length == 0)
                 {
                     return UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(targetKey.Key);
@@ -416,16 +459,16 @@ namespace Point.Audio
 #endif
             }
             //////////////////////////////////////////////////////////////////////////////////////////
-            /*                                                                                      */
+            /*                                End of Critical Section                               */
             //////////////////////////////////////////////////////////////////////////////////////////
 
-            if (!ins.m_CachedAssetInfo.TryGetValue(audioKey, out AssetInfo clipAsset))
+            if (!ins.m_CachedAssetInfoMap.TryGetValue(audioKey, out AssetInfo clipAsset))
             {
                 clipAsset = ins.m_AudioBundle.LoadAsset(audioKey);
-                ins.m_CachedAssetInfo.Add(audioKey, clipAsset);
+                ins.m_CachedAssetInfoMap.Add(audioKey, clipAsset);
             }
 
-            if (!ins.m_GroupMap.TryGetValue(audioKey, out managedData) ||
+            if (!ins.m_CachedManagedDataMap.TryGetValue(audioKey, out managedData) ||
                 managedData.childs.Length == 0)
             {
                 return clipAsset.Asset as AudioClip;
@@ -466,7 +509,7 @@ namespace Point.Audio
                 return Instance.m_DefaultAudioPool;
             }
 
-            Dictionary<Hash, AssetInfo> cachedAssetInfo = Instance.m_CachedAssetInfo;
+            Dictionary<Hash, AssetInfo> cachedAssetInfo = Instance.m_CachedAssetInfoMap;
             if (!cachedAssetInfo.TryGetValue(prefabKey, out AssetInfo prefabAsset))
             {
                 if (audioBundle.TryLoadAsset(prefabKey, out prefabAsset))
@@ -490,7 +533,7 @@ namespace Point.Audio
             return info.pool;
         }
 
-        private static AudioSource IssueAudioSource(in AudioKey audioKey,
+        private static RESULT IssueAudioSource(in AudioKey audioKey, out AudioSource audioSource,
             out CompressedAudioData data, out ManagedAudioData managedData)
         {
             AudioClip clip = GetAudioClip(audioKey);
@@ -498,53 +541,50 @@ namespace Point.Audio
             {
                 $"Could\'nt find audio clip {audioKey}.".ToLogError();
 
+                audioSource = null;
                 data = default(CompressedAudioData);
                 managedData = null;
-                return null;
+                return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
             }
-
-            AudioSource insAudio;
 
             /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
             if (!TryGetCompressedAudioData(audioKey, out data))
             {
-                insAudio = Instance.m_DefaultAudioPool.Get();
-                insAudio.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
-                insAudio.clip = clip;
+                audioSource = Instance.m_DefaultAudioPool.Get();
+                audioSource.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+                audioSource.clip = clip;
 
                 data = default(CompressedAudioData);
                 managedData = null;
-                return insAudio;
+                return RESULT.OK;
             }
 
-            managedData = Instance.m_GroupMap[data.AudioKey];
-            insAudio = Instance.CreateAudioSource(data.PrefabKey);
+            managedData = Instance.m_CachedManagedDataMap[data.AudioKey];
+            audioSource = Instance.CreateAudioSource(data.PrefabKey);
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                                                                      */
-            //////////////////////////////////////////////////////////////////////////////////////////
-            insAudio.outputAudioMixerGroup = managedData.audioMixerGroup;
-            insAudio.clip = clip;
+            audioSource.outputAudioMixerGroup = managedData.audioMixerGroup;
+            audioSource.clip = clip;
 
-            insAudio.volume = data.GetVolume();
-            insAudio.pitch = data.GetPitch();
-            //////////////////////////////////////////////////////////////////////////////////////////
+            audioSource.volume = data.GetVolume();
+            audioSource.pitch = data.GetPitch();
             /*                                                                                      */
             //////////////////////////////////////////////////////////////////////////////////////////
 
-            return insAudio;
+            return RESULT.OK;
         }
-        private static AudioSource GetAudio(in AudioKey audioKey, out Audio audio, 
-            out CompressedAudioData data, out ManagedAudioData managedData)
-        {
-            audio = default(Audio);
-            AudioSource insAudio = IssueAudioSource(in audioKey, out data, out managedData);
-            if (insAudio != null)
-            {
-                audio = Instance.m_AudioContainer.GetAudio(insAudio, audioKey);
-            }
+        //private static AudioSource GetAudio(in AudioKey audioKey, out Audio audio, 
+        //    out CompressedAudioData data, out ManagedAudioData managedData)
+        //{
+        //    audio = default(Audio);
+        //    var result = IssueAudioSource(in audioKey, out AudioSource insAudio, out data, out managedData);
+        //    if (result == RESULT.OK)
+        //    {
+        //        audio = Instance.m_AudioContainer.GetAudio(insAudio, audioKey);
+        //    }
             
-            return insAudio;
-        }
+        //    return insAudio;
+        //}
 
         internal static void StopAudio(in Audio audio)
         {
@@ -572,7 +612,7 @@ namespace Point.Audio
         {
             AudioKey audioKey = GetConcreteKey(in audio);
 
-            if (!Instance.m_GroupMap.TryGetValue(audioKey, out ManagedAudioData managedData) ||
+            if (!Instance.m_CachedManagedDataMap.TryGetValue(audioKey, out ManagedAudioData managedData) ||
                 !Instance.m_DataHashMap.TryGetValue(audioKey, out var data))
             {
                 return true;
@@ -586,7 +626,7 @@ namespace Point.Audio
         {
             AudioKey audioKey = GetConcreteKey(in audio.m_AudioKey);
 
-            if (Instance.m_GroupMap.TryGetValue(audioKey, out ManagedAudioData managedData))
+            if (Instance.m_CachedManagedDataMap.TryGetValue(audioKey, out ManagedAudioData managedData))
             {
                 for (int i = 0; i < managedData.onPlayConstAction.Count; i++)
                 {
@@ -623,7 +663,7 @@ namespace Point.Audio
             Instance.m_PlayedAudioHashSet.Remove(audio);
         }
 
-        internal static void PlayAudio(ref Audio audio)
+        internal static RESULT PlayAudio(ref Audio audio)
         {
             AudioSource audioSource;
             if (audio.RequireSetup())
@@ -631,19 +671,26 @@ namespace Point.Audio
                 if (!audio.IsValid())
                 {
                     "not valid".ToLogError();
-                    return;
+                    return RESULT.AUDIOKEY | RESULT.NOTVALID;
                 }
 
-                AudioKey key = audio.m_AudioKey;
-                audio = Play(key);
-                return;
+                AudioKey audioKey = audio.m_AudioKey;
+                RESULT result = InternalPlay(audioKey, out audio, out AudioSource insAudio);
+                if (result != RESULT.OK)
+                {
+                    return result;
+                }
+
+                insAudio.Play();
+                //audio = Play(key);
+                return RESULT.OK;
             }
             else
             {
                 if (!ProcessIsPlayable(in audio.m_AudioKey))
                 {
                     //"ignored".ToLog();
-                    return;
+                    return RESULT.IGNORED;
                 }
 
                 audioSource = GetAudioSource(audio);
@@ -651,8 +698,9 @@ namespace Point.Audio
             }
 
             audioSource.Play();
+            return RESULT.OK;
         }
-        private static AudioSource InternalPlay(in AudioKey audioKey, out Audio audio)
+        private static RESULT InternalPlay(in AudioKey audioKey, out Audio audio, out AudioSource audioSource)
         {
 #if DEBUG_MODE
             const string c_IgnoredLogFormat = "Ignored AudioKey({0})";
@@ -663,14 +711,24 @@ namespace Point.Audio
                     string.Format(c_IgnoredLogFormat, audioKey.ToString()));
 
                 audio = default(Audio);
-                return null;
+                audioSource = null;
+                return RESULT.IGNORED;
             }
 
-            AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
-            if (insAudio == null) return null;
+            RESULT result = IssueAudioSource(in audioKey, out audioSource, 
+                out CompressedAudioData data, out ManagedAudioData managedData);
+            if (result != RESULT.OK)
+            {
+                audio = default(Audio);
+                return result;   
+            }
 
-            ProcessOnPlay(in audio, insAudio);
-            return insAudio;
+            audio = Instance.m_AudioContainer.GetAudio(audioSource, audioKey);
+            //AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
+            //if (insAudio == null) return null;
+
+            ProcessOnPlay(in audio, audioSource);
+            return RESULT.OK;
         }
 
         public static Audio Play(AudioKey audioKey)
@@ -678,10 +736,10 @@ namespace Point.Audio
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
 #endif
-            AudioSource insAudio = InternalPlay(audioKey, out var audio);
-            if (insAudio == null)
+            RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
+            if (result != RESULT.OK)
             {
-                return audio;
+                return Audio.Invalid;
             }
 
             insAudio.Play();
@@ -696,8 +754,8 @@ namespace Point.Audio
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) at {1} with AudioKey({2})";
 #endif
-            AudioSource insAudio = InternalPlay(audioKey, out var audio);
-            if (insAudio == null)
+            RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
+            if (result != RESULT.OK)
             {
                 return Audio.Invalid;
             }
