@@ -40,7 +40,7 @@ namespace Point.Audio
 
             public void Register(Dictionary<Hash, Hash> map)
             {
-                map.Add(new Hash(m_FriendlyName), new Hash(m_AudioClip.AssetPath));
+                map.Add(new Hash(m_FriendlyName), new Hash(m_AudioClip.AssetPath.ToLowerInvariant()));
             }
         }
         [Serializable]
