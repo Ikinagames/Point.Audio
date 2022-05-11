@@ -32,7 +32,7 @@ namespace Point.Audio
     {
         public static Audio Invalid => new Audio();
 
-        [SerializeField] internal AudioKey m_AudioKey;
+        [SerializeField] private AudioKey m_AudioKey;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
 

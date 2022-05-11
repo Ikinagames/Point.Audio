@@ -447,12 +447,12 @@ namespace Point.Audio
             AudioSource audioSource;
             if (audio.RequireSetup())
             {
-                if (!audio.IsValid())
+                if (!audio.audioKey.IsValid())
                 {
                     return RESULT.AUDIOKEY | RESULT.NOTVALID;
                 }
 
-                AudioKey audioKey = audio.m_AudioKey;
+                AudioKey audioKey = audio.audioKey;
                 RESULT result = InternalPlay(audioKey, out audio, out AudioSource insAudio);
                 if ((result & RESULT.OK) != RESULT.OK)
                 {
@@ -464,7 +464,7 @@ namespace Point.Audio
             }
             else
             {
-                if (!ProcessIsPlayable(in audio.m_AudioKey))
+                if (!ProcessIsPlayable(audio.audioKey))
                 {
                     //"ignored".ToLog();
                     return RESULT.IGNORED;
@@ -489,7 +489,7 @@ namespace Point.Audio
         }
         internal static void ReserveAudio(ref Audio audio)
         {
-            ObjectPool<AudioSource> pool = GetPool(in audio.m_AudioKey);
+            ObjectPool<AudioSource> pool = GetPool(audio.audioKey);
             AudioSource audioSource = GetAudioSource(audio);
 
             pool.Reserve(audioSource);
@@ -517,7 +517,7 @@ namespace Point.Audio
         }
         private static void ProcessOnPlay(in Audio audio, AudioSource audioSource)
         {
-            AudioKey audioKey = GetConcreteKey(in audio.m_AudioKey);
+            AudioKey audioKey = GetConcreteKey(audio.audioKey);
 
             if (Instance.m_CachedManagedDataMap.TryGetValue(audioKey, out ManagedAudioData managedData))
             {
@@ -845,6 +845,7 @@ namespace Point.Audio
                 result.SendLog(in audioKey);
                 return Audio.Invalid;
             }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
             insAudio.Play();
 #if DEBUG_MODE
@@ -864,6 +865,7 @@ namespace Point.Audio
                 result.SendLog(in audioKey, in position);
                 return Audio.Invalid;
             }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
             insAudio.transform.position = position;
             insAudio.Play();
