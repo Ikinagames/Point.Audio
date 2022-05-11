@@ -57,6 +57,8 @@ namespace Point.Audio.Editor
         public AudioVisualElement()
         {
             m_Hash = string.Empty;
+
+            this.AddToClassList("point-text-element");
         }
         public AudioVisualElement(Audio audio)
         {
