@@ -17,17 +17,21 @@
 #define DEBUG_MODE
 #endif
 
+using UnityEngine;
 using Point.Collections;
 using System.Collections.Generic;
 
 namespace Point.Audio
 {
+    [AddComponentMenu("")]
     internal sealed class AudioAutomaticDisposer : StaticMonobehaviour<AudioAutomaticDisposer>
     {
         protected override bool EnableLog => false;
         protected override bool HideInInspector => true;
 
         private readonly List<Audio> m_Audios = new List<Audio>();
+
+        public Audio Audio;
 
         public void Register(in Audio audio)
         {

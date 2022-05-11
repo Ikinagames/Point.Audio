@@ -24,10 +24,11 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    [BurstCompatible]
+    [BurstCompatible, Serializable]
     public struct AudioKey : IValidation, IEquatable<AudioKey>
     {
-        private readonly Hash m_Key;
+        [SerializeField]
+        private Hash m_Key;
 
         private AudioKey(Hash hash)
         {

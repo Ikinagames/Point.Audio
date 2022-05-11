@@ -21,21 +21,23 @@ using Point.Collections;
 using Point.Collections.Buffer.LowLevel;
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace Point.Audio
 {
-    [BurstCompatible]
-    public struct Audio : IValidation
+    [BurstCompatible, Serializable]
+    public struct Audio : IValidation, ISerializationCallbackReceiver
     {
         public static Audio Invalid => new Audio();
 
-        internal readonly AudioKey m_AudioKey;
+        [SerializeField] internal AudioKey m_AudioKey;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
 
 #pragma warning disable IDE1006 // Naming Styles
+        public AudioKey audioKey => m_AudioKey;
         [NotBurstCompatible]
         public AudioClip clip
         {
@@ -87,7 +89,7 @@ namespace Point.Audio
         }
 
         internal bool RequireSetup() => m_InstanceID == 0;
-        public bool IsValid() => m_AudioKey.IsValid() && m_Allocator.IsCreated;
+        public bool IsValid() => m_AudioKey.IsValid() && m_InstanceID != 0;
 
         [NotBurstCompatible]
         public void Play()
@@ -120,23 +122,18 @@ namespace Point.Audio
         {
             return m_AudioKey.ToString();
         }
-    }
 
-    [Flags]
-    public enum RESULT
-    {
-        INVALID         =   0,
-        OK              =   0b0001 << 0,
-        IGNORED         =   0b0010 << 0,
+        #region ISerializationCallbackReceiver
 
-        //
-        AUDIOCLIP       =   0b0001 << 4,
-        ASSETBUNDLE     =   0b0010 << 4,
-        AUDIOKEY        =   0b0100 << 4,
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            //AudioKey targetKey = AudioManager.GetConcreteKey(in m_AudioKey);
+            //this = AudioManager.GetAudio(in targetKey);
+        }
 
-        //
-        NOTFOUND        =   0b0001 << 8,
-        NOTLOADED       =   0b0010 << 8,
-        NOTVALID        =   0b0100 << 8,
+        #endregion
     }
 }

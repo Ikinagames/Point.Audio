@@ -264,7 +264,7 @@ namespace Point.Audio
             return Instance.m_AudioContainer.GetAudioSource(in audio);
         }
 
-        private static AudioKey GetConcreteKey(in AudioKey audioKey)
+        internal static AudioKey GetConcreteKey(in AudioKey audioKey)
         {
             if (Instance.m_FriendlyNameMap.TryGetValue(audioKey, out var key))
             {

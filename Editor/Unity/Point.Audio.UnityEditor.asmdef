@@ -1,0 +1,26 @@
+{
+    "name": "Point.Audio.UnityEditor",
+    "rootNamespace": "Point.Audio.Editor",
+    "references": [
+        "GUID:2bafac87e7f4b9b418d9448d219b01ab",
+        "GUID:343deaaf83e0cee4ca978e7df0b80d21",
+        "GUID:808f93780307e5b44b9983c670878e65",
+        "GUID:270b0ec75c5e0514381ef110d9d57820",
+        "GUID:663f83620b9b34e4db37f0983fdf9791",
+        "GUID:83ce9eabcac0dab44b60f73f6e4a4004"
+    ],
+    "includePlatforms": [
+        "Editor",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!POINT_FMOD"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
