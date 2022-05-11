@@ -17,6 +17,9 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
+using UnityEngine;
+
 namespace Point.Audio
 {
     public static class AudioExtensions
@@ -28,6 +31,32 @@ namespace Point.Audio
         public static void AutoDisposal(in this Audio t)
         {
             AudioAutomaticDisposer.Instance.Register(t);
+        }
+
+        public static bool IsConsiderAsError(this RESULT t)
+        {
+            if ((t & RESULT.OK) != RESULT.OK &&
+                (t & RESULT.IGNORED) != RESULT.IGNORED)
+            {
+                return true;
+            }
+            return false;
+        }
+        public static void SendLog(this RESULT t, in AudioKey audioKey)
+        {
+            const string c_ErrorFormat = "Play AudioClip{0} request has been falid with {1}";
+            PointHelper.LogError(Channel.Audio,
+                   string.Format(c_ErrorFormat, audioKey, t.ToReadableString()));
+        }
+        public static void SendLog(this RESULT t, in AudioKey audioKey, in Vector3 position)
+        {
+            const string c_ErrorFormat = "Play AudioClip{0} at {1} request has been falid with {2}";
+            PointHelper.LogError(Channel.Audio,
+                   string.Format(c_ErrorFormat, audioKey, position, t.ToReadableString()));
+        }
+        public static string ToReadableString(this RESULT t)
+        {
+            return TypeHelper.Enum<RESULT>.ToString(t);
         }
     }
 }

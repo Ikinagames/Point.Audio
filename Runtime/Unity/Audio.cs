@@ -92,7 +92,11 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Play()
         {
-            AudioManager.PlayAudio(ref this);
+            RESULT result = AudioManager.PlayAudio(ref this);
+            if (result.IsConsiderAsError())
+            {
+                result.SendLog(in m_AudioKey);
+            }
         }
         [NotBurstCompatible]
         public void Stop()
@@ -121,18 +125,18 @@ namespace Point.Audio
     [Flags]
     public enum RESULT
     {
-        OK      =   0,
+        INVALID         =   0,
+        OK              =   0b0001 << 0,
+        IGNORED         =   0b0010 << 0,
 
         //
-        AUDIOCLIP       =   0b0001,
-        ASSETBUNDLE     =   0b0010,
-        AUDIOKEY        =   0b0100,
+        AUDIOCLIP       =   0b0001 << 4,
+        ASSETBUNDLE     =   0b0010 << 4,
+        AUDIOKEY        =   0b0100 << 4,
 
         //
-        NOTFOUND        =   0b0001 << 7,
-        NOTLOADED       =   0b0010 << 7,
-        NOTVALID        =   0b0100 << 7,
-
-        IGNORED         =   ~0
+        NOTFOUND        =   0b0001 << 8,
+        NOTLOADED       =   0b0010 << 8,
+        NOTVALID        =   0b0100 << 8,
     }
 }
