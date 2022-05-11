@@ -59,7 +59,7 @@ namespace Point.Audio
             m_MinPitch = minPitch;
             m_MaxPitch = maxPitch;
             
-            m_AudioClipPath = new Hash(audioClip.AssetPath);
+            m_AudioClipPath = new Hash(audioClip.AssetPath.ToLowerInvariant());
             m_PrefabPath = new Hash(prefab.AssetPath);
         }
 
