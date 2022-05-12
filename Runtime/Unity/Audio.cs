@@ -19,6 +19,7 @@
 
 using Point.Collections;
 using Point.Collections.Buffer.LowLevel;
+using Point.Collections.ResourceControl;
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -28,16 +29,17 @@ using UnityEngine;
 namespace Point.Audio
 {
     [BurstCompatible, Serializable]
-    public struct Audio : IValidation, ISerializationCallbackReceiver
+    public struct Audio : IValidation
     {
         public static Audio Invalid => new Audio();
 
-        [SerializeField] private AudioKey m_AudioKey;
+        //[SerializeField] private AudioKey m_AudioKey;
+        private AssetInfo m_AudioClip;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
 
 #pragma warning disable IDE1006 // Naming Styles
-        public AudioKey audioKey => m_AudioKey;
+        public AudioKey audioKey => m_AudioClip.Key;
         [NotBurstCompatible]
         public AudioClip clip
         {
@@ -77,19 +79,19 @@ namespace Point.Audio
         {
             this = default(Audio);
 
-            m_AudioKey = audioKey;
+            m_AudioClip = new AssetInfo(audioKey);
             m_Allocator = allocator;
         }
-        internal Audio(AudioKey audioKey, int index, int audioSource, UnsafeAllocator<Transformation> allocator)
+        internal Audio(AssetInfo audioKey, int index, int audioSource, UnsafeAllocator<Transformation> allocator)
         {
-            m_AudioKey = audioKey;
+            m_AudioClip = audioKey;
             m_Index = index;
             m_InstanceID = audioSource;
             m_Allocator = allocator;
         }
 
         internal bool RequireSetup() => m_InstanceID == 0;
-        public bool IsValid() => m_AudioKey.IsValid() && m_InstanceID != 0;
+        public bool IsValid() => m_AudioClip.IsValid() && m_InstanceID != 0;
 
         [NotBurstCompatible]
         public void Play()
@@ -97,7 +99,7 @@ namespace Point.Audio
             RESULT result = AudioManager.PlayAudio(ref this);
             if (result.IsConsiderAsError())
             {
-                result.SendLog(in m_AudioKey);
+                result.SendLog(m_AudioClip.Key);
             }
         }
         [NotBurstCompatible]
@@ -115,25 +117,14 @@ namespace Point.Audio
             AudioManager.ReserveAudio(ref this);
 
             m_Allocator = default(UnsafeAllocator<Transformation>);
+            m_AudioClip.Reserve();
+            m_AudioClip = AssetInfo.Invalid;
         }
 
         [NotBurstCompatible]
         public override string ToString()
         {
-            return m_AudioKey.ToString();
+            return m_AudioClip.Key.ToString();
         }
-
-        #region ISerializationCallbackReceiver
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-        }
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
-        {
-            //AudioKey targetKey = AudioManager.GetConcreteKey(in m_AudioKey);
-            //this = AudioManager.GetAudio(in targetKey);
-        }
-
-        #endregion
     }
 }
