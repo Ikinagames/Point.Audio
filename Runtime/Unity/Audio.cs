@@ -34,7 +34,7 @@ namespace Point.Audio
         public static Audio Invalid => new Audio();
 
         //[SerializeField] private AudioKey m_AudioKey;
-        private AssetInfo m_AudioClip;
+        internal AssetInfo m_AudioClip;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
 
@@ -97,6 +97,7 @@ namespace Point.Audio
         public void Play()
         {
             RESULT result = AudioManager.PlayAudio(ref this);
+            m_AudioClip.AddDebugger();
             if (result.IsConsiderAsError())
             {
                 result.SendLog(m_AudioClip.Key);

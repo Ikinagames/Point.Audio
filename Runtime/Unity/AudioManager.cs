@@ -314,11 +314,6 @@ namespace Point.Audio
                 throw new Exception("Audio AssetBundle is not loaded. This is not allowed.");
 #endif
             }
-            if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
-            {
-                audioClip = null;
-                return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
-            }
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                End of Critical Section                               */
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -326,6 +321,13 @@ namespace Point.Audio
             if (!ins.m_CachedManagedDataMap.TryGetValue(targetKey, out managedData) ||
                 managedData.childs.Length == 0)
             {
+                if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
+                {
+                    audioClip = null;
+                    return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
+                }
+
+                clipAsset.AddDebugger();
                 audioClip = (AudioClip)clipAsset.Asset;
                 return RESULT.OK;
             }
@@ -333,11 +335,21 @@ namespace Point.Audio
             index = managedData.GetIndex();
             if (index == 0)
             {
+                if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
+                {
+                    audioClip = null;
+                    return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
+                }
+
+                clipAsset.AddDebugger();
                 audioClip = (AudioClip)clipAsset.Asset;
                 return RESULT.OK;
             }
 
-            return GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset, out audioClip);
+            RESULT result = GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset, out audioClip);
+
+            clipAsset.AddDebugger();
+            return result;
         }
         private static bool TryGetCompressedAudioData(in AudioKey key, out CompressedAudioData data)
         {
@@ -367,6 +379,7 @@ namespace Point.Audio
                 managedData = null;
                 return result;
             }
+            clipInfo.AddDebugger();
 
             /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
             if (!TryGetCompressedAudioData(audioKey, out data))
@@ -418,6 +431,7 @@ namespace Point.Audio
                 audio = default(Audio);
                 return result;
             }
+            clipInfo.AddDebugger();
 
             audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo);
             //AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
@@ -446,6 +460,7 @@ namespace Point.Audio
                     return result;
                 }
 
+                audio.m_AudioClip.AddDebugger();
                 insAudio.Play();
                 return RESULT.OK | result;
             }
@@ -875,7 +890,7 @@ namespace Point.Audio
             insAudio.Play();
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
-                string.Format(c_LogFormat, insAudio.clip.name, position.ToString(), audioKey.ToString()));
+                string.Format(c_LogFormat, insAudio.clip == null ? "UNKNOWN" : insAudio.clip.name, position.ToString(), audioKey.ToString()));
 #endif
             return audio;
         }

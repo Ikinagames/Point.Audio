@@ -38,7 +38,7 @@ namespace Point.Audio
         [NotBurstCompatible]
         public static implicit operator AudioKey(AssetPathField<AudioClip> t)
         {
-            return new AudioKey(new Hash(t.AssetPath));
+            return new AudioKey(new Hash(t.AssetPath.ToLowerInvariant()));
         }
         [NotBurstCompatible]
         public static implicit operator AudioKey(string t)
