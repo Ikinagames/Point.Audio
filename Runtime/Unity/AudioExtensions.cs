@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Point.Audio
@@ -60,6 +61,26 @@ namespace Point.Audio
             return false;
         }
 
+        private static readonly Dictionary<AudioKey, HashSet<RESULT>> s_OnetimeLogged = new Dictionary<AudioKey, HashSet<RESULT>>();
+        private static bool CanLog(in RESULT t, in AudioKey audioKey)
+        {
+            if ((t & RESULT.AudioClip_NotFound_In_AssetBundle) == RESULT.AudioClip_NotFound_In_AssetBundle)
+            {
+                if (!s_OnetimeLogged.TryGetValue(audioKey, out var set))
+                {
+                    set = new HashSet<RESULT>();
+                    s_OnetimeLogged.Add(audioKey, set);
+                }
+
+                if (set.Contains(t)) return false;
+
+                set.Add(t);
+                return true;
+            }
+
+            return true;
+        }
+
         private static string GetResultString(in RESULT t)
         {
             if ((t & RESULT.AudioClip_NotFound_In_AssetBundle) == RESULT.AudioClip_NotFound_In_AssetBundle)
@@ -75,12 +96,22 @@ namespace Point.Audio
         }
         public static void SendLog(this RESULT t, in AudioKey audioKey)
         {
+            if (!CanLog(t, audioKey))
+            {
+                return;
+            }
+
             const string c_ErrorFormat = "Play AudioClip({0}) request has been falid with {1}";
             PointHelper.LogError(Channel.Audio,
                    string.Format(c_ErrorFormat, audioKey, GetResultString(t)));
         }
         public static void SendLog(this RESULT t, in AudioKey audioKey, in Vector3 position)
         {
+            if (!CanLog(t, audioKey))
+            {
+                return;
+            }
+
             const string c_ErrorFormat = "Play AudioClip({0}) at {1} request has been falid with {2}";
             PointHelper.LogError(Channel.Audio,
                    string.Format(c_ErrorFormat, audioKey, position, GetResultString(t)));
