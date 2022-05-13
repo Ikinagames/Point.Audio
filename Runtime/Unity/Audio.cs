@@ -45,23 +45,50 @@ namespace Point.Audio
         {
             get
             {
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
                 AudioSource audioSource = AudioManager.GetAudioSource(in this);
                 return audioSource.clip;
             }
             set
             {
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
                 AudioSource audioSource = AudioManager.GetAudioSource(in this);
                 audioSource.clip = value;
             }
         }
         [NotBurstCompatible]
         public bool isPlaying => AudioManager.IsPlaying(in this);
-
-        public float3 position
+        public bool is3D
         {
             get
             {
-                if (!m_Allocator.IsCreated)
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                AudioSource audioSource = AudioManager.GetAudioSource(in this);
+                return audioSource.spatialize;
+            }
+        }
+        public bool hasAudioSource => m_Allocator.IsCreated;
+
+        public Vector3 position
+        {
+            get
+            {
+                if (!hasAudioSource)
                 {
                     this = AudioManager.GetAudio(audioKey);
                     m_AudioClip.AddDebugger();

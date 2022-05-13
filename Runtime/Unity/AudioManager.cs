@@ -480,6 +480,13 @@ namespace Point.Audio
                 }
 
                 AudioKey audioKey = audio.audioKey;
+                if (!ProcessPlugin(in audioKey,
+                    audio.hasAudioSource ? audio.is3D : false,
+                    audio.hasAudioSource ? audio.position : Vector3.zero))
+                {
+                    return RESULT.IGNORED;
+                }
+
                 RESULT result = InternalPlay(audioKey, out audio, out AudioSource insAudio);
                 if ((result & RESULT.OK) != RESULT.OK)
                 {
@@ -493,6 +500,11 @@ namespace Point.Audio
             else
             {
                 audioSource = GetAudioSource(in audio);
+                if (!ProcessPlugin(audio.audioKey, audioSource.spatialize, audio.position))
+                {
+                    return RESULT.IGNORED;
+                }
+
                 if (!ProcessIsPlayable(audio.audioKey))
                 {
                     //"ignored".ToLog();
@@ -708,12 +720,13 @@ namespace Point.Audio
             }
         }
 
-        private sealed class InternalAudioContainer : IDisposable
+        private sealed unsafe class InternalAudioContainer : IDisposable
         {
             private AudioSource[] m_Audio;
             private Transform[] m_AudioTransforms;
             private TransformAccessArray m_AudioTransformAccess;
             private UnsafeAllocator<Transformation> transformations;
+
             private int m_Count;
 
             private JobHandle m_JobHandle;
@@ -803,6 +816,29 @@ namespace Point.Audio
 
         #endregion
 
+        private readonly List<IAudioPlugin> m_Plugins = new List<IAudioPlugin>();
+
+        private static bool ProcessPlugin(in AudioKey audioKey, in bool is3D, in Vector3 position)
+        {
+            IReadOnlyList<IAudioPlugin> plugins = Instance.m_Plugins;
+            for (int i = 0; i < plugins.Count; i++)
+            {
+                IAudioPlugin plugin = plugins[i];
+
+                if (plugin is IAudioOnRequested requested)
+                {
+                    requested.Process(in audioKey, in is3D, in position);
+                }
+
+                if (!plugin.CanPlayable())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                End of Critical Section                               */
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -859,6 +895,17 @@ namespace Point.Audio
             Instance.m_MainListener = listeners[0];
         }
 
+        public static void RegisterPlugin<TPlugin>(in TPlugin audioPlugin)
+            where TPlugin : IAudioPlugin
+        {
+            Instance.m_Plugins.Add(audioPlugin);
+        }
+        public static void UnregisterPlugin<TPlugin>(in TPlugin audioPlugin)
+            where TPlugin : IAudioPlugin
+        {
+            Instance.m_Plugins.Remove(audioPlugin);
+        }
+
         public static Audio GetAudio(in AudioKey audioKey)
         {
             AudioKey concreteKey = GetConcreteKey(in audioKey);
@@ -896,6 +943,11 @@ namespace Point.Audio
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
 #endif
+            if (!ProcessPlugin(in audioKey, false, Vector3.zero))
+            {
+                return Audio.Invalid;
+            }
+
             RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
             if (result.IsConsiderAsError())
             {
@@ -908,6 +960,7 @@ namespace Point.Audio
             {
                 result.SendLog(in audioKey);
             }
+
             insAudio.Play();
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
@@ -920,6 +973,11 @@ namespace Point.Audio
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) at {1} with AudioKey({2})";
 #endif
+            if (!ProcessPlugin(in audioKey, true, in position))
+            {
+                return Audio.Invalid;
+            }
+
             RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
             if (result.IsConsiderAsError())
             {
@@ -963,5 +1021,14 @@ namespace Point.Audio
                 );
             EventBroadcaster.PostEvent<PlayAudioEvent>(PlayAudioEvent.GetEvent("Soundtrack01"));
         }
+    }
+
+    public interface IAudioPlugin
+    {
+        bool CanPlayable();
+    }
+    public interface IAudioOnRequested : IAudioPlugin
+    {
+        void Process(in AudioKey audioKey, in bool is3D, in Vector3 position);
     }
 }
