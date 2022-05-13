@@ -38,6 +38,8 @@ namespace Point.Audio.Editor
         List<FriendlyName> m_FriendlyNames;
         List<Data> m_Data;
 
+        #region Inner Classes
+
         private sealed class FriendlyName
         {
             public static GUIContent Header = new GUIContent("Friendly Names");
@@ -206,6 +208,8 @@ namespace Point.Audio.Editor
             }
         }
 
+        #endregion
+
         private SearchField 
             m_FriendlyNameSearchField, m_DataSearchField;
 
@@ -233,6 +237,39 @@ namespace Point.Audio.Editor
         protected override void OnInspectorGUIContents()
         {
             EditorGUILayout.Space();
+
+            using (new CoreGUI.BoxBlock(Color.black))
+            {
+                bool isListed = AudioSettings.Instance.HasAudioList(target);
+                string msg;
+                if (isListed) msg = "Listed";
+                else msg = "Unlisted";
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    CoreGUI.Label(msg, 15, TextAnchor.MiddleCenter);
+
+                    if (isListed)
+                    {
+                        if (GUILayout.Button("Remove", GUILayout.Width(100)))
+                        {
+                            AudioSettings.Instance.RemoveAudioList(target);
+                            EditorUtility.SetDirty(AudioSettings.Instance);
+                        }
+                    }
+                    else
+                    {
+                        if (GUILayout.Button("Add", GUILayout.Width(100)))
+                        {
+                            AudioSettings.Instance.AddAudioList(target);
+                            EditorUtility.SetDirty(AudioSettings.Instance);
+                        }
+                    }
+                }
+            }
+
+            EditorGUILayout.Space();
+            CoreGUI.Line();
 
             using (new CoreGUI.BoxBlock(Color.black))
             {

@@ -14,8 +14,10 @@
 // limitations under the License.
 
 using Point.Collections;
+using Point.Collections.Buffer.LowLevel;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -29,6 +31,23 @@ namespace Point.Audio
         private AudioList[] m_AudioLists = Array.Empty<AudioList>();
 
         public AudioMixerGroup DefaultMixerGroup => m_DefaultMixerGroup;
+
+        public bool HasAudioList(AudioList list) => m_AudioLists.Contains(list);
+        public void RemoveAudioList(AudioList list)
+        {
+            int index = Array.IndexOf(m_AudioLists, list);
+            if (index < 0) return;
+
+            m_AudioLists.RemoveAtSwapBack(index);
+            Array.Resize(ref m_AudioLists, m_AudioLists.Length - 1);
+        }
+        public void AddAudioList(AudioList list)
+        {
+            if (HasAudioList(list)) return;
+
+            Array.Resize(ref m_AudioLists, m_AudioLists.Length + 1);
+            m_AudioLists[m_AudioLists.Length - 1] = list;
+        }
 
         public int CalculateEntryCount()
         {
