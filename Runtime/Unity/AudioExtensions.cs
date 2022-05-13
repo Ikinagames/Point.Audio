@@ -49,17 +49,41 @@ namespace Point.Audio
             }
             return false;
         }
+        public static bool IsRequireLog(this RESULT t)
+        {
+            RESULT notOk = ~RESULT.OK;
+            if ((t & notOk) != 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string GetResultString(in RESULT t)
+        {
+            if ((t & RESULT.AudioClip_NotFound_In_AssetBundle) == RESULT.AudioClip_NotFound_In_AssetBundle)
+            {
+                if ((t & RESULT.OK) == RESULT.OK)
+                {
+                    return "AudioClip not found in AssetBundle. This will work only in editor.";
+                }
+                return "AudioClip not found in AssetBundle either local. This is not allowed.";
+            }
+
+            return t.ToReadableString();
+        }
         public static void SendLog(this RESULT t, in AudioKey audioKey)
         {
-            const string c_ErrorFormat = "Play AudioClip{0} request has been falid with {1}";
+            const string c_ErrorFormat = "Play AudioClip({0}) request has been falid with {1}";
             PointHelper.LogError(Channel.Audio,
-                   string.Format(c_ErrorFormat, audioKey, t.ToReadableString()));
+                   string.Format(c_ErrorFormat, audioKey, GetResultString(t)));
         }
         public static void SendLog(this RESULT t, in AudioKey audioKey, in Vector3 position)
         {
-            const string c_ErrorFormat = "Play AudioClip{0} at {1} request has been falid with {2}";
+            const string c_ErrorFormat = "Play AudioClip({0}) at {1} request has been falid with {2}";
             PointHelper.LogError(Channel.Audio,
-                   string.Format(c_ErrorFormat, audioKey, position, t.ToReadableString()));
+                   string.Format(c_ErrorFormat, audioKey, position, GetResultString(t)));
         }
         public static string ToReadableString(this RESULT t)
         {

@@ -102,6 +102,10 @@ namespace Point.Audio
             {
                 result.SendLog(m_AudioClip.Key);
             }
+            else if (result.IsRequireLog())
+            {
+                result.SendLog(m_AudioClip.Key);
+            }
         }
         [NotBurstCompatible]
         public void Stop()

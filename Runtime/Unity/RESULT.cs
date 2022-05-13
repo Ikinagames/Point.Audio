@@ -37,5 +37,7 @@ namespace Point.Audio
         NOTFOUND        =   0b0001 << 8,
         NOTLOADED       =   0b0010 << 8,
         NOTVALID        =   0b0100 << 8,
+
+        AudioClip_NotFound_In_AssetBundle = AUDIOCLIP | NOTFOUND | ASSETBUNDLE,
     }
 }

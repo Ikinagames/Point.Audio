@@ -293,18 +293,26 @@ namespace Point.Audio
                 if (!ins.m_CachedManagedDataMap.TryGetValue(targetKey, out managedData) ||
                     managedData.childs.Length == 0)
                 {
-                    clipAsset = default(AssetInfo);
+                    clipAsset = AssetInfo.Invalid;
                     audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
 
+                    if (audioClip == null)
+                    {
+                        return RESULT.INVALID;
+                    }
                     return RESULT.OK | RESULT.ASSETBUNDLE | RESULT.NOTLOADED;
                 }
 
                 index = managedData.GetIndex();
                 if (index == 0)
                 {
-                    clipAsset = default(AssetInfo);
+                    clipAsset = AssetInfo.Invalid;
                     audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
 
+                    if (audioClip == null)
+                    {
+                        return RESULT.INVALID;
+                    }
                     return RESULT.OK | RESULT.ASSETBUNDLE | RESULT.NOTLOADED;
                 }
 
@@ -322,8 +330,16 @@ namespace Point.Audio
             {
                 if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
                 {
+                    clipAsset = AssetInfo.Invalid;
+#if UNITY_EDITOR
+                    audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
+                    if (audioClip != null)
+                    {
+                        return RESULT.OK | RESULT.AudioClip_NotFound_In_AssetBundle;
+                    }
+#endif
                     audioClip = null;
-                    return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
+                    return RESULT.AudioClip_NotFound_In_AssetBundle;
                 }
 
                 clipAsset.AddDebugger();
@@ -336,6 +352,13 @@ namespace Point.Audio
             {
                 if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
                 {
+#if UNITY_EDITOR
+                    audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
+                    if (audioClip != null)
+                    {
+                        return RESULT.OK | RESULT.AudioClip_NotFound_In_AssetBundle;
+                    }
+#endif
                     audioClip = null;
                     return RESULT.AUDIOCLIP | RESULT.NOTFOUND;
                 }
@@ -347,7 +370,8 @@ namespace Point.Audio
 
             RESULT result = GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset, out audioClip);
 
-            clipAsset.AddDebugger();
+            if ((result & RESULT.OK) == RESULT.OK) clipAsset.AddDebugger();
+
             return result;
         }
         private static bool TryGetCompressedAudioData(in AudioKey key, out CompressedAudioData data)
@@ -870,6 +894,11 @@ namespace Point.Audio
             }
             else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
+
+            if (result.IsRequireLog())
+            {
+                result.SendLog(in audioKey);
+            }
             insAudio.Play();
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
@@ -890,6 +919,10 @@ namespace Point.Audio
             }
             else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
+            if (result.IsRequireLog())
+            {
+                result.SendLog(in audioKey);
+            }
             insAudio.transform.position = position;
             insAudio.Play();
 #if DEBUG_MODE
