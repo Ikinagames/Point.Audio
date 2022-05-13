@@ -402,7 +402,6 @@ namespace Point.Audio
                 managedData = null;
                 return result;
             }
-            clipInfo.AddDebugger();
 
             /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
             if (!TryGetCompressedAudioData(audioKey, out data))
@@ -413,6 +412,8 @@ namespace Point.Audio
 
                 data = default(CompressedAudioData);
                 managedData = null;
+
+                clipInfo.AddDebugger();
                 return RESULT.OK | result;
             }
 
@@ -428,10 +429,12 @@ namespace Point.Audio
             /*                                                                                      */
             //////////////////////////////////////////////////////////////////////////////////////////
 
+            clipInfo.AddDebugger();
             return RESULT.OK | result;
         }
         
-        private static RESULT InternalPlay(in AudioKey audioKey, out Audio audio, out AudioSource audioSource)
+        private static RESULT InternalPlay(in AudioKey audioKey,
+            out Audio audio, out AudioSource audioSource)
         {
 #if DEBUG_MODE
             const string c_IgnoredLogFormat = "Ignored AudioKey({0})";
@@ -489,13 +492,13 @@ namespace Point.Audio
             }
             else
             {
+                audioSource = GetAudioSource(in audio);
                 if (!ProcessIsPlayable(audio.audioKey))
                 {
                     //"ignored".ToLog();
                     return RESULT.IGNORED;
                 }
 
-                audioSource = GetAudioSource(in audio);
                 ProcessOnPlay(in audio, audioSource);
             }
 
@@ -748,11 +751,6 @@ namespace Point.Audio
 
                 return new Audio(audioKey, index, audioSource.GetInstanceID(), transformations);
             }
-            public Audio GetEmptyAudio(in AudioKey audioKey)
-            {
-                return new Audio(audioKey, transformations);
-            }
-
             public void Register(AudioSource audioSource)
             {
                 m_JobHandle.Complete();
@@ -863,8 +861,20 @@ namespace Point.Audio
 
         public static Audio GetAudio(in AudioKey audioKey)
         {
-            //GetAudio(in audioKey, out Audio audio, out _, out _);
-            return Instance.m_AudioContainer.GetEmptyAudio(in audioKey);
+            AudioKey concreteKey = GetConcreteKey(in audioKey);
+            RESULT result = IssueAudioSource(in concreteKey, out AssetInfo clipInfo, 
+                out AudioSource audioSource, 
+                out CompressedAudioData data, out ManagedAudioData managedData);
+
+            if ((result & RESULT.OK) != RESULT.OK)
+            {
+                return Audio.Invalid;
+            }
+
+            clipInfo.AddDebugger();
+            Audio audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo);
+
+            return audio;
         }
         public static bool IsPlaying(in Audio audio)
         {
@@ -894,7 +904,6 @@ namespace Point.Audio
             }
             else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
-
             if (result.IsRequireLog())
             {
                 result.SendLog(in audioKey);
@@ -923,7 +932,10 @@ namespace Point.Audio
             {
                 result.SendLog(in audioKey);
             }
+
             insAudio.transform.position = position;
+            audio.position = position;
+
             insAudio.Play();
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,

@@ -59,28 +59,57 @@ namespace Point.Audio
 
         public float3 position
         {
-            get => m_Allocator[m_Index].localPosition;
+            get
+            {
+                if (!m_Allocator.IsCreated)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                return m_Allocator[m_Index].localPosition;
+            }
             set
             {
+                if (!m_Allocator.IsCreated)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
                 m_Allocator[m_Index].localPosition = value;
             }
         }
         public quaternion rotation
         {
-            get => m_Allocator[m_Index].localRotation;
+            get
+            {
+                if (!m_Allocator.IsCreated)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                return m_Allocator[m_Index].localRotation;
+            }
             set
             {
+                if (!m_Allocator.IsCreated)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
                 m_Allocator[m_Index].localRotation = value;
             }
         }
 #pragma warning restore IDE1006 // Naming Styles
 
-        public Audio(AudioKey audioKey, UnsafeAllocator<Transformation> allocator)
+        public Audio(AudioKey audioKey)
         {
             this = default(Audio);
 
             m_AudioClip = new AssetInfo(audioKey);
-            m_Allocator = allocator;
         }
         internal Audio(AssetInfo audioKey, int index, int audioSource, UnsafeAllocator<Transformation> allocator)
         {

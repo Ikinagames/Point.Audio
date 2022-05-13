@@ -66,7 +66,7 @@ namespace Point.Audio
             {
                 if ((t & RESULT.OK) == RESULT.OK)
                 {
-                    return "AudioClip not found in AssetBundle. This will work only in editor.";
+                    return $"AudioClip not found in AssetBundle. This will be accepted only in editor with AssetDatabase.";
                 }
                 return "AudioClip not found in AssetBundle either local. This is not allowed.";
             }
