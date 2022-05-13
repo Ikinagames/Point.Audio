@@ -33,6 +33,13 @@ namespace Point.Audio
             AudioAutomaticDisposer.Instance.Register(t);
         }
 
+        public static void Play(in this Audio t, in float delay)
+        {
+            AudioDelayedPlayer.Instance.Register(in t, in delay);
+        }
+
+        #region Debug
+
         public static bool IsConsiderAsError(this RESULT t)
         {
             if ((t & RESULT.OK) != RESULT.OK &&
@@ -58,5 +65,7 @@ namespace Point.Audio
         {
             return TypeHelper.Enum<RESULT>.ToString(t);
         }
+
+        #endregion
     }
 }

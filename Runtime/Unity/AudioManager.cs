@@ -50,7 +50,6 @@ namespace Point.Audio
         [NonSerialized] AssetBundleInfo m_AudioBundle;
         [NonSerialized] ObjectPool<AudioSource> m_DefaultAudioPool;
 
-        //[NonSerialized] readonly Dictionary<Hash, AssetInfo> m_CachedAssetInfoMap = new Dictionary<Hash, AssetInfo>();
         [NonSerialized] readonly Dictionary<Hash, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, IPrefabInfo>();
 
         [NonSerialized] private InternalAudioContainer m_AudioContainer;
@@ -798,6 +797,11 @@ namespace Point.Audio
                 }
             }
 #endif
+        }
+
+        public static void SetListener(AudioListener audioListener)
+        {
+            Instance.m_MainListener = audioListener;
         }
         public static void ValidateListener()
         {

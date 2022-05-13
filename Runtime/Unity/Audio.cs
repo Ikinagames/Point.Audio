@@ -29,7 +29,7 @@ using UnityEngine;
 namespace Point.Audio
 {
     [BurstCompatible, Serializable]
-    public struct Audio : IValidation
+    public struct Audio : IValidation, ICloneable
     {
         public static Audio Invalid => new Audio();
 
@@ -126,6 +126,14 @@ namespace Point.Audio
         public override string ToString()
         {
             return m_AudioClip.Key.ToString();
+        }
+
+        [NotBurstCompatible]
+        object ICloneable.Clone()
+        {
+            Audio audio = AudioManager.GetAudio(audioKey);
+
+            return audio;
         }
     }
 }
