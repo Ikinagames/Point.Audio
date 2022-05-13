@@ -26,6 +26,7 @@ using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace Point.Audio.Editor
 {
@@ -79,12 +80,12 @@ namespace Point.Audio.Editor
                     if (!Name.ToLower().Contains(SearchText.ToLower())) return false;
                 }
 
-                using (new EditorGUI.IndentLevelScope())
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     Name = EditorGUILayout.TextField(GUIContent.none, Name);
 
-                    AudioClip = (AudioClip)EditorGUILayout.ObjectField(GUIContent.none, AudioClip, TypeHelper.TypeOf<AudioClip>.Type, false);
+                    AudioClip = (AudioClip)EditorGUILayout.ObjectField(GUIContent.none, AudioClip, TypeHelper.TypeOf<AudioClip>.Type, false, 
+                        GUILayout.MinWidth(50), GUILayout.MaxWidth(180));
                 }
 
                 return true;
@@ -96,13 +97,39 @@ namespace Point.Audio.Editor
             public static string SearchText = string.Empty;
 
             private readonly SerializedProperty m_Property,
-                m_AudioClipProperty;
+                m_AudioClipProperty,
+                
+                m_PrefabProperty,
+                m_GroupProperty,
+                
+                m_IgnoreTimeProperty,
+                
+                m_OnPlayConstActionProperty,
+                m_ChildsProperty,
+                m_PlayOptionProperty,
+                
+                m_MasterVolumeProperty,
+                m_VolumeProperty,
+                m_PitchProperty;
 
             public Data(SerializedProperty property)
             {
                 m_Property = property;
 
                 m_AudioClipProperty = property.FindPropertyRelative("m_AudioClip");
+
+                m_PrefabProperty = property.FindPropertyRelative("m_Prefab");
+                m_GroupProperty = property.FindPropertyRelative("m_Group");
+
+                m_IgnoreTimeProperty = property.FindPropertyRelative("m_IgnoreTime");
+
+                m_OnPlayConstActionProperty = property.FindPropertyRelative("m_OnPlayConstAction");
+                m_ChildsProperty = property.FindPropertyRelative("m_Childs");
+                m_PlayOptionProperty = property.FindPropertyRelative("m_PlayOption");
+
+                m_MasterVolumeProperty = property.FindPropertyRelative("m_MasterVolume");
+                m_VolumeProperty = property.FindPropertyRelative("m_Volume");
+                m_PitchProperty = property.FindPropertyRelative("m_Pitch");
             }
 
             public string AudioClipPath
@@ -114,6 +141,23 @@ namespace Point.Audio.Editor
             {
                 get => SerializedPropertyHelper.GetAssetPathField<AudioClip>(m_AudioClipProperty);
                 set => SerializedPropertyHelper.SetAssetPathField(m_AudioClipProperty, value);
+            }
+
+            public AudioSource Prefab
+            {
+                get => SerializedPropertyHelper.GetAssetPathField<AudioSource>(m_PrefabProperty);
+                set => SerializedPropertyHelper.SetAssetPathField(m_PrefabProperty, value);
+            }
+            public AudioMixerGroup Group
+            {
+                get => m_GroupProperty.objectReferenceValue as AudioMixerGroup;
+                set => m_GroupProperty.objectReferenceValue = value;
+            }
+
+            public float IgnoreTime
+            {
+                get => m_IgnoreTimeProperty.floatValue;
+                set => m_IgnoreTimeProperty.floatValue = value;
             }
 
             public bool OnGUI()
@@ -141,6 +185,24 @@ namespace Point.Audio.Editor
                 EditorGUI.indentLevel--;
 
                 return true;
+            }
+
+            public void Reset()
+            {
+                AudioClip = null;
+
+                Prefab = null;
+                Group = null;
+
+                IgnoreTime = .2f;
+
+                m_OnPlayConstActionProperty.ClearArray();
+                m_ChildsProperty.ClearArray();
+                m_PlayOptionProperty.enumValueIndex = (int)AudioPlayOption.Sequential;
+
+                m_MasterVolumeProperty.floatValue = 1;
+                SerializedPropertyHelper.SetMinMaxField(m_VolumeProperty, Vector2.one);
+                SerializedPropertyHelper.SetMinMaxField(m_PitchProperty, Vector2.one);
             }
         }
 
@@ -181,12 +243,46 @@ namespace Point.Audio.Editor
                 {
                     FriendlyName.SearchText = m_FriendlyNameSearchField.OnGUI(FriendlyName.SearchText);
 
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("+"))
+                        {
+                            m_FriendlyNamesProperty.InsertArrayElementAtIndex(m_FriendlyNamesProperty.arraySize);
+
+                            var temp = new FriendlyName(m_FriendlyNamesProperty.GetArrayElementAtIndex(m_FriendlyNamesProperty.arraySize - 1));
+                            temp.Name = string.Empty;
+                            temp.AudioClip = null;
+
+                            m_FriendlyNames.Add(temp);
+                        }
+                        if (GUILayout.Button("-"))
+                        {
+                            m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
+                            m_FriendlyNamesProperty.DeleteArrayElementAtIndex(m_FriendlyNamesProperty.arraySize - 1);
+                        }
+                    }
+
                     for (int i = 0; i < m_FriendlyNames.Count; i++)
                     {
-                        if (m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count)
+                        bool drawLine;
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            CoreGUI.Line();
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                drawLine = m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count;
+                            }
+
+                            if (GUILayout.Button("-", GUILayout.Width(20)))
+                            {
+                                m_FriendlyNamesProperty.DeleteArrayElementAtIndex(i);
+                                m_FriendlyNames.RemoveAt(i);
+
+                                i--;
+                                continue;
+                            }
                         }
+
+                        if (drawLine) CoreGUI.Line();
                     }
                 }
             }
@@ -202,12 +298,44 @@ namespace Point.Audio.Editor
                 {
                     Data.SearchText = m_DataSearchField.OnGUI(Data.SearchText);
 
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("+"))
+                        {
+                            m_DataProperty.InsertArrayElementAtIndex(m_DataProperty.arraySize);
+
+                            var temp = new Data(m_DataProperty.GetArrayElementAtIndex(m_DataProperty.arraySize - 1));
+                            temp.Reset();
+                            m_Data.Add(temp);
+                        }
+                        if (GUILayout.Button("-"))
+                        {
+                            m_Data.RemoveAt(m_DataProperty.arraySize - 1);
+                            m_DataProperty.DeleteArrayElementAtIndex(m_DataProperty.arraySize - 1);
+                        }
+                    }
+
                     for (int i = 0; i < m_Data.Count; i++)
                     {
-                        if (m_Data[i].OnGUI() && i + 1 < m_FriendlyNames.Count)
+                        bool drawLine;
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            CoreGUI.Line();
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                drawLine = m_Data[i].OnGUI() && i + 1 < m_Data.Count;
+                            }
+
+                            if (GUILayout.Button("-", GUILayout.Width(20)))
+                            {
+                                m_DataProperty.DeleteArrayElementAtIndex(i);
+                                m_Data.RemoveAt(i);
+
+                                i--;
+                                continue;
+                            }
                         }
+
+                        if (drawLine) CoreGUI.Line();
                     }
                 }
             }
