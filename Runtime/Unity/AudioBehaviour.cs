@@ -40,22 +40,22 @@ namespace Point.Audio
         }
 
         [SerializeField]
-        private PlayOption m_PlayOption = PlayOption.OnEnable;
+        protected PlayOption m_PlayOption = PlayOption.OnEnable;
         [SerializeField]
-        private StopOption m_StopOption = StopOption.FadeOut;
+        protected StopOption m_StopOption = StopOption.FadeOut;
         [SerializeField]
-        private AssetPathField<AudioClip> m_Clip;
+        protected AssetPathField<AudioClip> m_Clip;
 
         [NonSerialized]
         private Audio m_Audio;
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             if (m_PlayOption != PlayOption.OnEnable) return;
 
             m_Audio = AudioManager.Play(m_Clip);
         }
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             if (!m_Audio.hasAudioSource) return;
 

@@ -48,8 +48,6 @@ namespace Point.Audio.Editor
             private readonly SerializedProperty m_Property,
                 m_FriendlyNameProperty, m_ClipProperty;
 
-            //AnimFloat m_Height;
-
             public FriendlyName(SerializedProperty property)
             {
                 m_Property = property;
@@ -93,8 +91,10 @@ namespace Point.Audio.Editor
                 return true;
             }
         }
-        private sealed class Data
+        private sealed class Data : TreeViewItem
         {
+            private static int s_Index = 0;
+
             public static GUIContent Header = new GUIContent("Data");
             public static string SearchText = string.Empty;
 
@@ -114,7 +114,7 @@ namespace Point.Audio.Editor
                 m_VolumeProperty,
                 m_PitchProperty;
 
-            public Data(SerializedProperty property)
+            public Data(SerializedProperty property) : base(s_Index++)
             {
                 m_Property = property;
 
@@ -208,13 +208,40 @@ namespace Point.Audio.Editor
             }
         }
 
+        private sealed class DataTreeView : TreeView
+        {
+
+
+            public DataTreeView(TreeViewState state) : base(state)
+            {
+
+            }
+
+            protected override TreeViewItem BuildRoot()
+            {
+                TreeViewItem root = new TreeViewItem(0);
+
+
+
+                return root;
+            }
+        }
+
         #endregion
+
+        private TreeViewState
+            m_DataTreeViewState;
+        private DataTreeView
+            m_DataTreeView;
 
         private SearchField 
             m_FriendlyNameSearchField, m_DataSearchField;
 
         private void OnEnable()
         {
+            m_DataTreeViewState = new TreeViewState();
+            m_DataTreeView = new DataTreeView(m_DataTreeViewState);
+
             m_FriendlyNamesProperty = GetSerializedProperty("m_FriendlyNames");
             m_DataProperty = GetSerializedProperty("m_Data");
 
