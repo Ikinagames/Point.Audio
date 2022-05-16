@@ -31,7 +31,7 @@ namespace Point.Audio
     [BurstCompatible, Serializable]
     public struct Audio : IValidation, ICloneable
     {
-        public static Audio Invalid => new Audio();
+        public static Audio Invalid => new Audio(AssetInfo.Invalid, -1, -1, default(UnsafeAllocator<Transformation>));
 
         //[SerializeField] private AudioKey m_AudioKey;
         internal AssetInfo m_AudioClip;
@@ -178,6 +178,13 @@ namespace Point.Audio
             AudioManager.ReserveAudio(ref this);
 
             m_Allocator = default(UnsafeAllocator<Transformation>);
+
+            if (!m_AudioClip.IsValid())
+            {
+                // TODO
+                return;
+            }
+
             m_AudioClip.Reserve();
             m_AudioClip = AssetInfo.Invalid;
         }

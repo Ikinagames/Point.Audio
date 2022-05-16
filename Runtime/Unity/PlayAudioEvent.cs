@@ -25,12 +25,15 @@ namespace Point.Audio
 {
     public sealed class PlayAudioEvent : SynchronousEvent<PlayAudioEvent>
     {
+        private Vector3 INIT_POSITION = new Vector3(-9999999, 0, -99999999);
+
         protected override bool EnableLog => false;
 
         public const string Unhandled = "UNHANDLED";
 
         public AudioKey Key { get; private set; }
         public Vector3 Position { get; private set; }
+        public bool HasPosition => !Position.Equals(INIT_POSITION);
 
         public static PlayAudioEvent GetEvent(AudioKey key)
         {
@@ -52,7 +55,7 @@ namespace Point.Audio
         protected override void OnReserve()
         {
             Key = Hash.Empty;
-            Position = Vector3.zero;
+            Position = INIT_POSITION;
         }
     }
 }

@@ -35,11 +35,6 @@ namespace Point.Audio
 
         public void Register(in Audio audio)
         {
-            if (!audio.IsValid())
-            {
-                return;
-            }
-
             m_Audios.Add(audio);
         }
 

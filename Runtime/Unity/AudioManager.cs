@@ -179,7 +179,11 @@ namespace Point.Audio
 
         private void PlayAudioEventHandler(PlayAudioEvent ev)
         {
-            Play(ev.Key).AutoDisposal();
+            Audio audio;
+            if (ev.HasPosition) audio = Play(ev.Key, ev.Position);
+            else audio = Play(ev.Key);
+
+            audio.AutoDisposal();
         }
 
         #endregion
@@ -442,9 +446,10 @@ namespace Point.Audio
             AudioKey concreteKey = GetConcreteKey(in audioKey);
             if (!ProcessIsPlayable(in concreteKey))
             {
+#if DEBUG_MODE
                 PointHelper.Log(Channel.Audio,
                     string.Format(c_IgnoredLogFormat, concreteKey.ToString()));
-
+#endif
                 audio = default(Audio);
                 audioSource = null;
                 return RESULT.IGNORED;
@@ -529,9 +534,25 @@ namespace Point.Audio
         }
         internal static void ReserveAudio(ref Audio audio)
         {
-            ObjectPool<AudioSource> pool = GetPool(audio.audioKey);
-            AudioSource audioSource = GetAudioSource(audio);
+            if (!audio.audioKey.IsValid())
+            {
+                return;
+            }
 
+            ObjectPool<AudioSource> pool = GetPool(audio.audioKey);
+            if (pool == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"Fatal error. Cannot found audio pool.");
+                return;
+            }
+
+            AudioSource audioSource = GetAudioSource(audio);
+            if (audioSource == null)
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"Fatal error. Cannot found audio source GameObject.");
+            }
             pool.Reserve(audioSource);
         }
         /*                                                                                      */
@@ -750,7 +771,7 @@ namespace Point.Audio
 
             public AudioSource GetAudioSource(in Audio audio)
             {
-                if (!audio.IsValid()) return null;
+                if (audio.m_Index < 0) return null;
 
                 return m_Audio[audio.m_Index];
             }
@@ -827,7 +848,16 @@ namespace Point.Audio
 
                 if (plugin is IAudioOnRequested requested)
                 {
-                    requested.Process(in audioKey, in is3D, in position);
+                    try
+                    {
+                        requested.Process(in audioKey, in is3D, in position);
+                    }
+                    catch (Exception ex)
+                    {
+                        PointHelper.LogError(Channel.Audio,
+                            $"Unhandled error has been raised.");
+                        UnityEngine.Debug.LogException(ex);
+                    }
                 }
 
                 if (!plugin.CanPlayable())
@@ -925,16 +955,15 @@ namespace Point.Audio
         }
         public static bool IsPlaying(in Audio audio)
         {
-            if (!audio.IsValid())
+            AudioSource audioSource = GetAudioSource(in audio);
+            if (audioSource == null)
             {
-                PointHelper.LogError(Channel.Audio,
-                    $"This audio is invalid.");
+                //PointHelper.LogError(Channel.Audio,
+                //    $"This audio is invalid.");
 
                 return false;
             }
 
-            //return Instance.m_PlayedAudioHashSet.Contains(audio);
-            AudioSource audioSource = GetAudioSource(in audio);
             return audioSource.isPlaying;
         }
 
