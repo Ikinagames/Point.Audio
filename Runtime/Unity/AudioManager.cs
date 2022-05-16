@@ -225,7 +225,7 @@ namespace Point.Audio
                     $"There\'s no prefab({prefab.gameObject.name}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) but Resources folder. This is not allowed in runtime.");
                 return info.Pool;
 #else
-                    throw new InvalidOperationException($"Prefab asset for audio is not available in currently registered audio {nameof(AssetBundle)}({m_AudioBundle.AssetBundle.name}). This is not allowed cannot play requested audio.");
+                    throw new InvalidOperationException($"Prefab asset for audio is not available in currently registered audio {nameof(AssetBundle)}({audioBundle.AssetBundle.name}). This is not allowed cannot play requested audio.");
 #endif
             }
 
