@@ -21,7 +21,9 @@
 
 using Point.Collections;
 using Point.Collections.Editor;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
@@ -35,7 +37,7 @@ namespace Point.Audio.Editor
     {
         SerializedProperty
             m_FriendlyNamesProperty, m_DataProperty;
-        List<FriendlyName> m_FriendlyNames;
+        FriendlyNameCollection m_FriendlyNames;
         List<Data> m_Data;
 
         #region Inner Classes
@@ -95,9 +97,6 @@ namespace Point.Audio.Editor
         {
             private static int s_Index = 0;
 
-            public static GUIContent Header = new GUIContent("Data");
-            public static string SearchText = string.Empty;
-
             private readonly SerializedProperty m_Property,
                 m_AudioClipProperty,
                 
@@ -114,7 +113,7 @@ namespace Point.Audio.Editor
                 m_VolumeProperty,
                 m_PitchProperty;
 
-            public Data(SerializedProperty property) : base(s_Index++)
+            public Data(SerializedProperty property) : base(s_Index++, 0)
             {
                 m_Property = property;
 
@@ -133,6 +132,8 @@ namespace Point.Audio.Editor
                 m_VolumeProperty = property.FindPropertyRelative("m_Volume");
                 m_PitchProperty = property.FindPropertyRelative("m_Pitch");
             }
+
+            public override string displayName => AudioClip != null ? AudioClip.name : "Unknown";
 
             public string AudioClipPath
             {
@@ -164,27 +165,27 @@ namespace Point.Audio.Editor
 
             public bool OnGUI()
             {
-                if (!SearchText.IsNullOrEmpty())
-                {
-                    if (!AudioClipPath.ToLower().Contains(SearchText.ToLower())) return false;
-                }
+                //m_Property.isExpanded = CoreGUI.LabelToggle(m_Property.isExpanded, AudioClipPath, 12, TextAnchor.MiddleLeft);
 
-                m_Property.isExpanded = CoreGUI.LabelToggle(m_Property.isExpanded, AudioClipPath, 12, TextAnchor.MiddleLeft);
+                //if (!m_Property.isExpanded)
+                //{
+                //    return true;
+                //}
 
-                if (!m_Property.isExpanded)
+                //EditorGUI.indentLevel++;
+                CoreGUI.Line();
+                using (new CoreGUI.BoxBlock(Color.white))
                 {
-                    return true;
-                }
+                    CoreGUI.Label(AudioClipPath, 14, TextAnchor.MiddleCenter);
+                    EditorGUILayout.Space();
 
-                EditorGUI.indentLevel++;
-                using (new CoreGUI.BoxBlock(Color.blue))
-                {
                     foreach (var item in m_Property.ForEachChild())
                     {
                         EditorGUILayout.PropertyField(item);
                     }
                 }
-                EditorGUI.indentLevel--;
+                CoreGUI.Line();
+                //EditorGUI.indentLevel--;
 
                 return true;
             }
@@ -208,20 +209,171 @@ namespace Point.Audio.Editor
             }
         }
 
+        private sealed class FriendlyNameCollection : List<FriendlyName>
+        {
+            SerializedProperty m_Property;
+
+            public FriendlyNameCollection(SerializedProperty property)
+            {
+                m_Property = property;
+
+                for (int i = 0; i < m_Property.arraySize; i++)
+                {
+                    base.Add(new FriendlyName(m_Property.GetArrayElementAtIndex(i)));
+                }
+            }
+
+            public FriendlyName Add()
+            {
+                m_Property.InsertArrayElementAtIndex(m_Property.arraySize);
+
+                var temp = new FriendlyName(m_Property.GetArrayElementAtIndex(m_Property.arraySize - 1));
+                temp.Name = string.Empty;
+                temp.AudioClip = null;
+
+                base.Add(temp);
+
+                return temp;
+            }
+            public new bool Remove(FriendlyName item)
+            {
+                int index = base.IndexOf(item);
+                if (index < 0) return false;
+
+                RemoveAt(index);
+
+                return true;
+            }
+            public new void RemoveAt(int index)
+            {
+                base.RemoveAt(index);
+                m_Property.DeleteArrayElementAtIndex(index);
+            }
+        }
+
         private sealed class DataTreeView : TreeView
         {
+            private SerializedProperty m_Property;
+            private FriendlyNameCollection m_FriendlyNames;
 
+            List<Data> m_Data;
+            private SearchField m_SearchField;
 
-            public DataTreeView(TreeViewState state) : base(state)
+            public event Action<IEnumerable<Data>> OnSelection;
+            public IEnumerable<Data> CurrentSelection { get; private set; }
+
+            public DataTreeView(SerializedProperty property, FriendlyNameCollection friendlyNames,
+                TreeViewState state, List<Data> data) : base(state)
             {
+                m_Property = property;
+                m_FriendlyNames = friendlyNames;
+                m_Data = data;
+                m_SearchField = new SearchField();
 
+                showAlternatingRowBackgrounds = true;
+                showBorder = true;
+
+                Reload();
+            }
+            protected override bool DoesItemMatchSearch(TreeViewItem item, string search)
+            {
+                Data data = (Data)item;
+                if (!search.IsNullOrEmpty())
+                {
+                    if (!data.AudioClipPath.ToLower().Contains(search.ToLower())) return false;
+                }
+
+                return base.DoesItemMatchSearch(item, search);
+            }
+            protected override void SelectionChanged(IList<int> selectedIds)
+            {
+                CurrentSelection = FindRows(selectedIds).Select(t => (Data)t);
+                
+                OnSelection?.Invoke(CurrentSelection);
+            }
+            protected override void ContextClickedItem(int id)
+            {
+                Data data = (Data)FindItem(id, rootItem);
+                GenericMenu ctx = new GenericMenu();
+
+                ctx.AddDisabledItem(new GUIContent(data.displayName));
+                ctx.AddSeparator(string.Empty);
+
+                ctx.AddItem(new GUIContent("Remove"), false, () =>
+                {
+                    if (CurrentSelection != null &&
+                        CurrentSelection.Contains(data))
+                    {
+                        SetSelection(Array.Empty<int>(), TreeViewSelectionOptions.FireSelectionChanged);
+                    }
+
+                    int index = m_Data.IndexOf(data);
+                    m_Data.RemoveAt(index);
+                    m_Property.DeleteArrayElementAtIndex(index);
+
+                    Reload();
+                });
+                ctx.AddSeparator(string.Empty);
+
+                ctx.AddItem(new GUIContent("Make Friendly Name"), false, () =>
+                {
+                    var item = m_FriendlyNames.Add();
+                    item.Name = data.displayName;
+                    item.AudioClip = data.AudioClip;
+                });
+
+                ctx.ShowAsContext();
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                AutoRect autoRect = new AutoRect(rect);
+
+                CoreGUI.Label(autoRect.Pop(), "Data", 15, TextAnchor.MiddleCenter);
+                Rect searchFieldRect = autoRect.Pop(rowHeight);
+
+                searchString = m_SearchField.OnGUI(searchFieldRect, searchString);
+                 
+                Rect bttRowRect = autoRect.Pop(rowHeight);
+                Rect[] bttRects = AutoRect.DivideWithRatio(bttRowRect, .5f, .5f);
+
+                if (GUI.Button(bttRects[0], "+"))
+                {
+                    m_Property.InsertArrayElementAtIndex(m_Property.arraySize);
+
+                    var temp = new Data(m_Property.GetArrayElementAtIndex(m_Property.arraySize - 1));
+                    temp.Reset();
+                    m_Data.Add(temp);
+
+                    Reload();
+                }
+                if (GUI.Button(bttRects[1], "-"))
+                {
+                    if (CurrentSelection != null &&
+                        CurrentSelection.Contains(m_Data[m_Data.Count - 1]))
+                    {
+                        SetSelection(Array.Empty<int>(), TreeViewSelectionOptions.FireSelectionChanged);
+                    }
+
+                    m_Data.RemoveAt(m_Property.arraySize - 1);
+                    m_Property.DeleteArrayElementAtIndex(m_Property.arraySize - 1);
+
+                    Reload();
+                }
+
+                base.OnGUI(autoRect.Current);
             }
 
             protected override TreeViewItem BuildRoot()
             {
-                TreeViewItem root = new TreeViewItem(0);
+                TreeViewItem root = new TreeViewItem(-1, -1);
 
+                for (int i = 0; i < m_Data.Count; i++)
+                {
+                    root.AddChild(m_Data[i]);
+                }
 
+                SetupDepthsFromParentsAndChildren(root);
 
                 return root;
             }
@@ -235,22 +387,16 @@ namespace Point.Audio.Editor
             m_DataTreeView;
 
         private SearchField 
-            m_FriendlyNameSearchField, m_DataSearchField;
+            m_FriendlyNameSearchField;
 
         private void OnEnable()
         {
-            m_DataTreeViewState = new TreeViewState();
-            m_DataTreeView = new DataTreeView(m_DataTreeViewState);
-
             m_FriendlyNamesProperty = GetSerializedProperty("m_FriendlyNames");
             m_DataProperty = GetSerializedProperty("m_Data");
 
             //
-            m_FriendlyNames = new List<FriendlyName>();
-            for (int i = 0; i < m_FriendlyNamesProperty.arraySize; i++)
-            {
-                m_FriendlyNames.Add(new FriendlyName(m_FriendlyNamesProperty.GetArrayElementAtIndex(i)));
-            }
+            m_FriendlyNames = new FriendlyNameCollection(m_FriendlyNamesProperty);
+            
             m_FriendlyNameSearchField = new SearchField();
             //
             m_Data = new List<Data>();
@@ -258,7 +404,9 @@ namespace Point.Audio.Editor
             {
                 m_Data.Add(new Data(m_DataProperty.GetArrayElementAtIndex(i)));
             }
-            m_DataSearchField = new SearchField();
+
+            m_DataTreeViewState = new TreeViewState();
+            m_DataTreeView = new DataTreeView(m_DataProperty, m_FriendlyNames, m_DataTreeViewState, m_Data);
         }
 
         protected override void OnInspectorGUIContents()
@@ -311,18 +459,11 @@ namespace Point.Audio.Editor
                     {
                         if (GUILayout.Button("+"))
                         {
-                            m_FriendlyNamesProperty.InsertArrayElementAtIndex(m_FriendlyNamesProperty.arraySize);
-
-                            var temp = new FriendlyName(m_FriendlyNamesProperty.GetArrayElementAtIndex(m_FriendlyNamesProperty.arraySize - 1));
-                            temp.Name = string.Empty;
-                            temp.AudioClip = null;
-
-                            m_FriendlyNames.Add(temp);
+                            m_FriendlyNames.Add();
                         }
                         if (GUILayout.Button("-"))
                         {
                             m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
-                            m_FriendlyNamesProperty.DeleteArrayElementAtIndex(m_FriendlyNamesProperty.arraySize - 1);
                         }
                     }
 
@@ -338,7 +479,6 @@ namespace Point.Audio.Editor
 
                             if (GUILayout.Button("-", GUILayout.Width(20)))
                             {
-                                m_FriendlyNamesProperty.DeleteArrayElementAtIndex(i);
                                 m_FriendlyNames.RemoveAt(i);
 
                                 i--;
@@ -353,53 +493,16 @@ namespace Point.Audio.Editor
 
             CoreGUI.Line();
 
+            m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
+
             using (new CoreGUI.BoxBlock(Color.black))
             {
-                m_DataProperty.isExpanded
-                    = CoreGUI.LabelToggle(m_DataProperty.isExpanded, Data.Header, 15, TextAnchor.MiddleCenter);
-
-                if (m_DataProperty.isExpanded)
+                if (m_DataTreeView.CurrentSelection != null &&
+                    m_DataTreeView.CurrentSelection.Any())
                 {
-                    Data.SearchText = m_DataSearchField.OnGUI(Data.SearchText);
-
-                    using (new EditorGUILayout.HorizontalScope())
+                    foreach (var item in m_DataTreeView.CurrentSelection)
                     {
-                        if (GUILayout.Button("+"))
-                        {
-                            m_DataProperty.InsertArrayElementAtIndex(m_DataProperty.arraySize);
-
-                            var temp = new Data(m_DataProperty.GetArrayElementAtIndex(m_DataProperty.arraySize - 1));
-                            temp.Reset();
-                            m_Data.Add(temp);
-                        }
-                        if (GUILayout.Button("-"))
-                        {
-                            m_Data.RemoveAt(m_DataProperty.arraySize - 1);
-                            m_DataProperty.DeleteArrayElementAtIndex(m_DataProperty.arraySize - 1);
-                        }
-                    }
-
-                    for (int i = 0; i < m_Data.Count; i++)
-                    {
-                        bool drawLine;
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            using (new EditorGUILayout.VerticalScope())
-                            {
-                                drawLine = m_Data[i].OnGUI() && i + 1 < m_Data.Count;
-                            }
-
-                            if (GUILayout.Button("-", GUILayout.Width(20)))
-                            {
-                                m_DataProperty.DeleteArrayElementAtIndex(i);
-                                m_Data.RemoveAt(i);
-
-                                i--;
-                                continue;
-                            }
-                        }
-
-                        if (drawLine) CoreGUI.Line();
+                        item.OnGUI();
                     }
                 }
             }
