@@ -27,43 +27,43 @@ using UnityEngine.UIElements;
 
 namespace Point.Audio.Editor
 {
-    public class AudioVisualElement : VisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<AudioVisualElement, UxmlTraits> { }
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Hash = new UxmlStringAttributeDescription
-            {
-                name = "hash",
-                defaultValue = string.Empty,
-            };
+    //public class AudioVisualElement : VisualElement
+    //{
+    //    public new class UxmlFactory : UxmlFactory<AudioVisualElement, UxmlTraits> { }
+    //    public new class UxmlTraits : VisualElement.UxmlTraits
+    //    {
+    //        UxmlStringAttributeDescription m_Hash = new UxmlStringAttributeDescription
+    //        {
+    //            name = "hash",
+    //            defaultValue = string.Empty,
+    //        };
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                AudioVisualElement e = ve as AudioVisualElement;
+    //        public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+    //        {
+    //            get { yield break; }
+    //        }
+    //        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+    //        {
+    //            base.Init(ve, bag, cc);
+    //            AudioVisualElement e = ve as AudioVisualElement;
 
-                e.m_Hash = m_Hash.GetValueFromBag(bag, cc);
-            }
-        }
+    //            e.m_Hash = m_Hash.GetValueFromBag(bag, cc);
+    //        }
+    //    }
 
-        private string m_Hash;
+    //    private string m_Hash;
 
-        public AudioVisualElement()
-        {
-            m_Hash = string.Empty;
+    //    public AudioVisualElement()
+    //    {
+    //        m_Hash = string.Empty;
 
-            this.AddToClassList("point-text-element");
-        }
-        public AudioVisualElement(Audio audio)
-        {
-            //m_Hash = audio.audioKey;
-        }
-    }
+    //        this.AddToClassList("point-text-element");
+    //    }
+    //    public AudioVisualElement(Audio audio)
+    //    {
+    //        //m_Hash = audio.audioKey;
+    //    }
+    //}
 }
 
 #endif

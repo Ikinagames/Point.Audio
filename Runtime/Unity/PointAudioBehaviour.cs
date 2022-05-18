@@ -23,7 +23,8 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    public class AudioBehaviour : PointMonobehaviour
+
+    public class PointAudioBehaviour : PointMonobehaviour
     {
         public enum PlayOption
         {

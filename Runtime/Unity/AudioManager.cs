@@ -887,10 +887,12 @@ namespace Point.Audio
 #endif
         }
 
+        [Log("set listener test")]
         public static void SetListener(AudioListener audioListener)
         {
             Instance.m_MainListener = audioListener;
         }
+
         public static void ValidateListener()
         {
             if (Instance.m_MainListener != null)
@@ -926,12 +928,12 @@ namespace Point.Audio
         }
 
         public static void RegisterPlugin<TPlugin>(in TPlugin audioPlugin)
-            where TPlugin : IAudioPlugin
+            where TPlugin : class, IAudioPlugin
         {
             Instance.m_Plugins.Add(audioPlugin);
         }
         public static void UnregisterPlugin<TPlugin>(in TPlugin audioPlugin)
-            where TPlugin : IAudioPlugin
+            where TPlugin : class, IAudioPlugin
         {
             Instance.m_Plugins.Remove(audioPlugin);
         }
