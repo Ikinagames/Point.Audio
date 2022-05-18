@@ -887,7 +887,6 @@ namespace Point.Audio
 #endif
         }
 
-        [Log("set listener test")]
         public static void SetListener(AudioListener audioListener)
         {
             Instance.m_MainListener = audioListener;
