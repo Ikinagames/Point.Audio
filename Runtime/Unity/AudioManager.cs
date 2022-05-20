@@ -25,6 +25,8 @@ using Point.Collections.Events;
 using Point.Collections.ResourceControl;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -35,6 +37,7 @@ using UnityEngine.Jobs;
 namespace Point.Audio
 {
     [AddComponentMenu("")]
+    [XmlSettings(PropertyName = "Audio", SaveToDisk = false)]
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
     {
         protected override bool EnableLog => false;
@@ -59,10 +62,20 @@ namespace Point.Audio
         private static bool s_AudioBundleIsNotLoadedErrorSended = false;
 #endif
 
+        // Runtime Settings
+        [XmlField(PropertyName = "MasterVolume")]
+        private float m_MasterVolume = 1.0f;
+        [XmlField(PropertyName = "Mute")]
+        private bool m_Mute = false;
+        [XmlField(PropertyName = "UserFloats")]
+        private Dictionary<string, float> m_UserFloatHashMap = new Dictionary<string, float>();
+
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                   Critical Section                                   */
         /*                                       수정금지                                        */
         //////////////////////////////////////////////////////////////////////////////////////////
+
+        #region Critical Section
 
         #region Initialize
 
@@ -102,9 +115,41 @@ namespace Point.Audio
                 null
                 );
             m_DefaultAudioPool.AddObjects(15);
+
+            // Load Runtime Settings
+            XmlSettings.LoadSettings(this);
+            AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
+            List<string> invalidKeys = new List<string>();
+            foreach (var item in m_UserFloatHashMap)
+            {
+                if (!audioMixer.GetFloat(item.Key, out float currentValue))
+                {
+                    invalidKeys.Add(item.Key);
+                    continue;
+                }
+
+                audioMixer.SetFloat(item.Key, item.Value);
+            }
+            for (int i = 0; i < invalidKeys.Count; i++)
+            {
+                m_UserFloatHashMap.Remove(invalidKeys[i]);
+            }
         }
         protected override void OnShutdown()
         {
+            // Save Runtime Settings
+            AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
+            foreach (var item in m_UserFloatHashMap.Keys.ToArray())
+            {
+                if (!audioMixer.GetFloat(item, out float currentValue))
+                {
+                    continue;
+                }
+
+                m_UserFloatHashMap[item] = currentValue;
+            }
+            XmlSettings.SaveSettings(this);
+
             foreach (var item in m_CachedPrefabInfo.Values)
             {
                 item.Dispose();
@@ -869,9 +914,46 @@ namespace Point.Audio
             return true;
         }
 
+        #endregion
+
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                End of Critical Section                               */
         //////////////////////////////////////////////////////////////////////////////////////////
+
+        public static float MasterVolume
+        {
+            get => Instance.m_MasterVolume;
+            set => Instance.m_MasterVolume = value;
+        }
+        public static bool Mute
+        {
+            get => Instance.m_Mute;
+            set => Instance.m_Mute = value;
+        }
+
+        #region User Floats
+
+        public sealed class UserFloatWrapper
+        {
+            public float this[string key]
+            {
+                get => GetUserFloat(key);
+                set => SetUserFloat(key, value);
+            }
+        }
+        public static UserFloatWrapper UserFloat { get; } = new UserFloatWrapper();
+
+        public static float GetUserFloat(string key)
+        {
+            Instance.m_UserFloatHashMap.TryGetValue(key, out float value);
+            return value;
+        }
+        public static void SetUserFloat(string key, float value)
+        {
+            Instance.m_UserFloatHashMap[key] = value;
+        }
+
+        #endregion
 
         public static void Initialize(AssetBundle audioBundle)
         {
@@ -885,6 +967,24 @@ namespace Point.Audio
                 }
             }
 #endif
+        }
+        public static void Initialize(AssetBundleInfo audioBundle)
+        {
+            Instance.m_AudioBundle = audioBundle;
+#if DEBUG_MODE
+            foreach (var item in Instance.m_DataHashMap)
+            {
+                if (!Instance.m_AudioBundle.HasAsset(item.Key))
+                {
+                    $"?? {item.Value.AudioKey} does not exist from assetbundle {Path.GetFileName(audioBundle.AssetBundle.name)}".ToLogError();
+                }
+            }
+#endif
+        }
+        public static void Initialize(string absoluteAssetBundlePath)
+        {
+            Instance.m_AudioBundle = ResourceManager.RegisterAssetBundleAbsolutePath(absoluteAssetBundlePath);
+            Instance.m_AudioBundle.LoadAsync();
         }
 
         public static void SetListener(AudioListener audioListener)
@@ -1040,7 +1140,7 @@ namespace Point.Audio
         public static void Test()
         {
             // 에셋 번들 등록
-            AudioManager.Initialize(null);
+            AudioManager.Initialize(String.Empty);
 
             // 오디오 재생
             AudioManager.Play(
