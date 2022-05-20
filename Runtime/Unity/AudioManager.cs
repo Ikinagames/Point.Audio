@@ -63,9 +63,10 @@ namespace Point.Audio
 #endif
 
         // Runtime Settings
-        [XmlField(PropertyName = "MasterVolume")]
+        [SerializeField, XmlField(PropertyName = "MasterVolume")]
+        [Decibel]
         private float m_MasterVolume = 1.0f;
-        [XmlField(PropertyName = "Mute")]
+        [SerializeField, XmlField(PropertyName = "Mute")]
         private bool m_Mute = false;
         [XmlField(PropertyName = "UserFloats")]
         private Dictionary<string, float> m_UserFloatHashMap = new Dictionary<string, float>();
@@ -134,6 +135,9 @@ namespace Point.Audio
             {
                 m_UserFloatHashMap.Remove(invalidKeys[i]);
             }
+
+            if (m_Mute) AudioListener.volume = 0;
+            else AudioListener.volume = m_MasterVolume;
         }
         protected override void OnShutdown()
         {
@@ -920,15 +924,35 @@ namespace Point.Audio
         /*                                End of Critical Section                               */
         //////////////////////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// 모든 오디오의 전체 볼륨입니다.
+        /// </summary>
         public static float MasterVolume
         {
             get => Instance.m_MasterVolume;
-            set => Instance.m_MasterVolume = value;
+            set
+            {
+                float temp = Mathf.Min(0, value);
+                if (1 < temp) temp = 1;
+
+                Instance.m_MasterVolume = temp;
+                if (!Mute) AudioListener.volume = temp;
+            }
         }
+        /// <summary>
+        /// 오디오가 음소거되었나요?
+        /// </summary>
         public static bool Mute
         {
             get => Instance.m_Mute;
-            set => Instance.m_Mute = value;
+            set
+            {
+                if (Instance.m_Mute == value) return;
+
+                Instance.m_Mute = value;
+                if (value) AudioListener.volume = 0;
+                else AudioListener.volume = MasterVolume;
+            }
         }
 
         #region User Floats
@@ -951,6 +975,7 @@ namespace Point.Audio
         public static void SetUserFloat(string key, float value)
         {
             Instance.m_UserFloatHashMap[key] = value;
+            AudioSettings.Instance.DefaultMixerGroup.audioMixer.SetFloat(key, value);
         }
 
         #endregion
