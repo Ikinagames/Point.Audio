@@ -686,6 +686,9 @@ namespace Point.Audio
 
             public PreloadedPrefabInfo(AudioSource prefab)
             {
+#if UNITY_EDITOR
+                $"Fatal error. Prefab is null".ToLogError(LogChannel.Audio);
+#endif
                 m_AudioSource = prefab;
                 m_Pool = new ObjectPool<AudioSource>(
                    Factory,
@@ -694,7 +697,7 @@ namespace Point.Audio
                    null
                    );
             }
-
+             
             private AudioSource Factory()
             {
                 AudioSource prefabAudio = m_AudioSource;
@@ -742,6 +745,15 @@ namespace Point.Audio
             public PrefabInfo(AssetInfo<AudioSource> prefab)
             {
                 this.m_Prefab = prefab;
+                if (!m_Prefab.IsLoaded)
+                {
+                    $"not loaded prefab {prefab.Key}".ToLogError();
+                }
+                if (m_Prefab.Asset == null)
+                {
+                    $"asset null {prefab.Key}".ToLogError();
+                }
+
                 m_Pool = new ObjectPool<AudioSource>(
                     Factory,
                     OnGet,
@@ -897,6 +909,7 @@ namespace Point.Audio
 
                 if (plugin is IAudioOnRequested requested)
                 {
+#line hidden
                     try
                     {
                         requested.Process(in audioKey, in is3D, in position);
@@ -907,6 +920,7 @@ namespace Point.Audio
                             $"Unhandled error has been raised.");
                         UnityEngine.Debug.LogException(ex);
                     }
+#line default
                 }
 
                 if (!plugin.CanPlayable())
@@ -996,6 +1010,10 @@ namespace Point.Audio
         public static void Initialize(AssetBundleInfo audioBundle)
         {
             Instance.m_AudioBundle = audioBundle;
+            if (!audioBundle.IsLoaded)
+            {
+                audioBundle.LoadAsync();
+            }
 #if DEBUG_MODE
             foreach (var item in Instance.m_DataHashMap)
             {

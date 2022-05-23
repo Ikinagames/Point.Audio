@@ -84,6 +84,19 @@ namespace Point.Audio
         }
         public bool hasAudioSource => m_Allocator.IsCreated;
 
+        public ref Transformation transform
+        {
+            get
+            {
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                return ref m_Allocator[m_Index];
+            }
+        }
         public Vector3 position
         {
             get
