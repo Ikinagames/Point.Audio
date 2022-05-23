@@ -165,6 +165,13 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Play()
         {
+            if (!IsValid())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"You\'re trying to play an invalid audio. This is not allowed.");
+                return;
+            }
+
             RESULT result = AudioManager.PlayAudio(ref this, out bool initialized);
             if (initialized) m_AudioClip.AddDebugger();
 
@@ -180,6 +187,12 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Stop()
         {
+            if (!IsValid())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"You\'re trying to stop an invalid audio. This is not allowed.");
+                return;
+            }
             AudioManager.StopAudio(in this);
         }
 
@@ -189,6 +202,8 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Reserve()
         {
+            if (!IsValid()) return;
+
             AudioManager.ReserveAudio(ref this);
 
             m_Allocator = default(UnsafeAllocator<Transformation>);

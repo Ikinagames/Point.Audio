@@ -1167,6 +1167,14 @@ namespace Point.Audio
             return audioSource.isPlaying;
         }
 
+        public static void EnsureResources(in AudioKey audioKey)
+        {
+            AudioKey concreteKey = GetConcreteKey(in audioKey);
+            AssetInfo clipInfo = Instance.m_AudioBundle.LoadAsset(concreteKey);
+            clipInfo.Reserve();
+            GetPool(audioKey);
+        }
+
         public static Audio Play(AudioKey audioKey, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
 #if DEBUG_MODE
