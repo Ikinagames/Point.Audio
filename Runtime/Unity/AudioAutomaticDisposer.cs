@@ -31,8 +31,6 @@ namespace Point.Audio
 
         private readonly List<Audio> m_Audios = new List<Audio>();
 
-        public Audio Audio;
-
         public void Register(in Audio audio)
         {
             m_Audios.Add(audio);
@@ -50,6 +48,14 @@ namespace Point.Audio
                 m_Audios[i].Reserve();
                 m_Audios.RemoveAt(i);
             }
+        }
+        private void OnDestroy()
+        {
+            for (int i = 0; i < m_Audios.Count; i++)
+            {
+                m_Audios[i].Reserve();
+            }
+            m_Audios.Clear();
         }
     }
 }

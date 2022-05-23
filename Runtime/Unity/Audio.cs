@@ -165,8 +165,9 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Play()
         {
-            RESULT result = AudioManager.PlayAudio(ref this);
-            m_AudioClip.AddDebugger();
+            RESULT result = AudioManager.PlayAudio(ref this, out bool initialized);
+            if (initialized) m_AudioClip.AddDebugger();
+
             if (result.IsConsiderAsError())
             {
                 result.SendLog(m_AudioClip.Key);

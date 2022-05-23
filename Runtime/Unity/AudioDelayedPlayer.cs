@@ -54,6 +54,14 @@ namespace Point.Audio
                 m_Payloads.RemoveAt(i);
             }
         }
+        private void OnDestroy()
+        {
+            for (int i = 0; i < m_Payloads.Count; i++)
+            {
+                m_Payloads[i].audio.Reserve();
+            }
+            m_Payloads.Clear();
+        }
 
         private struct Payload
         {

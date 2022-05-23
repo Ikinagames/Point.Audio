@@ -249,48 +249,47 @@ namespace Point.Audio
                 return Instance.m_DefaultAudioPool;
             }
 
-            //Dictionary<Hash, AssetInfo> cachedAssetInfo = Instance.m_CachedAssetInfoMap;
-            IPrefabInfo info;
-            if (!audioBundle.TryLoadAsset<AudioSource>(prefabKey, out AssetInfo<AudioSource> prefabAsset))
-            // 프리팹이 없다?
+            Dictionary<Hash, IPrefabInfo> cachedPrefabInfo = Instance.m_CachedPrefabInfo;
+            if (!cachedPrefabInfo.TryGetValue(prefabKey, out IPrefabInfo info))
             {
+                if (!audioBundle.TryLoadAsset<AudioSource>(prefabKey, out AssetInfo<AudioSource> prefabAsset))
+                // 프리팹이 없다?
+                {
 #if UNITY_EDITOR
-                string editorPrefabKey = prefabKey.Key;
-                if (editorPrefabKey.StartsWith("assets/resources"))
-                {
-                    editorPrefabKey = editorPrefabKey.Replace("assets/resources", String.Empty);
-                }
+                    string editorPrefabKey = prefabKey.Key;
+                    if (editorPrefabKey.StartsWith("assets/resources"))
+                    {
+                        editorPrefabKey = editorPrefabKey.Replace("assets/resources", String.Empty);
+                    }
 
-                AudioSource prefab = Resources.Load<AudioSource>(editorPrefabKey);
-                if (prefab == null)
-                {
+                    AudioSource prefab = Resources.Load<AudioSource>(editorPrefabKey);
+                    if (prefab == null)
+                    {
+                        PointHelper.LogError(Channel.Audio,
+                            $"There\'s no prefab({prefabKey}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) either Resources folder. This is not allowed.");
+                        return Instance.m_DefaultAudioPool;
+                    }
+
+                    if (!Instance.m_CachedPrefabInfo.TryGetValue(prefabKey, out info))
+                    {
+                        info = new PreloadedPrefabInfo(prefab);
+                        Instance.m_CachedPrefabInfo.Add(prefabKey, info);
+                    }
+
                     PointHelper.LogError(Channel.Audio,
-                        $"There\'s no prefab({prefabKey}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) either Resources folder. This is not allowed.");
-                    return Instance.m_DefaultAudioPool;
-                }
-
-                if (!Instance.m_CachedPrefabInfo.TryGetValue(prefabKey, out info))
-                {
-                    info = new PreloadedPrefabInfo(prefab);
-                    Instance.m_CachedPrefabInfo.Add(prefabKey, info);
-                }
-
-                PointHelper.LogError(Channel.Audio,
-                    $"There\'s no prefab({prefab.gameObject.name}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) but Resources folder. This is not allowed in runtime.");
-                return info.Pool;
+                        $"There\'s no prefab({prefab.gameObject.name}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) but Resources folder. This is not allowed in runtime.");
+                    return info.Pool;
 #else
                     throw new InvalidOperationException($"Prefab asset for audio is not available in currently registered audio {nameof(AssetBundle)}({audioBundle.AssetBundle.name}). This is not allowed cannot play requested audio.");
 #endif
-            }
+                }
 
-            Dictionary<Hash, IPrefabInfo> cachedPrefabInfo = Instance.m_CachedPrefabInfo;
-            if (!cachedPrefabInfo.TryGetValue(prefabKey, out info))
-            {
                 info = new PrefabInfo(prefabAsset);
+                prefabAsset.AddDebugger();
+
                 cachedPrefabInfo.Add(prefabKey, info);
             }
-
-            prefabAsset.AddDebugger();
+            
             return info.Pool;
         }
         private static ObjectPool<AudioSource> GetPool(in AudioKey audioKey)
@@ -554,11 +553,17 @@ namespace Point.Audio
 
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                 Audio Internal Methods                               */
-        internal static RESULT PlayAudio(ref Audio audio)
+        internal static RESULT PlayAudio(ref Audio audio, out bool initialized)
         {
             AudioSource audioSource;
             if (audio.RequireSetup())
             {
+                initialized = true;
+                if (audio.m_AudioClip.IsValid())
+                {
+                    audio.m_AudioClip.Reserve();
+                }
+
                 if (!audio.audioKey.IsValid())
                 {
                     return RESULT.AUDIOKEY | RESULT.NOTVALID;
@@ -591,6 +596,7 @@ namespace Point.Audio
             }
             else
             {
+                initialized = false;
                 audioSource = GetAudioSource(in audio);
                 if (!ProcessPlugin(audio.audioKey, audioSource.spatialize, audio.position))
                 {
