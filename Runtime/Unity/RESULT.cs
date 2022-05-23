@@ -22,7 +22,7 @@ using System;
 namespace Point.Audio
 {
     [Flags]
-    public enum RESULT
+    public enum RESULT : int
     {
         INVALID         =   0,
         OK              =   0b0001 << 0,
@@ -37,7 +37,18 @@ namespace Point.Audio
         NOTFOUND        =   0b0001 << 8,
         NOTLOADED       =   0b0010 << 8,
         NOTVALID        =   0b0100 << 8,
+        ISLOADING       =   0b1000 << 8,
 
+        //
+        DELAYEDPLAY     =   0b0001 << 12,
+
+        //
         AudioClip_NotFound_In_AssetBundle = AUDIOCLIP | NOTFOUND | ASSETBUNDLE,
+        AudioClip_IsLoading = OK | AUDIOCLIP | ISLOADING,
+    }
+    public struct AdditionalAudioOptions
+    {
+        // if audio clip is loading, play after when loading is finished.
+        public bool playAfterIfAudioClipIsLoading;
     }
 }

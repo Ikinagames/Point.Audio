@@ -33,6 +33,7 @@ using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Jobs;
+using System.Runtime.InteropServices;
 
 namespace Point.Audio
 {
@@ -289,6 +290,7 @@ namespace Point.Audio
                 cachedPrefabInfo.Add(prefabKey, info);
             }
 
+            prefabAsset.AddDebugger();
             return info.Pool;
         }
         private static ObjectPool<AudioSource> GetPool(in AudioKey audioKey)
@@ -396,8 +398,8 @@ namespace Point.Audio
                 }
 
                 clipAsset.AddDebugger();
-                audioClip = (AudioClip)clipAsset.Asset;
-                return RESULT.OK;
+                audioClip = clipAsset.Asset as AudioClip;
+                return audioClip != null ? RESULT.OK : RESULT.AudioClip_IsLoading;
             }
 
             index = managedData.GetIndex();
@@ -417,8 +419,8 @@ namespace Point.Audio
                 }
 
                 clipAsset.AddDebugger();
-                audioClip = (AudioClip)clipAsset.Asset;
-                return RESULT.OK;
+                audioClip = clipAsset.Asset as AudioClip;
+                return audioClip != null ? RESULT.OK : RESULT.AudioClip_IsLoading;
             }
 
             RESULT result = GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset, out audioClip);
@@ -442,7 +444,9 @@ namespace Point.Audio
             return true;
         }
 
-        private static RESULT IssueAudioSource(in AudioKey audioKey, out AssetInfo clipInfo, out AudioSource audioSource,
+        private static RESULT IssueAudioSource(
+            in AudioKey audioKey,
+            out AssetInfo clipInfo, out AudioSource audioSource,
             out CompressedAudioData data, out ManagedAudioData managedData)
         {
             RESULT result = GetAudioClip(audioKey, out clipInfo, out AudioClip clip);
@@ -453,6 +457,15 @@ namespace Point.Audio
                 audioSource = null;
                 data = default(CompressedAudioData);
                 managedData = null;
+                return result;
+            }
+            else if ((result & RESULT.AudioClip_IsLoading) == RESULT.AudioClip_IsLoading)
+            {
+                audioSource = null;
+                data = default(CompressedAudioData);
+                managedData = null;
+
+                clipInfo.AddDebugger();
                 return result;
             }
 
@@ -486,8 +499,9 @@ namespace Point.Audio
             return RESULT.OK | result;
         }
         
-        private static RESULT InternalPlay(in AudioKey audioKey,
-            out Audio audio, out AudioSource audioSource)
+        private static RESULT InternalPlay(
+            in AudioKey audioKey, in AdditionalAudioOptions additionalOptions,
+            out AssetInfo clipInfo, out Audio audio, out AudioSource audioSource)
         {
 #if DEBUG_MODE
             const string c_IgnoredLogFormat = "Ignored AudioKey({0})";
@@ -499,18 +513,35 @@ namespace Point.Audio
                 PointHelper.Log(Channel.Audio,
                     string.Format(c_IgnoredLogFormat, concreteKey.ToString()));
 #endif
+                clipInfo = default(AssetInfo);
                 audio = default(Audio);
                 audioSource = null;
                 return RESULT.IGNORED;
             }
 
-            RESULT result = IssueAudioSource(in concreteKey, out AssetInfo clipInfo, out audioSource,
+            RESULT result = IssueAudioSource(in concreteKey, out clipInfo, out audioSource,
                 out CompressedAudioData data, out ManagedAudioData managedData);
-            if ((result & RESULT.OK) != RESULT.OK)
+            if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
+                (result & RESULT.OK) != RESULT.OK)
             {
                 audio = default(Audio);
                 return result;
             }
+            // AudioClip is loading, but wants to play after loading.
+            else if ((result & RESULT.AudioClip_IsLoading) == RESULT.AudioClip_IsLoading)
+            {
+                audio = default(Audio);
+
+                if (additionalOptions.playAfterIfAudioClipIsLoading)
+                {
+                    clipInfo.AddDebugger();
+                    return result | RESULT.DELAYEDPLAY;
+                }
+
+                clipInfo.Reserve();
+                return result | RESULT.IGNORED;
+            }
+
             clipInfo.AddDebugger();
 
             audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo);
@@ -541,9 +572,16 @@ namespace Point.Audio
                     return RESULT.IGNORED;
                 }
 
-                RESULT result = InternalPlay(audioKey, out audio, out AudioSource insAudio);
-                if ((result & RESULT.OK) != RESULT.OK)
+                RESULT result = InternalPlay(audioKey, default(AdditionalAudioOptions), 
+                    out AssetInfo clipInfo, out audio, out AudioSource insAudio);
+                if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
+                    (result & RESULT.OK) != RESULT.OK)
                 {
+                    return result;
+                }
+                else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+                {
+                    $"unhandled. delayed play".ToLogError();
                     return result;
                 }
 
@@ -844,7 +882,8 @@ namespace Point.Audio
                     throw new Exception();
                 }
 
-                return new Audio(audioKey, index, audioSource.GetInstanceID(), transformations);
+                return new Audio(audioKey, index, 
+                    audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
             }
             public void Register(AudioSource audioSource)
             {
@@ -1083,8 +1122,8 @@ namespace Point.Audio
         public static Audio GetAudio(in AudioKey audioKey)
         {
             AudioKey concreteKey = GetConcreteKey(in audioKey);
-            RESULT result = IssueAudioSource(in concreteKey, out AssetInfo clipInfo, 
-                out AudioSource audioSource, 
+            RESULT result = IssueAudioSource(in concreteKey, 
+                out AssetInfo clipInfo, out AudioSource audioSource, 
                 out CompressedAudioData data, out ManagedAudioData managedData);
 
             if ((result & RESULT.OK) != RESULT.OK)
@@ -1111,7 +1150,7 @@ namespace Point.Audio
             return audioSource.isPlaying;
         }
 
-        public static Audio Play(AudioKey audioKey)
+        public static Audio Play(AudioKey audioKey, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
@@ -1121,8 +1160,30 @@ namespace Point.Audio
                 return Audio.Invalid;
             }
 
-            RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
-            if (result.IsConsiderAsError())
+            RESULT result = InternalPlay(in audioKey, in additionalOptions, 
+                out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
+            if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            {
+                GCHandle handle = GCHandle.Alloc(audio, GCHandleType.Pinned);
+                IntPtr intPtr = handle.AddrOfPinnedObject();
+                clipInfo.OnLoaded += t =>
+                {
+                    unsafe
+                    {
+                        Audio* ptr = (Audio*)intPtr;
+                        var temp = Play(audioKey, additionalOptions);
+                        // TODO : Temp code
+                        temp.AutoDisposal();
+
+                        *ptr = temp;
+                    }
+
+                    handle.Free();
+                    clipInfo.Reserve();
+                };
+                return audio;
+            }
+            else if (result.IsConsiderAsError())
             {
                 result.SendLog(in audioKey);
                 return Audio.Invalid;
@@ -1141,7 +1202,7 @@ namespace Point.Audio
 #endif
             return audio;
         }
-        public static Audio Play(AudioKey audioKey, Vector3 position)
+        public static Audio Play(AudioKey audioKey, Vector3 position, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) at {1} with AudioKey({2})";
@@ -1151,13 +1212,35 @@ namespace Point.Audio
                 return Audio.Invalid;
             }
 
-            RESULT result = InternalPlay(audioKey, out Audio audio, out AudioSource insAudio);
+            RESULT result = InternalPlay(in audioKey, in additionalOptions, 
+                out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
+            if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            {
+                GCHandle handle = GCHandle.Alloc(audio, GCHandleType.Pinned);
+                clipInfo.OnLoaded += t =>
+                {
+                    unsafe
+                    {
+                        Audio* ptr = (Audio*)GCHandle.ToIntPtr(handle);
+                        var temp = Play(audioKey, position, additionalOptions);
+                        // TODO : Temp code
+                        temp.AutoDisposal();
+
+                        *ptr = temp;
+                    }
+
+                    handle.Free();
+                    clipInfo.Reserve();
+                };
+                return audio;
+            }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
+            
             if (result.IsConsiderAsError())
             {
                 result.SendLog(in audioKey, in position);
                 return Audio.Invalid;
             }
-            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
 
             if (result.IsRequireLog())
             {

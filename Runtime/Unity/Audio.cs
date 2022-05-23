@@ -82,7 +82,7 @@ namespace Point.Audio
                 return audioSource.spatialize;
             }
         }
-        public bool hasAudioSource => m_Allocator.IsCreated;
+        public bool hasAudioSource => m_Allocator.IsCreated && m_InstanceID != 0;
 
         public ref Transformation transform
         {
