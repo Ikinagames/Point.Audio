@@ -155,13 +155,13 @@ namespace Point.Audio
             }
             XmlSettings.SaveSettings(this);
 
+            m_AudioContainer.Dispose();
             foreach (var item in m_CachedPrefabInfo.Values)
             {
                 item.Dispose();
             }
             m_CachedPrefabInfo.Clear();
 
-            m_AudioContainer.Dispose();
             EventBroadcaster.RemoveEvent<PlayAudioEvent>(PlayAudioEventHandler);
             m_DataHashMap.Dispose();
 
@@ -188,7 +188,7 @@ namespace Point.Audio
             AudioSource source = obj.AddComponent<AudioSource>();
             source.playOnAwake = false;
 
-            Instance.m_AudioContainer.Register(source);
+            Instance.m_AudioContainer.Register(source, Instance.m_DefaultAudioPool);
 
             return source;
         }
@@ -748,7 +748,7 @@ namespace Point.Audio
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
                 insAudio.playOnAwake = false;
 
-                Instance.m_AudioContainer.Register(insAudio);
+                Instance.m_AudioContainer.Register(insAudio, m_Pool);
 
                 return insAudio;
             }
@@ -812,7 +812,7 @@ namespace Point.Audio
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
                 insAudio.playOnAwake = false;
 
-                Instance.m_AudioContainer.Register(insAudio);
+                Instance.m_AudioContainer.Register(insAudio, m_Pool);
 
                 return insAudio;
             }
@@ -843,6 +843,7 @@ namespace Point.Audio
         private sealed unsafe class InternalAudioContainer : IDisposable
         {
             private AudioSource[] m_Audio;
+            private ObjectPool<AudioSource>[] m_AudioPool;
             private Transform[] m_AudioTransforms;
             private TransformAccessArray m_AudioTransformAccess;
             private UnsafeAllocator<Transformation> transformations;
@@ -854,6 +855,7 @@ namespace Point.Audio
             public InternalAudioContainer(int capacity)
             {
                 m_Audio = new AudioSource[capacity];
+                m_AudioPool = new ObjectPool<AudioSource>[capacity];
                 m_AudioTransforms = new Transform[capacity];
                 m_AudioTransformAccess = new TransformAccessArray(capacity);
                 transformations = new UnsafeAllocator<Transformation>(capacity, Allocator.Persistent, NativeArrayOptions.ClearMemory);
@@ -861,8 +863,15 @@ namespace Point.Audio
             public void Dispose()
             {
                 m_JobHandle.Complete();
+                for (int i = 0; i < m_Audio.Length; i++)
+                {
+                    if (m_Audio[i] == null) continue;
+
+                    m_AudioPool[i].Reserve(m_Audio[i]);
+                }
 
                 m_Audio = null;
+                m_AudioPool = null;
                 m_AudioTransforms = null;
                 m_AudioTransformAccess.Dispose();
                 transformations.Dispose();
@@ -885,7 +894,7 @@ namespace Point.Audio
                 return new Audio(audioKey, index, 
                     audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
             }
-            public void Register(AudioSource audioSource)
+            public void Register(AudioSource audioSource, ObjectPool<AudioSource> pool)
             {
                 m_JobHandle.Complete();
 
@@ -893,12 +902,14 @@ namespace Point.Audio
                 {
                     int targetLength = m_Audio.Length * 2;
                     Array.Resize(ref m_Audio, targetLength);
+                    Array.Resize(ref m_AudioPool, targetLength);
                     Array.Resize(ref m_AudioTransforms, targetLength);
                     transformations.Resize(targetLength, NativeArrayOptions.ClearMemory);
                 }
 
                 int index = m_Count;
                 m_Audio[index] = audioSource;
+                m_AudioPool[index] = pool;
                 m_AudioTransforms[index] = audioSource.transform;
                 transformations[index] = new Transformation();
 
