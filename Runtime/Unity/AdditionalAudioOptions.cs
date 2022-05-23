@@ -17,33 +17,20 @@
 #define DEBUG_MODE
 #endif
 
-using System;
 
 namespace Point.Audio
 {
-    [Flags]
-    public enum RESULT : int
+    public struct AdditionalAudioOptions
     {
-        INVALID         =   0,
-        OK              =   0b0001 << 0,
-        IGNORED         =   0b0010 << 0,
+        public static AdditionalAudioOptions PlayAfterLoading
+        {
+            get => new AdditionalAudioOptions
+            {
+                playAfterIfAudioClipIsLoading = true,
+            };
+        }
 
-        //
-        AUDIOCLIP       =   0b0001 << 4,
-        ASSETBUNDLE     =   0b0010 << 4,
-        AUDIOKEY        =   0b0100 << 4,
-
-        //
-        NOTFOUND        =   0b0001 << 8,
-        NOTLOADED       =   0b0010 << 8,
-        NOTVALID        =   0b0100 << 8,
-        ISLOADING       =   0b1000 << 8,
-
-        //
-        DELAYEDPLAY     =   0b0001 << 12,
-
-        //
-        AudioClip_NotFound_In_AssetBundle = AUDIOCLIP | NOTFOUND | ASSETBUNDLE,
-        AudioClip_IsLoading = OK | AUDIOCLIP | ISLOADING,
+        // if audio clip is loading, play after when loading is finished.
+        public bool playAfterIfAudioClipIsLoading;
     }
 }
