@@ -747,13 +747,13 @@ namespace Point.Audio
             public AudioSource Get()
             {
                 var ins = m_Pool.Get();
-                $"Get {ins.name} from Default Pool".ToLog();
+                //$"Get {ins.name} from Default Pool".ToLog();
 
                 return ins;
             }
             public void Reserve(AudioSource audioSource)
             {
-                $"Reserve {audioSource.name} to Default Pool".ToLog();
+                //$"Reserve {audioSource.name} to Default Pool".ToLog();
 
                 m_Pool.Reserve(audioSource);
             }
