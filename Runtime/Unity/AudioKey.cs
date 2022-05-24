@@ -30,7 +30,7 @@ namespace Point.Audio
         [SerializeField]
         private Hash m_Key;
 
-        private AudioKey(Hash hash)
+        public AudioKey(Hash hash)
         {
             m_Key = hash;
         }

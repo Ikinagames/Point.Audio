@@ -54,7 +54,7 @@ namespace Point.Audio
                 m_Payloads.RemoveAt(i);
             }
         }
-        private void OnDestroy()
+        protected override void OnShutdown()
         {
             for (int i = 0; i < m_Payloads.Count; i++)
             {

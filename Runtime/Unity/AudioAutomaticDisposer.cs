@@ -33,6 +33,14 @@ namespace Point.Audio
 
         public void Register(in Audio audio)
         {
+            if (audio.Equals(Audio.Invalid)) return;
+
+            if (!audio.IsValid())
+            {
+                $"Cannot add an invalid audio".ToLogError();
+                return;
+            }
+
             m_Audios.Add(audio);
         }
 
@@ -49,7 +57,7 @@ namespace Point.Audio
                 m_Audios.RemoveAt(i);
             }
         }
-        private void OnDestroy()
+        protected override void OnShutdown()
         {
             for (int i = 0; i < m_Audios.Count; i++)
             {

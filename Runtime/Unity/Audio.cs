@@ -31,24 +31,25 @@ namespace Point.Audio
     [BurstCompatible, Serializable]
     public struct Audio : IValidation, ICloneable
     {
-        public static Audio Invalid => new Audio(AssetInfo.Invalid, -1, -1, default(UnsafeAllocator<Transformation>));
+        public static Audio Invalid => new Audio(AssetInfo.Invalid, default(AudioKey), -1, -1, default(UnsafeAllocator<Transformation>));
 
         //[SerializeField] private AudioKey m_AudioKey;
         internal AssetInfo m_AudioClip;
+        internal AudioKey m_Parent;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
 
 #pragma warning disable IDE1006 // Naming Styles
-        public AudioKey audioKey => m_AudioClip.Key;
+        public AudioKey audioKey => m_Parent.IsValid() ? m_Parent : new AudioKey(m_AudioClip.Key);
         [NotBurstCompatible]
         public AudioClip clip
         {
             get
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    $"?? error".ToLogError();
+                    return null;
                 }
 
                 AudioSource audioSource = AudioManager.GetAudioSource(in this);
@@ -72,11 +73,16 @@ namespace Point.Audio
         {
             get
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    $"?? error".ToLogError();
+                    return false;
                 }
+                //if (!hasAudioSource)
+                //{
+                //    this = AudioManager.GetAudio(audioKey);
+                //    m_AudioClip.AddDebugger();
+                //}
 
                 AudioSource audioSource = AudioManager.GetAudioSource(in this);
                 return audioSource.spatialize;
@@ -151,16 +157,26 @@ namespace Point.Audio
 
             m_AudioClip = new AssetInfo(audioKey);
         }
-        internal Audio(AssetInfo audioKey, int index, int audioSource, UnsafeAllocator<Transformation> allocator)
+        internal Audio(AssetInfo audioKey, AudioKey parent,
+            int index, int audioSource, UnsafeAllocator<Transformation> allocator)
         {
             m_AudioClip = audioKey;
+            m_Parent = parent;
             m_Index = index;
             m_InstanceID = audioSource;
             m_Allocator = allocator;
         }
 
         internal bool RequireSetup() => m_InstanceID == 0;
-        public bool IsValid() => m_AudioClip.IsValid() && m_InstanceID != 0;
+        public bool IsValid()
+        {
+            if (!m_AudioClip.IsValid() || m_InstanceID == 0 || m_Index < 0) return false;
+
+            AudioSource audioSource = AudioManager.GetAudioSource(in this);
+            if (audioSource == null || audioSource.GetInstanceID() != m_InstanceID) return false;
+
+            return true;
+        }
 
         [NotBurstCompatible]
         public void Play()

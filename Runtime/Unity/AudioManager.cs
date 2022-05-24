@@ -52,7 +52,7 @@ namespace Point.Audio
 
         //
         [NonSerialized] AssetBundleInfo m_AudioBundle;
-        [NonSerialized] ObjectPool<AudioSource> m_DefaultAudioPool;
+        [NonSerialized] DefaultPrefabInfo m_DefaultAudioPool;
 
         [NonSerialized] readonly Dictionary<Hash, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, IPrefabInfo>();
 
@@ -61,6 +61,9 @@ namespace Point.Audio
 
 #if UNITY_EDITOR
         private static bool s_AudioBundleIsNotLoadedErrorSended = false;
+
+        private static int s_AudioSourceCounter = 0;
+        private static readonly Dictionary<int, string> m_DebugNames = new Dictionary<int, string>();
 #endif
 
         // Runtime Settings
@@ -95,7 +98,7 @@ namespace Point.Audio
             {
                 var temp = data.GetAudioData();
 
-                m_DataHashMap.Add(temp.AudioKey, temp);
+                m_DataHashMap.Add(GetConcreteKey(temp.AudioKey), temp);
                 m_CachedManagedDataMap.Add(temp.AudioKey, 
                     new ManagedAudioData
                     {
@@ -110,14 +113,8 @@ namespace Point.Audio
             EventBroadcaster.AddEvent<PlayAudioEvent>(PlayAudioEventHandler);
 
             m_AudioContainer = new InternalAudioContainer(1024);
-            m_DefaultAudioPool = new ObjectPool<AudioSource>(
-                DefaultAudioFactory,
-                DefaultAudioOnGet,
-                DefaultAudioOnReserve,
-                null
-                );
-            m_DefaultAudioPool.AddObjects(15);
-
+            m_DefaultAudioPool = new DefaultPrefabInfo();
+            
             // Load Runtime Settings
             XmlSettings.LoadSettings(this);
             AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
@@ -173,44 +170,6 @@ namespace Point.Audio
 
         #endregion
 
-        #region Default Pool
-
-#if DEBUG_MODE
-        private static int s_AudioSourceCounter = 0;
-#endif
-        private static AudioSource DefaultAudioFactory()
-        {
-            GameObject obj = new GameObject();
-#if DEBUG_MODE
-            obj.name = $"Default AudioSource {s_AudioSourceCounter++}";
-#endif
-            obj.transform.SetParent(Instance.transform);
-            AudioSource source = obj.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-
-            Instance.m_AudioContainer.Register(source, Instance.m_DefaultAudioPool);
-
-            return source;
-        }
-        private static void DefaultAudioOnGet(AudioSource t)
-        {
-            t.volume = 1;
-            t.pitch = 1;
-            t.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
-        }
-        private static void DefaultAudioOnReserve(AudioSource t)
-        {
-            t.volume = 0;
-            t.Stop();
-
-            t.clip = null;
-            t.outputAudioMixerGroup = null;
-
-            t.transform.SetParent(Instance.transform);
-        }
-
-        #endregion
-
         #region Monobehaviour Messages
 
         private void LateUpdate()
@@ -240,7 +199,7 @@ namespace Point.Audio
 
         #region Internal
 
-        private static ObjectPool<AudioSource> GetPool(in Hash prefabKey)
+        private static IPrefabInfo GetPool(in Hash prefabKey)
         {
             AssetBundleInfo audioBundle = Instance.m_AudioBundle;
 
@@ -278,7 +237,7 @@ namespace Point.Audio
 
                     PointHelper.LogError(Channel.Audio,
                         $"There\'s no prefab({prefab.gameObject.name}) in {nameof(AssetBundle)}({Instance.m_AudioBundle.AssetBundle.name}) but Resources folder. This is not allowed in runtime.");
-                    return info.Pool;
+                    return info;
 #else
                     throw new InvalidOperationException($"Prefab asset for audio is not available in currently registered audio {nameof(AssetBundle)}({audioBundle.AssetBundle.name}). This is not allowed cannot play requested audio.");
 #endif
@@ -290,12 +249,13 @@ namespace Point.Audio
                 cachedPrefabInfo.Add(prefabKey, info);
             }
             
-            return info.Pool;
+            return info;
         }
-        private static ObjectPool<AudioSource> GetPool(in AudioKey audioKey)
+        private static IPrefabInfo GetPool(in AudioKey audioKey)
         {
+            AudioKey concreteKey = GetConcreteKey(in audioKey);
             /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
-            if (!TryGetCompressedAudioData(audioKey, out CompressedAudioData data))
+            if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
                 return Instance.m_DefaultAudioPool;
             }
@@ -428,14 +388,14 @@ namespace Point.Audio
 
             return result;
         }
-        private static bool TryGetCompressedAudioData(in AudioKey key, out CompressedAudioData data)
+        private static bool TryGetCompressedAudioData(in AudioKey concreteKey, out CompressedAudioData data)
         {
-            if (Instance.m_DataHashMap.TryGetValue(key, out data))
+            if (Instance.m_DataHashMap.TryGetValue(concreteKey, out data))
             {
                 return true;
             }
 
-            if (!Instance.m_FriendlyNameMap.TryGetValue(key, out Hash temp) ||
+            if (!Instance.m_FriendlyNameMap.TryGetValue(concreteKey, out Hash temp) ||
                 !Instance.m_DataHashMap.TryGetValue(temp, out data))
             {
                 return false;
@@ -443,12 +403,14 @@ namespace Point.Audio
             return true;
         }
 
+        // AudioClip_IsLoading = audiosource, clipInfo.
+        // else err = none;
         private static RESULT IssueAudioSource(
-            in AudioKey audioKey,
+            in AudioKey concreteKey,
             out AssetInfo clipInfo, out AudioSource audioSource,
             out CompressedAudioData data, out ManagedAudioData managedData)
         {
-            RESULT result = GetAudioClip(audioKey, out clipInfo, out AudioClip clip);
+            RESULT result = GetAudioClip(concreteKey, out clipInfo, out AudioClip clip);
             if ((result & RESULT.OK) != RESULT.OK)
             {
                 //$"Could\'nt find audio clip {audioKey}.".ToLogError();
@@ -458,18 +420,9 @@ namespace Point.Audio
                 managedData = null;
                 return result;
             }
-            else if ((result & RESULT.AudioClip_IsLoading) == RESULT.AudioClip_IsLoading)
-            {
-                audioSource = null;
-                data = default(CompressedAudioData);
-                managedData = null;
-
-                clipInfo.AddDebugger();
-                return result;
-            }
 
             /// <see cref="AudioList"/> 에 세부 정보가 등록되지 않은 오디오 클립
-            if (!TryGetCompressedAudioData(audioKey, out data))
+            if (!TryGetCompressedAudioData(concreteKey, out data))
             {
                 audioSource = Instance.m_DefaultAudioPool.Get();
                 audioSource.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
@@ -479,6 +432,7 @@ namespace Point.Audio
                 managedData = null;
 
                 clipInfo.AddDebugger();
+                "return default audio pool".ToLog();
                 return RESULT.OK | result;
             }
 
@@ -529,25 +483,26 @@ namespace Point.Audio
             // AudioClip is loading, but wants to play after loading.
             else if ((result & RESULT.AudioClip_IsLoading) == RESULT.AudioClip_IsLoading)
             {
-                audio = default(Audio);
-
-                if (additionalOptions.playAfterIfAudioClipIsLoading)
+                if (!additionalOptions.playAfterIfAudioClipIsLoading)
                 {
-                    clipInfo.AddDebugger();
-                    return result | RESULT.DELAYEDPLAY;
+                    audio = default(Audio);
+
+                    clipInfo.Reserve();
+                    GetPool(in concreteKey).Reserve(audioSource);
+                    return result | RESULT.IGNORED;
                 }
 
-                clipInfo.Reserve();
-                return result | RESULT.IGNORED;
+                clipInfo.AddDebugger();
+                audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo, in concreteKey);
+                result |= RESULT.DELAYEDPLAY;
             }
-
-            clipInfo.AddDebugger();
-
-            audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo);
-            //AudioSource insAudio = GetAudio(in audioKey, out audio, out _, out _);
-            //if (insAudio == null) return null;
-
-            ProcessOnPlay(in audio, audioSource);
+            else
+            {
+                clipInfo.AddDebugger();
+                audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo, in concreteKey);
+                ProcessOnPlay(in audio, audioSource);
+            }
+            
             return RESULT.OK | result;
         }
 
@@ -632,7 +587,8 @@ namespace Point.Audio
                 return;
             }
 
-            ObjectPool<AudioSource> pool = GetPool(audio.audioKey);
+            IPrefabInfo pool = GetPool(audio.audioKey);
+            $"reserve audio {audio.audioKey}".ToLog();
             if (pool == null)
             {
                 PointHelper.LogError(Channel.Audio,
@@ -719,7 +675,88 @@ namespace Point.Audio
 
         private interface IPrefabInfo : IDisposable
         {
-            ObjectPool<AudioSource> Pool { get; }
+            //ObjectPool<AudioSource> Pool { get; }
+
+            AudioSource Get();
+            void Reserve(AudioSource audioSource);
+        }
+        private sealed class DefaultPrefabInfo : IPrefabInfo
+        {
+            private ObjectPool<AudioSource> m_Pool;
+
+            public ObjectPool<AudioSource> Pool => m_Pool;
+
+            public DefaultPrefabInfo()
+            {
+                m_Pool = new ObjectPool<AudioSource>(
+                    DefaultAudioFactory,
+                    DefaultAudioOnGet,
+                    DefaultAudioOnReserve,
+                    null);
+                m_Pool.AddObjects(15);
+            }
+            private AudioSource DefaultAudioFactory()
+            {
+                GameObject obj = new GameObject();
+#if DEBUG_MODE
+                obj.name = $"Default AudioSource {s_AudioSourceCounter++}";
+                m_DebugNames[obj.GetInstanceID()] = obj.name;
+#endif
+                obj.transform.SetParent(Instance.transform);
+                AudioSource source = obj.AddComponent<AudioSource>();
+                source.playOnAwake = false;
+
+                return source;
+            }
+            private void DefaultAudioOnGet(AudioSource t)
+            {
+                t.volume = 1;
+                t.pitch = 1;
+                t.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+#endif
+
+                Instance.m_AudioContainer.Register(t, this);
+            }
+            private void DefaultAudioOnReserve(AudioSource t)
+            {
+                t.volume = 0;
+                t.Stop();
+
+                t.clip = null;
+                t.outputAudioMixerGroup = null;
+
+                t.transform.SetParent(Instance.transform);
+                Instance.m_AudioContainer.Unregister(t);
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+#endif
+            }
+
+            void IDisposable.Dispose()
+            {
+                m_Pool.Dispose();
+
+                m_Pool = null;
+            }
+
+            public AudioSource Get()
+            {
+                var ins = m_Pool.Get();
+                $"Get {ins.name} from Default Pool".ToLog();
+
+                return ins;
+            }
+            public void Reserve(AudioSource audioSource)
+            {
+                $"Reserve {audioSource.name} to Default Pool".ToLog();
+
+                m_Pool.Reserve(audioSource);
+            }
         }
         private sealed class PreloadedPrefabInfo : IPrefabInfo
         {
@@ -749,17 +786,21 @@ namespace Point.Audio
                 GameObject ins = Instantiate(prefabAudio.gameObject);
 #if DEBUG_MODE
                 ins.name = $"Default AudioSource {s_AudioSourceCounter++}";
+                m_DebugNames[ins.GetInstanceID()] = ins.name;
 #endif
                 ins.transform.SetParent(Instance.transform);
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
                 insAudio.playOnAwake = false;
 
-                Instance.m_AudioContainer.Register(insAudio, m_Pool);
-
                 return insAudio;
             }
-            private static void OnGet(AudioSource t)
+            private void OnGet(AudioSource t)
             {
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+#endif
+                Instance.m_AudioContainer.Register(t, this);
             }
             private static void OnReserve(AudioSource t)
             {
@@ -769,14 +810,30 @@ namespace Point.Audio
                 t.outputAudioMixerGroup = null;
 
                 t.transform.SetParent(Instance.transform);
+                Instance.m_AudioContainer.Unregister(t);
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+#endif
             }
 
-            public void Dispose()
+            void IDisposable.Dispose()
             {
                 m_Pool.Dispose();
 
                 m_AudioSource = null;
                 m_Pool = null;
+            }
+
+            public AudioSource Get()
+            {
+                var ins = m_Pool.Get();
+
+                return ins;
+            }
+            public void Reserve(AudioSource audioSource)
+            {
+                m_Pool.Reserve(audioSource);
             }
         }
         private sealed class PrefabInfo : IPrefabInfo
@@ -812,19 +869,22 @@ namespace Point.Audio
 
                 GameObject ins = Instantiate(prefabAudio.gameObject);
 #if DEBUG_MODE
-                ins.name = $"Default AudioSource {s_AudioSourceCounter++}";
+                ins.name = $"{prefabAudio.gameObject.name} {s_AudioSourceCounter++}";
+                m_DebugNames[ins.GetInstanceID()] = ins.name;
 #endif
                 ins.transform.SetParent(Instance.transform);
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
                 insAudio.playOnAwake = false;
 
-                Instance.m_AudioContainer.Register(insAudio, m_Pool);
-
                 return insAudio;
             }
-            private static void OnGet(AudioSource t)
+            private void OnGet(AudioSource t)
             {
-
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+#endif
+                Instance.m_AudioContainer.Register(t, this);
             }
             private static void OnReserve(AudioSource t)
             {
@@ -834,9 +894,14 @@ namespace Point.Audio
                 t.outputAudioMixerGroup = null;
 
                 t.transform.SetParent(Instance.transform);
+#if DEBUG_MODE
+                GameObject ins = t.gameObject;
+                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+#endif
+                Instance.m_AudioContainer.Unregister(t);
             }
 
-            public void Dispose()
+            void IDisposable.Dispose()
             {
                 m_Prefab.Reserve();
                 m_Pool.Dispose();
@@ -844,27 +909,45 @@ namespace Point.Audio
                 m_Prefab = AssetInfo<AudioSource>.Invalid;
                 m_Pool = null;
             }
+
+            public AudioSource Get()
+            {
+                var ins = m_Pool.Get();
+
+                return ins;
+            }
+            public void Reserve(AudioSource audioSource)
+            {
+                m_Pool.Reserve(audioSource);
+            }
         }
 
         private sealed unsafe class InternalAudioContainer : IDisposable
         {
             private AudioSource[] m_Audio;
-            private ObjectPool<AudioSource>[] m_AudioPool;
+            private IPrefabInfo[] m_AudioPool;
             private Transform[] m_AudioTransforms;
             private TransformAccessArray m_AudioTransformAccess;
             private UnsafeAllocator<Transformation> transformations;
 
             private int m_Count;
+            private Stack<int> m_ReservedIndices;
 
             private JobHandle m_JobHandle;
 
             public InternalAudioContainer(int capacity)
             {
                 m_Audio = new AudioSource[capacity];
-                m_AudioPool = new ObjectPool<AudioSource>[capacity];
+                m_AudioPool = new IPrefabInfo[capacity];
                 m_AudioTransforms = new Transform[capacity];
                 m_AudioTransformAccess = new TransformAccessArray(capacity);
                 transformations = new UnsafeAllocator<Transformation>(capacity, Allocator.Persistent, NativeArrayOptions.ClearMemory);
+
+                m_ReservedIndices = new Stack<int>();
+                for (int i = 0; i < capacity; i++)
+                {
+                    m_ReservedIndices.Push(i);
+                }
             }
             public void Dispose()
             {
@@ -889,7 +972,7 @@ namespace Point.Audio
 
                 return m_Audio[audio.m_Index];
             }
-            public Audio GetAudio(AudioSource audioSource, in AssetInfo audioKey)
+            public Audio GetAudio(AudioSource audioSource, in AssetInfo audioKey, in AudioKey parent)
             {
                 int index = Array.IndexOf(m_Audio, audioSource);
                 if (index < 0)
@@ -897,23 +980,29 @@ namespace Point.Audio
                     throw new Exception();
                 }
 
-                return new Audio(audioKey, index, 
+                return new Audio(audioKey, parent, index, 
                     audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
             }
-            public void Register(AudioSource audioSource, ObjectPool<AudioSource> pool)
+            public void Register(AudioSource audioSource, IPrefabInfo pool)
             {
                 m_JobHandle.Complete();
 
                 if (m_Count >= m_Audio.Length)
                 {
+                    int originLength = m_Audio.Length;
                     int targetLength = m_Audio.Length * 2;
                     Array.Resize(ref m_Audio, targetLength);
                     Array.Resize(ref m_AudioPool, targetLength);
                     Array.Resize(ref m_AudioTransforms, targetLength);
                     transformations.Resize(targetLength, NativeArrayOptions.ClearMemory);
+
+                    for (int i = 0; i < originLength; i++)
+                    {
+                        m_ReservedIndices.Push(originLength + i);
+                    }
                 }
 
-                int index = m_Count;
+                int index = m_ReservedIndices.Pop();
                 m_Audio[index] = audioSource;
                 m_AudioPool[index] = pool;
                 m_AudioTransforms[index] = audioSource.transform;
@@ -921,6 +1010,28 @@ namespace Point.Audio
 
                 m_AudioTransformAccess.SetTransforms(m_AudioTransforms);
                 m_Count++;
+            }
+            public void Unregister(AudioSource audioSource)
+            {
+                int index = Array.IndexOf(m_Audio, audioSource);
+                if (index < 0)
+                {
+                    "??".ToLogError();
+                    return;
+                }
+
+                m_Audio[index] = null;
+                m_AudioPool[index] = null;
+
+                //m_Audio.RemoveAtSwapBack(index);
+                //m_AudioPool.RemoveAtSwapBack(index);
+                //m_AudioTransforms.RemoveAtSwapBack(index);
+                //transformations.RemoveAtSwapBack(index);
+
+                m_AudioTransformAccess.SetTransforms(m_AudioTransforms);
+                m_Count--;
+
+                m_ReservedIndices.Push(index);
             }
 
             public void Update()
@@ -1149,7 +1260,20 @@ namespace Point.Audio
             }
 
             clipInfo.AddDebugger();
-            Audio audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo);
+            Audio audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo, in concreteKey);
+
+            if ((result & RESULT.AudioClip_IsLoading) == RESULT.AudioClip_IsLoading)
+            {
+                clipInfo.OnLoaded += t =>
+                {
+                    if (audioSource.clip != null)
+                    {
+                        $"?? reserved? {audioSource.gameObject.name}".ToLog();
+                        return;
+                    }
+                    audioSource.clip = t as AudioClip;
+                };
+            }
 
             return audio;
         }
@@ -1189,23 +1313,21 @@ namespace Point.Audio
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
             if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
-                GCHandle handle = GCHandle.Alloc(audio, GCHandleType.Pinned);
-                IntPtr intPtr = handle.AddrOfPinnedObject();
                 clipInfo.OnLoaded += t =>
                 {
-                    unsafe
+                    if (insAudio.clip != null)
                     {
-                        Audio* ptr = (Audio*)intPtr;
-                        var temp = Play(audioKey, additionalOptions);
-                        // TODO : Temp code
-                        temp.AutoDisposal();
-
-                        *ptr = temp;
+                        "?? reserved".ToLogError();
+                        return;
                     }
 
-                    handle.Free();
-                    clipInfo.Reserve();
+                    insAudio.clip = t as AudioClip;
+                    insAudio.Play();
                 };
+#if DEBUG_MODE
+                PointHelper.Log(Channel.Audio,
+                    string.Format(c_LogFormat, "Delayed Play", audioKey.ToString()));
+#endif
                 return audio;
             }
             else if (result.IsConsiderAsError())
@@ -1241,22 +1363,24 @@ namespace Point.Audio
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
             if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
-                GCHandle handle = GCHandle.Alloc(audio, GCHandleType.Pinned);
+                insAudio.transform.position = position;
+                audio.position = position;
+
                 clipInfo.OnLoaded += t =>
                 {
-                    unsafe
+                    if (insAudio.clip != null)
                     {
-                        Audio* ptr = (Audio*)GCHandle.ToIntPtr(handle);
-                        var temp = Play(audioKey, position, additionalOptions);
-                        // TODO : Temp code
-                        temp.AutoDisposal();
-
-                        *ptr = temp;
+                        "?? reserved".ToLogError();
+                        return;
                     }
 
-                    handle.Free();
-                    clipInfo.Reserve();
+                    insAudio.clip = t as AudioClip;
+                    insAudio.Play();
                 };
+#if DEBUG_MODE
+                PointHelper.Log(Channel.Audio,
+                    string.Format(c_LogFormat, insAudio.clip == null ? "UNKNOWN" : insAudio.clip.name, position.ToString(), audioKey.ToString()));
+#endif
                 return audio;
             }
             else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
