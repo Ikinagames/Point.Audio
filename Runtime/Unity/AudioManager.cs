@@ -403,8 +403,6 @@ namespace Point.Audio
             return true;
         }
 
-        // AudioClip_IsLoading = audiosource, clipInfo.
-        // else err = none;
         private static RESULT IssueAudioSource(
             in AudioKey concreteKey,
             out AssetInfo clipInfo, out AudioSource audioSource,
@@ -1291,6 +1289,7 @@ namespace Point.Audio
             return audioSource.isPlaying;
         }
 
+        [Obsolete("This is deprecated method.", true)]
         public static void EnsureResources(in AudioKey audioKey)
         {
             AudioKey concreteKey = GetConcreteKey(in audioKey);
