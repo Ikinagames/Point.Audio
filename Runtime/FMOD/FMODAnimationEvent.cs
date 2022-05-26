@@ -17,7 +17,10 @@
 #define DEBUG_MODE
 #endif
 
+#if ENABLE_NODEGRAPH
 using Point.Audio.Graphs;
+#endif
+
 using Point.Collections.Graphs;
 using System;
 using UnityEngine;
@@ -30,21 +33,26 @@ namespace Point.Audio
         [SerializeField] private string m_Name;
         [SerializeField] private FMODEventReference m_AudioReference;
 
+#if ENABLE_NODEGRAPH
         [Space]
         [SerializeField] private VisualLogicGraph m_VisualGraph;
-
         [NonSerialized] internal VisualGraphLogicProcessor m_Processor = null;
+#endif
 
         public string Name => m_Name;
         public FMODEventReference AudioReference => m_AudioReference;
+#if ENABLE_NODEGRAPH
         public VisualLogicGraph VisualGraph => m_VisualGraph;
+#endif
 
         public void Initialize()
         {
+#if ENABLE_NODEGRAPH
             if (m_Processor == null && m_VisualGraph != null)
             {
                 m_Processor = new VisualGraphLogicProcessor(m_VisualGraph);
             }
+#endif
         }
 
         public object Clone()
@@ -54,12 +62,13 @@ namespace Point.Audio
             ev.m_Name = string.Copy(m_Name);
             ev.m_AudioReference = (FMODEventReference)m_AudioReference.Clone();
 
+#if ENABLE_NODEGRAPH
             if (m_VisualGraph != null)
             {
                 ev.m_VisualGraph = UnityEngine.Object.Instantiate(m_VisualGraph);
                 ev.m_Processor = new VisualGraphLogicProcessor(ev.m_VisualGraph);
             }
-
+#endif
             return ev;
         }
     }

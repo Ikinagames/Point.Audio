@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if ENABLE_NODEGRAPH
+
 #if (UNITY_EDITOR || DEVELOPMENT_BUILD) && !POINT_DISABLE_CHECKS
 #define DEBUG_MODE
 #endif
@@ -31,3 +33,5 @@ namespace Point.Audio.Graphs
         public ConditionalLink link;
     }
 }
+
+#endif

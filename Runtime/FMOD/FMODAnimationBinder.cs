@@ -98,11 +98,13 @@ namespace Point.Audio
             m_CurrentAudio.rotation = transform.rotation;
 
             // Visual Logic Graph
+#if ENABLE_NODEGRAPH
             if (animEv.VisualGraph != null)
             {
                 animEv.VisualGraph.Execute(
                     m_OverrideRoot != null ? m_OverrideRoot : gameObject, animEv.m_Processor);
             }
+#endif
 
             m_CurrentAudio.Play();
 

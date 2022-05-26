@@ -13,63 +13,63 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using GraphProcessor;
-using UnityEditor;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine;
-using UnityEngine.UIElements;
+//using GraphProcessor;
+//using UnityEditor;
+//using UnityEditor.Experimental.GraphView;
+//using UnityEngine;
+//using UnityEngine.UIElements;
 
-namespace Point.Audio.FMODEditor
-{
-    public class FMODVisualGraphWindow : BaseGraphWindow
-    {
-        protected override void InitializeWindow(BaseGraph graph)
-        {
-            // Set the window title
-            titleContent = new GUIContent("Default Graph");
+//namespace Point.Audio.FMODEditor
+//{
+//    public class FMODVisualGraphWindow : BaseGraphWindow
+//    {
+//        protected override void InitializeWindow(BaseGraph graph)
+//        {
+//            // Set the window title
+//            titleContent = new GUIContent("Default Graph");
 
-            // Here you can use the default BaseGraphView or a custom one (see section below)
-            var graphView = new FMODVisualGraphView(this);
+//            // Here you can use the default BaseGraphView or a custom one (see section below)
+//            var graphView = new FMODVisualGraphView(this);
 
-            GridBackground background = new GridBackground();
-            graphView.Insert(0, background);
-            background.StretchToParentSize();
+//            GridBackground background = new GridBackground();
+//            graphView.Insert(0, background);
+//            background.StretchToParentSize();
 
-            graphView.Add(new MiniMapView(graphView));
+//            graphView.Add(new MiniMapView(graphView));
 
-            rootView.Add(graphView);
-        }
-    }
-    public class FMODVisualGraphView : BaseGraphView
-    {
-        public FMODVisualGraphView(EditorWindow window) : base(window)
-        {
-        }
+//            rootView.Add(graphView);
+//        }
+//    }
+//    public class FMODVisualGraphView : BaseGraphView
+//    {
+//        public FMODVisualGraphView(EditorWindow window) : base(window)
+//        {
+//        }
 
-        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
-        {
-            //evt.menu.AppendSeparator();
+//        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+//        {
+//            //evt.menu.AppendSeparator();
 
-            //evt.menu.AppendAction("To Json",
-            //    e =>
-            //    {
+//            //evt.menu.AppendAction("To Json",
+//            //    e =>
+//            //    {
 
-            //    },
-            //    status: DropdownMenuAction.Status.Normal);
-            //evt.menu.AppendSeparator();
+//            //    },
+//            //    status: DropdownMenuAction.Status.Normal);
+//            //evt.menu.AppendSeparator();
 
-            BuildStackNodeContextualMenu(evt);
+//            BuildStackNodeContextualMenu(evt);
 
-            base.BuildContextualMenu(evt);
-        }
-        /// <summary>
-        /// Add the New Stack entry to the context menu
-        /// </summary>
-        /// <param name="evt"></param>
-        protected void BuildStackNodeContextualMenu(ContextualMenuPopulateEvent evt)
-        {
-            Vector2 position = (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
-            evt.menu.AppendAction("Create Stack", (e) => AddStackNode(new BaseStackNode(position)), DropdownMenuAction.AlwaysEnabled);
-        }
-    }
-}
+//            base.BuildContextualMenu(evt);
+//        }
+//        /// <summary>
+//        /// Add the New Stack entry to the context menu
+//        /// </summary>
+//        /// <param name="evt"></param>
+//        protected void BuildStackNodeContextualMenu(ContextualMenuPopulateEvent evt)
+//        {
+//            Vector2 position = (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
+//            evt.menu.AppendAction("Create Stack", (e) => AddStackNode(new BaseStackNode(position)), DropdownMenuAction.AlwaysEnabled);
+//        }
+//    }
+//}
