@@ -31,6 +31,8 @@ namespace Point.Audio
         [SerializeField]
         private string m_DebugName = string.Empty;
         [SerializeField]
+        private bool m_StopOnExit = true;
+        [SerializeField]
         private ArrayWrapper<FMODEventReference> m_PlayOnEnter = Array.Empty<FMODEventReference>();
 
         private FMODAudioRoom m_AudioRoom;
@@ -68,17 +70,20 @@ namespace Point.Audio
         }
         private void OnExitedHandler()
         {
-            for (int i = 0; i < m_PlayedEvents.Length; i++)
+            if (m_StopOnExit)
             {
-                if (m_PlayedEvents[i].IsValid())
+                for (int i = 0; i < m_PlayedEvents.Length; i++)
                 {
-                    m_PlayedEvents[i].Stop();
+                    if (m_PlayedEvents[i].IsValid())
+                    {
+                        m_PlayedEvents[i].Stop();
+                    }
                 }
-            }
 #if DEBUG_MODE
-            PointHelper.Log(Channel.Audio,
-                $"Stop events({m_PlayedEvents.Length}) on enter at {(string.IsNullOrEmpty(m_DebugName) ? gameObject.name : m_DebugName)}");
+                PointHelper.Log(Channel.Audio,
+                    $"Stop events({m_PlayedEvents.Length}) on enter at {(string.IsNullOrEmpty(m_DebugName) ? gameObject.name : m_DebugName)}");
 #endif
+            }
         }
     }
 }
