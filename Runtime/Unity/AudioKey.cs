@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.ResourceControl;
 using System;
 using Unity.Collections;
 using UnityEngine;
@@ -28,11 +29,15 @@ namespace Point.Audio
     public struct AudioKey : IValidation, IEquatable<AudioKey>
     {
         [SerializeField]
-        private Hash m_Key;
+        private AssetRuntimeKey m_Key;
 
-        public AudioKey(Hash hash)
+        public AudioKey(AssetRuntimeKey hash)
         {
             m_Key = hash;
+        }
+        public AudioKey(Hash hash)
+        {
+            m_Key = new AssetRuntimeKey(hash);
         }
 
         [NotBurstCompatible]
@@ -49,7 +54,12 @@ namespace Point.Audio
         {
             return new AudioKey(t);
         }
-        public static implicit operator Hash(AudioKey t) => t.m_Key;
+        public static implicit operator AudioKey(AssetRuntimeKey t)
+        {
+            return new AudioKey(t);
+        }
+        public static implicit operator AssetRuntimeKey(AudioKey t) => t.m_Key;
+        public static implicit operator Hash(AudioKey t) => t.m_Key.Key;
 
         [NotBurstCompatible]
         public override string ToString() => m_Key.ToString();

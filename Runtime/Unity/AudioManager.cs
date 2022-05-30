@@ -54,7 +54,7 @@ namespace Point.Audio
         [NonSerialized] AssetBundleInfo m_AudioBundle;
         [NonSerialized] DefaultPrefabInfo m_DefaultAudioPool;
 
-        [NonSerialized] readonly Dictionary<Hash, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<Hash, IPrefabInfo>();
+        [NonSerialized] readonly Dictionary<AssetRuntimeKey, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<AssetRuntimeKey, IPrefabInfo>();
 
         [NonSerialized] private InternalAudioContainer m_AudioContainer;
         [NonSerialized] private AudioListener m_MainListener = null;
@@ -199,7 +199,7 @@ namespace Point.Audio
 
         #region Internal
 
-        private static IPrefabInfo GetPool(in Hash prefabKey)
+        private static IPrefabInfo GetPool(in AssetRuntimeKey prefabKey)
         {
             AssetBundleInfo audioBundle = Instance.m_AudioBundle;
 
@@ -208,14 +208,14 @@ namespace Point.Audio
                 return Instance.m_DefaultAudioPool;
             }
 
-            Dictionary<Hash, IPrefabInfo> cachedPrefabInfo = Instance.m_CachedPrefabInfo;
+            Dictionary<AssetRuntimeKey, IPrefabInfo> cachedPrefabInfo = Instance.m_CachedPrefabInfo;
             if (!cachedPrefabInfo.TryGetValue(prefabKey, out IPrefabInfo info))
             {
                 if (!audioBundle.TryLoadAsset<AudioSource>(prefabKey, out AssetInfo<AudioSource> prefabAsset))
                 // 프리팹이 없다?
                 {
 #if UNITY_EDITOR
-                    string editorPrefabKey = prefabKey.Key;
+                    string editorPrefabKey = prefabKey.Key.Key;
                     if (editorPrefabKey.StartsWith("assets/resources"))
                     {
                         editorPrefabKey = editorPrefabKey.Replace("assets/resources", String.Empty);
