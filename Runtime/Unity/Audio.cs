@@ -103,6 +103,31 @@ namespace Point.Audio
                 return ref m_Allocator[m_Index];
             }
         }
+        public float volume
+        {
+            get
+            {
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                var audioSource = AudioManager.GetAudioSource(this);
+                return audioSource.volume;
+            }
+            set
+            {
+                if (!hasAudioSource)
+                {
+                    this = AudioManager.GetAudio(audioKey);
+                    m_AudioClip.AddDebugger();
+                }
+
+                var audioSource = AudioManager.GetAudioSource(this);
+                audioSource.volume = value;
+            }
+        }
         public Vector3 position
         {
             get
