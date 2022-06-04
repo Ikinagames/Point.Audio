@@ -117,21 +117,28 @@ namespace Point.Audio
             
             // Load Runtime Settings
             XmlSettings.LoadSettings(this);
-            AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
-            List<string> invalidKeys = new List<string>();
-            foreach (var item in m_UserFloatHashMap)
+            if (AudioSettings.Instance.DefaultMixerGroup != null)
             {
-                if (!audioMixer.GetFloat(item.Key, out float currentValue))
+                AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
+                List<string> invalidKeys = new List<string>();
+                foreach (var item in m_UserFloatHashMap)
                 {
-                    invalidKeys.Add(item.Key);
-                    continue;
-                }
+                    if (!audioMixer.GetFloat(item.Key, out float currentValue))
+                    {
+                        invalidKeys.Add(item.Key);
+                        continue;
+                    }
 
-                audioMixer.SetFloat(item.Key, item.Value);
+                    audioMixer.SetFloat(item.Key, item.Value);
+                }
+                for (int i = 0; i < invalidKeys.Count; i++)
+                {
+                    m_UserFloatHashMap.Remove(invalidKeys[i]);
+                }
             }
-            for (int i = 0; i < invalidKeys.Count; i++)
+            else
             {
-                m_UserFloatHashMap.Remove(invalidKeys[i]);
+                "? default mixer none".ToLogError(Channel.Audio);
             }
 
             if (m_Mute) AudioListener.volume = 0;
@@ -140,16 +147,20 @@ namespace Point.Audio
         protected override void OnShutdown()
         {
             // Save Runtime Settings
-            AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
-            foreach (var item in m_UserFloatHashMap.Keys.ToArray())
+            if (AudioSettings.Instance.DefaultMixerGroup != null)
             {
-                if (!audioMixer.GetFloat(item, out float currentValue))
+                AudioMixer audioMixer = AudioSettings.Instance.DefaultMixerGroup.audioMixer;
+                foreach (var item in m_UserFloatHashMap.Keys.ToArray())
                 {
-                    continue;
-                }
+                    if (!audioMixer.GetFloat(item, out float currentValue))
+                    {
+                        continue;
+                    }
 
-                m_UserFloatHashMap[item] = currentValue;
+                    m_UserFloatHashMap[item] = currentValue;
+                }
             }
+            
             XmlSettings.SaveSettings(this);
 
             m_AudioContainer.Dispose();
