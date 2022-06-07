@@ -27,13 +27,15 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.UIElements;
 
 namespace Point.Audio.Editor
 {
     [CustomEditor(typeof(AudioList))]
-    internal sealed class AudioListEditor : InspectorEditor<AudioList>
+    internal sealed class AudioListEditor : InspectorEditorUXML<AudioList>
     {
         SerializedProperty
             m_FriendlyNamesProperty, m_DataProperty;
@@ -95,6 +97,7 @@ namespace Point.Audio.Editor
         }
         private sealed class Data : TreeViewItem
         {
+            public static GUIContent Header = new GUIContent("Data");
             private static int s_Index = 0;
 
             private readonly SerializedProperty m_Property,
@@ -329,7 +332,6 @@ namespace Point.Audio.Editor
             {
                 AutoRect autoRect = new AutoRect(rect);
 
-                CoreGUI.Label(autoRect.Pop(), "Data", 15, TextAnchor.MiddleCenter);
                 Rect searchFieldRect = autoRect.Pop(rowHeight);
 
                 searchString = m_SearchField.OnGUI(searchFieldRect, searchString);
@@ -389,6 +391,8 @@ namespace Point.Audio.Editor
         private SearchField 
             m_FriendlyNameSearchField;
 
+        private VisualTreeAsset VisualTreeAsset { get; set; }
+
         private void OnEnable()
         {
             m_FriendlyNamesProperty = GetSerializedProperty("m_FriendlyNames");
@@ -407,91 +411,78 @@ namespace Point.Audio.Editor
 
             m_DataTreeViewState = new TreeViewState();
             m_DataTreeView = new DataTreeView(m_DataProperty, m_FriendlyNames, m_DataTreeViewState, m_Data);
+
+            VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
         }
 
-        protected override void OnInspectorGUIContents()
+        public override VisualElement CreateInspectorGUI()
         {
-            EditorGUILayout.Space();
+            var tree = VisualTreeAsset.CloneTree();
+            tree.Bind(serializedObject);
 
-            using (new CoreGUI.BoxBlock(Color.black))
+            IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
+            friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
+
+            IMGUIContainer dataGUI = tree.Q<IMGUIContainer>("DataGUI");
+            dataGUI.onGUIHandler += DataGUI;
+
+            return tree;
+        }
+
+        private void ListedButtonGUI()
+        {
+
+        }
+        private void FriendlyNamesGUI()
+        {
+            m_FriendlyNamesProperty.isExpanded
+                = CoreGUI.LabelToggle(m_FriendlyNamesProperty.isExpanded, FriendlyName.Header, 15, TextAnchor.MiddleCenter);
+
+            if (m_FriendlyNamesProperty.isExpanded)
             {
-                bool isListed = AudioSettings.Instance.HasAudioList(target);
-                string msg;
-                if (isListed) msg = "Listed";
-                else msg = "Unlisted";
+                FriendlyName.SearchText = m_FriendlyNameSearchField.OnGUI(FriendlyName.SearchText);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    CoreGUI.Label(msg, 15, TextAnchor.MiddleCenter);
-
-                    if (isListed)
+                    if (GUILayout.Button("+"))
                     {
-                        if (GUILayout.Button("Remove", GUILayout.Width(100)))
-                        {
-                            AudioSettings.Instance.RemoveAudioList(target);
-                            EditorUtility.SetDirty(AudioSettings.Instance);
-                        }
+                        m_FriendlyNames.Add();
                     }
-                    else
+                    if (GUILayout.Button("-"))
                     {
-                        if (GUILayout.Button("Add", GUILayout.Width(100)))
-                        {
-                            AudioSettings.Instance.AddAudioList(target);
-                            EditorUtility.SetDirty(AudioSettings.Instance);
-                        }
+                        m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
                     }
                 }
-            }
 
-            EditorGUILayout.Space();
-            CoreGUI.Line();
-
-            using (new CoreGUI.BoxBlock(Color.black))
-            {
-                m_FriendlyNamesProperty.isExpanded 
-                    = CoreGUI.LabelToggle(m_FriendlyNamesProperty.isExpanded, FriendlyName.Header, 15, TextAnchor.MiddleCenter);
-
-                if (m_FriendlyNamesProperty.isExpanded)
+                for (int i = 0; i < m_FriendlyNames.Count; i++)
                 {
-                    FriendlyName.SearchText = m_FriendlyNameSearchField.OnGUI(FriendlyName.SearchText);
-
+                    bool drawLine;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        if (GUILayout.Button("+"))
+                        using (new EditorGUILayout.VerticalScope())
                         {
-                            m_FriendlyNames.Add();
+                            drawLine = m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count;
                         }
-                        if (GUILayout.Button("-"))
+
+                        if (GUILayout.Button("-", GUILayout.Width(20)))
                         {
-                            m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
+                            m_FriendlyNames.RemoveAt(i);
+
+                            i--;
+                            continue;
                         }
                     }
 
-                    for (int i = 0; i < m_FriendlyNames.Count; i++)
-                    {
-                        bool drawLine;
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            using (new EditorGUILayout.VerticalScope())
-                            {
-                                drawLine = m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count;
-                            }
-
-                            if (GUILayout.Button("-", GUILayout.Width(20)))
-                            {
-                                m_FriendlyNames.RemoveAt(i);
-
-                                i--;
-                                continue;
-                            }
-                        }
-
-                        if (drawLine) CoreGUI.Line();
-                    }
+                    if (drawLine) CoreGUI.Line();
                 }
             }
+        }
+        private void DataGUI()
+        {
+            m_DataProperty.isExpanded
+                = CoreGUI.LabelToggle(m_DataProperty.isExpanded, Data.Header, 15, TextAnchor.MiddleCenter);
 
-            CoreGUI.Line();
+            if (!m_DataProperty.isExpanded) return;
 
             m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
 
@@ -506,11 +497,110 @@ namespace Point.Audio.Editor
                     }
                 }
             }
-
-            CoreGUI.Line();
-
-            serializedObject.ApplyModifiedProperties();
         }
+
+        //protected override void OnInspectorGUIContents()
+        //{
+        //    EditorGUILayout.Space();
+
+        //    using (new CoreGUI.BoxBlock(Color.black))
+        //    {
+        //        bool isListed = AudioSettings.Instance.HasAudioList(target);
+        //        string msg;
+        //        if (isListed) msg = "Listed";
+        //        else msg = "Unlisted";
+
+        //        using (new EditorGUILayout.HorizontalScope())
+        //        {
+        //            CoreGUI.Label(msg, 15, TextAnchor.MiddleCenter);
+
+        //            if (isListed)
+        //            {
+        //                if (GUILayout.Button("Remove", GUILayout.Width(100)))
+        //                {
+        //                    AudioSettings.Instance.RemoveAudioList(target);
+        //                    EditorUtility.SetDirty(AudioSettings.Instance);
+        //                }
+        //            }
+        //            else
+        //            {
+        //                if (GUILayout.Button("Add", GUILayout.Width(100)))
+        //                {
+        //                    AudioSettings.Instance.AddAudioList(target);
+        //                    EditorUtility.SetDirty(AudioSettings.Instance);
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    EditorGUILayout.Space();
+        //    CoreGUI.Line();
+
+        //    using (new CoreGUI.BoxBlock(Color.black))
+        //    {
+        //        m_FriendlyNamesProperty.isExpanded 
+        //            = CoreGUI.LabelToggle(m_FriendlyNamesProperty.isExpanded, FriendlyName.Header, 15, TextAnchor.MiddleCenter);
+
+        //        if (m_FriendlyNamesProperty.isExpanded)
+        //        {
+        //            FriendlyName.SearchText = m_FriendlyNameSearchField.OnGUI(FriendlyName.SearchText);
+
+        //            using (new EditorGUILayout.HorizontalScope())
+        //            {
+        //                if (GUILayout.Button("+"))
+        //                {
+        //                    m_FriendlyNames.Add();
+        //                }
+        //                if (GUILayout.Button("-"))
+        //                {
+        //                    m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
+        //                }
+        //            }
+
+        //            for (int i = 0; i < m_FriendlyNames.Count; i++)
+        //            {
+        //                bool drawLine;
+        //                using (new EditorGUILayout.HorizontalScope())
+        //                {
+        //                    using (new EditorGUILayout.VerticalScope())
+        //                    {
+        //                        drawLine = m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count;
+        //                    }
+
+        //                    if (GUILayout.Button("-", GUILayout.Width(20)))
+        //                    {
+        //                        m_FriendlyNames.RemoveAt(i);
+
+        //                        i--;
+        //                        continue;
+        //                    }
+        //                }
+
+        //                if (drawLine) CoreGUI.Line();
+        //            }
+        //        }
+        //    }
+
+        //    CoreGUI.Line();
+
+        //    m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
+
+        //    using (new CoreGUI.BoxBlock(Color.black))
+        //    {
+        //        if (m_DataTreeView.CurrentSelection != null &&
+        //            m_DataTreeView.CurrentSelection.Any())
+        //        {
+        //            foreach (var item in m_DataTreeView.CurrentSelection)
+        //            {
+        //                item.OnGUI();
+        //            }
+        //        }
+        //    }
+
+        //    CoreGUI.Line();
+
+        //    serializedObject.ApplyModifiedProperties();
+        //}
     }
 }
 

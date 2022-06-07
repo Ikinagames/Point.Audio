@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="/Assets/Plugins/Point/Point.Collections/Editor/Editor Default Resources/Uxml/default-uss.uss" />
+    <ui:Label text="Audio List" display-tooltip-when-elided="true" name="Header" class="header-label" />
+    <ui:VisualElement name="ContentContainer" style="margin-left: 4px; margin-right: 4px; margin-top: 4px; margin-bottom: 4px;">
+        <ui:VisualElement name="ListedContainer" style="flex-direction: row; align-items: center; width: auto; justify-content: center; background-color: rgb(63, 63, 63); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: rgb(125, 125, 125); border-right-color: rgb(125, 125, 125); border-top-color: rgb(125, 125, 125); border-bottom-color: rgb(125, 125, 125); margin-top: 4px; margin-bottom: 4px;">
+            <ui:Label text="Listed" display-tooltip-when-elided="true" name="ListedText" style="font-size: 15px; -unity-text-align: middle-center;" />
+            <ui:Button text="." display-tooltip-when-elided="true" name="ListedButton" />
+        </ui:VisualElement>
+        <ui:VisualElement name="FriendlyNamesContainer" style="flex-direction: column; align-items: center; width: auto; justify-content: center; background-color: rgb(63, 63, 63); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: rgb(125, 125, 125); border-right-color: rgb(125, 125, 125); border-top-color: rgb(125, 125, 125); border-bottom-color: rgb(125, 125, 125); margin-top: 4px; margin-bottom: 4px;">
+            <ui:Label text="Friendly Names" display-tooltip-when-elided="true" name="Text" style="font-size: 15px; -unity-text-align: middle-center; display: none;" />
+            <ui:IMGUIContainer name="FriendlyNamesGUI" />
+        </ui:VisualElement>
+        <ui:VisualElement name="DataContainer" style="flex-direction: column; align-items: center; width: auto; justify-content: center; background-color: rgb(63, 63, 63); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: rgb(125, 125, 125); border-right-color: rgb(125, 125, 125); border-top-color: rgb(125, 125, 125); border-bottom-color: rgb(125, 125, 125); margin-top: 4px; margin-bottom: 4px;">
+            <ui:IMGUIContainer name="DataGUI" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

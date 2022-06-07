@@ -1,5 +1,0 @@
-.point-text-element {
-    -unity-text-align: middle-left;
-    padding-top: 0;
-    color: rgba(210, 210, 210, 255);
-}

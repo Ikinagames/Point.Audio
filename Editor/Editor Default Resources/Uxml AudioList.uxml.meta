@@ -1,5 +1,7 @@
 fileFormatVersion: 2
-guid: 2a9db1a7a48101249aa6575c00d57cb7
+guid: 570e84f574a5c0046968a7cf8936abe6
+labels:
+- PointEditor
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
