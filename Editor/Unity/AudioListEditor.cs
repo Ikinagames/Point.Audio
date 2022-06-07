@@ -393,6 +393,8 @@ namespace Point.Audio.Editor
 
         private VisualTreeAsset VisualTreeAsset { get; set; }
 
+        Label listedLabel;
+
         private void OnEnable()
         {
             m_FriendlyNamesProperty = GetSerializedProperty("m_FriendlyNames");
@@ -415,10 +417,22 @@ namespace Point.Audio.Editor
             VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
         }
 
-        public override VisualElement CreateInspectorGUI()
+        protected override bool ShouldHideOpenButton() => true;
+        protected override VisualElement CreateVisualElement()
         {
             var tree = VisualTreeAsset.CloneTree();
             tree.Bind(serializedObject);
+
+            {
+                listedLabel = tree.Q<Label>("ListedText");
+                Button listedBtt = tree.Q<Button>("ListedButton");
+
+                bool isListed = AudioSettings.Instance.HasAudioList(target);
+                if (isListed) listedLabel.text = "Listed";
+                else listedLabel.text = "Unlisted";
+
+                listedBtt.clicked += ListedButton;
+            }
 
             IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
             friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
@@ -429,10 +443,25 @@ namespace Point.Audio.Editor
             return tree;
         }
 
-        private void ListedButtonGUI()
+        private void ListedButton()
         {
+            bool isListed = AudioSettings.Instance.HasAudioList(target);
+            if (!isListed)
+            {
+                listedLabel.text = "Listed";
 
+                AudioSettings.Instance.AddAudioList(target);
+                EditorUtility.SetDirty(AudioSettings.Instance);
+            }
+            else
+            {
+                listedLabel.text = "Unlisted";
+
+                AudioSettings.Instance.RemoveAudioList(target);
+                EditorUtility.SetDirty(AudioSettings.Instance);
+            }
         }
+
         private void FriendlyNamesGUI()
         {
             m_FriendlyNamesProperty.isExpanded
