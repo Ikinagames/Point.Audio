@@ -429,6 +429,7 @@ namespace Point.Audio
         [NotBurstCompatible]
         public ParamReference GetParameter(string name)
         {
+#if DEBUG_MODE
             if (!IsValidID())
             {
                 PointHelper.LogError(Channel.Audio,
@@ -436,7 +437,7 @@ namespace Point.Audio
 
                 return default(ParamReference);
             }
-
+#endif
             return new ParamReference(eventDescription, name);
         }
 

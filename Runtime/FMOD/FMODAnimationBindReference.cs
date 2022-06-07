@@ -43,7 +43,7 @@ namespace Point.Audio
             }
         }
 
-        internal IFMODEvent[] PlayOnActive(Transform caller)
+        internal IFMODEvent[] PlayWhileActive(Transform caller)
         {
             if (m_PlayWhileActive.Count == 0) return Array.Empty<IFMODEvent>();
 
@@ -52,6 +52,7 @@ namespace Point.Audio
             {
                 temp[i] = m_PlayWhileActive[i].GetEvent();
                 temp[i].Play();
+                FMODEventReference.SetExposedEvent(m_PlayWhileActive[i], temp[i]);
 
                 if (temp[i] is Audio audio && audio.Is3D)
                 {

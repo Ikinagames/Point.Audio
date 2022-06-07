@@ -10,7 +10,8 @@
         "Unity.Addressables",
         "Arbor",
         "Arbor.Core",
-        "com.alelievr.NodeGraphProcessor.Runtime"
+        "com.alelievr.NodeGraphProcessor.Runtime",
+        "Unity.Timeline"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

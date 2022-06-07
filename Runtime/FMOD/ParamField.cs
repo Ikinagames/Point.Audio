@@ -23,6 +23,9 @@ using System.Reflection;
 
 namespace Point.Audio
 {
+    /// <summary>
+    /// <see cref="Point.Audio.ParamReference"/> 를 직렬화하여 저장될 수 있게한 클래스입니다.
+    /// </summary>
     [System.Serializable]
     public sealed class ParamField : ICloneable
     {
@@ -42,6 +45,9 @@ namespace Point.Audio
         [NonSerialized] private PropertyInfo m_PropertyInfo;
         [NonSerialized] private FieldInfo m_FieldInfo;
 
+        public string Name { get => m_Name; set => m_Name = value; }
+        public float Value { get => m_Value; set => m_Value = value; }
+        public bool IgnoreSeekSpeed { get => m_IgnoreSeekSpeed; set => m_IgnoreSeekSpeed = value; }
         public bool IsGlobal { get => m_IsGlobal; set => m_IsGlobal = value; }
 
         public ParamReference GetGlobalParamReference()
@@ -176,17 +182,17 @@ namespace Point.Audio
         }
         public void Execute(FMOD.Studio.EventInstance ev)
         {
-#if DEBUG_MODE
             if (m_IsGlobal)
             {
                 Execute();
+//#if DEBUG_MODE
 
-                PointHelper.LogError(Channel.Audio,
-                    $"You can execute this parameter that is global without event description. " +
-                    $"This is not allowed at build. Please use Execute without any params.");
+//                PointHelper.LogError(Channel.Audio,
+//                    $"You can execute this parameter that is global without event description. " +
+//                    $"This is not allowed at build. Please use Execute without any params.");
+//#endif
                 return;
             }
-#endif
 
             FMOD.RESULT result = ev.getDescription(out var description);
 #if DEBUG_MODE
@@ -212,7 +218,7 @@ namespace Point.Audio
 #endif
         }
 
-        public object Clone()
+        object ICloneable.Clone()
         {
             ParamField field = (ParamField)MemberwiseClone();
 
@@ -221,5 +227,6 @@ namespace Point.Audio
 
             return field;
         }
+        public ParamField Clone() => (ParamField)((ICloneable)this).Clone();
     }
 }

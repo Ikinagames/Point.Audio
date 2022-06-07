@@ -52,6 +52,7 @@ namespace Point.Audio
             SnapshotPrefix = "snapshot:/";
 
         private ResonanceAudioHelper m_ResonanceAudioHelper;
+        private Dictionary<Hash, IFMODEvent> m_ExposedEvents = new Dictionary<Hash, IFMODEvent>();
         
         private IUserPropertyProcessor[] m_GlobalPropertyProcesors = Array.Empty<IUserPropertyProcessor>();
         private GlobalParameterLinker[] m_GlobalParameterLinkers = Array.Empty<GlobalParameterLinker>();
@@ -63,6 +64,23 @@ namespace Point.Audio
         private JobHandle m_GlobalJobHandle;
 
         private UnsafeAudioHandlerContainer m_Handlers;
+
+        public IFMODEvent this[string name]
+        {
+            get
+            {
+                Hash hash = new Hash(name);
+                if (m_ExposedEvents.TryGetValue(hash, out var value)) return value;
+                return null;
+            }
+            set
+            {
+                Hash hash = new Hash(name);
+                m_ExposedEvents[hash] = value;
+
+                $"Exposed Event({name}) has been set".ToLog(LogChannel.Audio);
+            }
+        }
 
         #region Class Instruction
 

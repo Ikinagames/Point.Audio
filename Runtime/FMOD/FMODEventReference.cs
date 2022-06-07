@@ -37,6 +37,16 @@ namespace Point.Audio
         [SerializeField] private bool m_OverrideAttenuation;
         [SerializeField] private float m_OverrideMinDistance = -1, m_OverrideMaxDistance = -1;
 
+        [Space]
+        [SerializeField] private bool m_ExposeGlobalEvent = false;
+        [SerializeField] private string m_ExposedName = string.Empty;
+
+        public static void SetExposedEvent(FMODEventReference eventReference, IFMODEvent ev)
+        {
+            if (!eventReference.m_ExposeGlobalEvent) return;
+
+            FMODManager.Instance[eventReference.m_ExposedName] = ev;
+        }
         public IFMODEvent GetEvent()
         {
             if (m_Event.IsSnapshot()) return GetSnapshot();
@@ -48,7 +58,6 @@ namespace Point.Audio
         public Snapshot GetSnapshot()
         {
             Snapshot snapshot = new Snapshot(FMODManager.GetEventDescription(m_Event));
-
             return snapshot;
         }
         public Audio GetAudio()

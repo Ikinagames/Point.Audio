@@ -166,6 +166,10 @@ namespace Point.Audio
             return isSnapshot;
 #endif
         }
+        public static bool IsEvent(this IFMODEvent t)
+        {
+            return !t.IsSnapshot();
+        }
         public static bool IsEvent(this FMODUnity.EventReference t)
         {
 #if UNITY_EDITOR
@@ -176,6 +180,57 @@ namespace Point.Audio
 
             return !isSnapshot;
 #endif
+        }
+
+        public static ParamReference GetParameter(this IFMODEvent t, string name)
+        {
+#if DEBUG_MODE
+            if (!t.IsEvent())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"err");
+                return default(ParamReference);
+            }
+#endif
+            Audio audio = (Audio)t;
+#if DEBUG_MODE
+            if (!audio.IsValidID())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"This audio is invalid.");
+
+                return default(ParamReference);
+            }
+#endif
+            return new ParamReference(audio.eventDescription, name);
+        }
+        public static void SetParameter(this IFMODEvent t, string name, float value)
+        {
+#if DEBUG_MODE
+            if (!t.IsEvent())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"err");
+                return;
+            }
+#endif
+            Audio audio = (Audio)t;
+#if DEBUG_MODE
+            if (!audio.IsValidID())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"This audio has an invalid but trying access. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            ParamReference parameter = new ParamReference(audio.eventDescription, name, value);
+            if (audio.IsValid())
+            {
+                var result = audio.audioHandler.Value.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+                $"Parameter Set {name} = {value}, {result}".ToLog(LogChannel.Audio);
+            }
         }
 
         public static IFMODEvent[] Play(this IList<FMODEventReference> t)

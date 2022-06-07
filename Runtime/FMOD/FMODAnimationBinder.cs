@@ -22,6 +22,7 @@ using Point.Collections.Graphs;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 namespace Point.Audio
 {
@@ -46,7 +47,7 @@ namespace Point.Audio
         private Dictionary<Hash, FMODAnimationEvent> m_Parsed;
         
         private Audio m_CurrentAudio;
-        private IFMODEvent[] m_PlayedOnActives = Array.Empty<IFMODEvent>();
+        private IFMODEvent[] m_PlayedWhileActives = Array.Empty<IFMODEvent>();
 
         /// <summary>
         /// 등록된 FMOD 애니메이션 이벤트 배열입니다.
@@ -71,13 +72,13 @@ namespace Point.Audio
         }
         private void OnEnable()
         {
-            m_PlayedOnActives = m_BindReference.PlayOnActive(transform);
+            m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
         }
         private void OnDisable()
         {
-            for (int i = 0; i < m_PlayedOnActives.Length; i++)
+            for (int i = 0; i < m_PlayedWhileActives.Length; i++)
             {
-                m_PlayedOnActives[i].Stop();
+                m_PlayedWhileActives[i].Stop();
             }
         }
 
@@ -111,6 +112,27 @@ namespace Point.Audio
             m_CurrentAudio.bindTransform = transform;
         }
 
+        public IFMODEvent GetPlayedEvent(int index)
+        {
+            return m_PlayedWhileActives[index];
+        }
+        public IEnumerable<IFMODEvent> GetPlayedEvents(FMOD.GUID guid)
+        {
+            List<IFMODEvent> ev = new List<IFMODEvent>();
+            for (int i = 0; i < m_PlayedWhileActives.Length; i++)
+            {
+                m_PlayedWhileActives[i].EventDescription.getID(out var id);
+                if (id.Equals(guid))
+                {
+                    ev.Add(m_PlayedWhileActives[i]);
+                }
+            }
+
+            return ev;
+        }
+
+        #region Inhert
+
         /// <summary>
         /// Audio 에 전달할 Parameter 값을 받아 수정할 수 있습니다.
         /// </summary>
@@ -119,5 +141,7 @@ namespace Point.Audio
         /// <returns>수정된 값을 반환하여 적용시킵니다.</returns>
         protected virtual float OnProcessParameter(
             FMOD.Studio.PARAMETER_DESCRIPTION ev, float existingValue) => existingValue;
+
+        #endregion
     }
 }

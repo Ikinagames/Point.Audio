@@ -29,13 +29,4 @@ namespace Point.Audio
     {
         void OnProcess(ref Audio audio, in FMOD.Studio.USER_PROPERTY property);
     }
-
-    //[Point.Collections.InternalIgnoreType]
-    //public struct TestUserPropertyProcessor : IUserPropertyProcessor
-    //{
-    //    public void OnProcess(ref Audio audio, in USER_PROPERTY property)
-    //    {
-    //        USER_PROPERTY_TYPE t = property.type;
-    //    }
-    //}
 }
