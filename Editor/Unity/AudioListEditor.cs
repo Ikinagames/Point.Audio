@@ -275,8 +275,6 @@ namespace Point.Audio.Editor
 
                 showAlternatingRowBackgrounds = true;
                 showBorder = true;
-
-                Reload();
             }
             protected override bool DoesItemMatchSearch(TreeViewItem item, string search)
             {
@@ -360,8 +358,10 @@ namespace Point.Audio.Editor
                     m_Data.RemoveAt(m_Property.arraySize - 1);
                     m_Property.DeleteArrayElementAtIndex(m_Property.arraySize - 1);
 
-                    Reload();
+                    if (m_Data.Count > 0) Reload();
                 }
+
+                if (m_Data.Count == 0) return;
 
                 base.OnGUI(autoRect.Current);
             }
@@ -414,12 +414,13 @@ namespace Point.Audio.Editor
             m_DataTreeViewState = new TreeViewState();
             m_DataTreeView = new DataTreeView(m_DataProperty, m_FriendlyNames, m_DataTreeViewState, m_Data);
 
-            VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
+            if (m_Data.Count > 0) m_DataTreeView.Reload();
         }
 
         protected override bool ShouldHideOpenButton() => true;
         protected override VisualElement CreateVisualElement()
         {
+            VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
             var tree = VisualTreeAsset.CloneTree();
             tree.Bind(serializedObject);
 
@@ -514,6 +515,8 @@ namespace Point.Audio.Editor
             if (!m_DataProperty.isExpanded) return;
 
             m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
+
+            if (m_Data.Count == 0) return;
 
             using (new CoreGUI.BoxBlock(Color.black))
             {
