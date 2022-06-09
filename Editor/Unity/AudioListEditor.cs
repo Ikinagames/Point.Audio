@@ -175,15 +175,18 @@ namespace Point.Audio.Editor
                 {
                     CoreGUI.Label(AudioClipPath.IsNullOrEmpty() ? "Unknown" : AudioClipPath, 14, TextAnchor.MiddleCenter);
 
-                    if (GUILayout.Button("Copy"))
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        $"{index}".ToLog();
+                        if (GUILayout.Button("Copy"))
+                        {
+                            $"{index}".ToLog();
 
-                        
-                    }
-                    if (GUILayout.Button("Paste"))
-                    {
 
+                        }
+                        if (GUILayout.Button("Paste"))
+                        {
+
+                        }
                     }
 
                     EditorGUILayout.Space();
