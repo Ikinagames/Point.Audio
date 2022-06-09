@@ -30,6 +30,7 @@ namespace Point.Audio
         [SerializeField] 
         private AudioList[] m_AudioLists = Array.Empty<AudioList>();
 
+        public IReadOnlyList<AudioList> AudioLists => m_AudioLists;
         public AudioMixerGroup DefaultMixerGroup => m_DefaultMixerGroup;
 
         public bool HasAudioList(AudioList list) => m_AudioLists.Contains(list);

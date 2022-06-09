@@ -27,7 +27,8 @@ using UnityEngine.Audio;
 
 namespace Point.Audio
 {
-    [CreateAssetMenu(menuName = "Point/Audio/Create Audio List")]
+    [CreateAssetMenu(menuName = "Point/Audio/debug-Create Audio List")]
+    [PreferBinarySerialization]
     public sealed class AudioList : PointScriptableObject
     {
         [Serializable]
