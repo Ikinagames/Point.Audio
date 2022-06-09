@@ -102,7 +102,7 @@ namespace Point.Audio.FMODEditor
 
         protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
         {
-            bool isInArray = PropertyDrawerHelper.IsPropertyInArray(property);
+            bool isInArray = property.IsInArray();
             if (!isInArray)
             {
                 if (string.IsNullOrEmpty(label.text)) label = new GUIContent(property.displayName);
