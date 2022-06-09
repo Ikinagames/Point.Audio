@@ -49,7 +49,6 @@ namespace Point.Audio.Editor
             }
             catch (System.Exception)
             {
-
                 throw;
             }
             finally

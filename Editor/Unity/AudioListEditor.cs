@@ -168,18 +168,10 @@ namespace Point.Audio.Editor
 
             public bool OnGUI()
             {
-                //m_Property.isExpanded = CoreGUI.LabelToggle(m_Property.isExpanded, AudioClipPath, 12, TextAnchor.MiddleLeft);
-
-                //if (!m_Property.isExpanded)
-                //{
-                //    return true;
-                //}
-
-                //EditorGUI.indentLevel++;
                 CoreGUI.Line();
                 using (new CoreGUI.BoxBlock(Color.white))
                 {
-                    CoreGUI.Label(AudioClipPath, 14, TextAnchor.MiddleCenter);
+                    CoreGUI.Label(AudioClipPath.IsNullOrEmpty() ? "Unknown" : AudioClipPath, 14, TextAnchor.MiddleCenter);
                     EditorGUILayout.Space();
 
                     foreach (var item in m_Property.ForEachChild())
@@ -188,7 +180,6 @@ namespace Point.Audio.Editor
                     }
                 }
                 CoreGUI.Line();
-                //EditorGUI.indentLevel--;
 
                 return true;
             }
@@ -346,6 +337,8 @@ namespace Point.Audio.Editor
                     m_Data.Add(temp);
 
                     Reload();
+
+                    m_Property.serializedObject.ApplyModifiedProperties();
                 }
                 if (GUI.Button(bttRects[1], "-"))
                 {
@@ -359,6 +352,8 @@ namespace Point.Audio.Editor
                     m_Property.DeleteArrayElementAtIndex(m_Property.arraySize - 1);
 
                     if (m_Data.Count > 0) Reload();
+
+                    m_Property.serializedObject.ApplyModifiedProperties();
                 }
 
                 if (m_Data.Count == 0) return;
@@ -378,6 +373,20 @@ namespace Point.Audio.Editor
                 SetupDepthsFromParentsAndChildren(root);
 
                 return root;
+            }
+            protected override void RowGUI(RowGUIArgs args)
+            {
+                Color origin = GUI.color;
+
+                Data data = args.item as Data;
+                if (data.AudioClipPath.IsNullOrEmpty())
+                {
+                    GUI.color = new Color(1, 0, 0, .5f);
+                }
+
+                base.RowGUI(args);
+
+                GUI.color = origin;
             }
         }
 
@@ -519,6 +528,7 @@ namespace Point.Audio.Editor
             if (m_Data.Count == 0) return;
 
             using (new CoreGUI.BoxBlock(Color.black))
+            using (var change = new EditorGUI.ChangeCheckScope())
             {
                 if (m_DataTreeView.CurrentSelection != null &&
                     m_DataTreeView.CurrentSelection.Any())
@@ -528,6 +538,8 @@ namespace Point.Audio.Editor
                         item.OnGUI();
                     }
                 }
+
+                if (change.changed) serializedObject.ApplyModifiedProperties();
             }
         }
     }
