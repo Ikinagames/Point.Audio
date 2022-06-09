@@ -42,8 +42,8 @@ namespace Point.Audio
             }
         }
 
-        [SerializeField] private ArrayWrapper<FMODEventReference> m_PlayOnStart = Array.Empty<FMODEventReference>();
-        [SerializeField] private ArrayWrapper<SceneContainer> m_SceneDependencies = Array.Empty<SceneContainer>();
+        [SerializeField] private FMODEventReference[] m_PlayOnStart = Array.Empty<FMODEventReference>();
+        [SerializeField] private SceneContainer[] m_SceneDependencies = Array.Empty<SceneContainer>();
 
         private readonly List<Audio> m_GlobalAudios = new List<Audio>();
 

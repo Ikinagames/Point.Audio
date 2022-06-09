@@ -15,11 +15,13 @@
 
 using UnityEditor;
 using Point.Collections.Editor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODRuntimeVariables))]
-    public sealed class FMODRuntimeVariablesEditor : InspectorEditor<FMODRuntimeVariables>
+    public sealed class FMODRuntimeVariablesEditor : InspectorEditorUXML<FMODRuntimeVariables>
     {
         private SerializedProperty
             m_PlayOnStart,
@@ -30,15 +32,28 @@ namespace Point.Audio.FMODEditor
             m_PlayOnStart = GetSerializedProperty("m_PlayOnStart");
             m_SceneDependencies = GetSerializedProperty("m_SceneDependencies");
         }
+        protected override bool ShouldHideOpenButton() => true;
 
-        protected override void OnInspectorGUIContents()
+        protected override VisualElement CreateVisualElement()
         {
-            EditorGUILayout.PropertyField(m_PlayOnStart);
-            EditorGUILayout.PropertyField(m_SceneDependencies);
+            VisualElement root = new VisualElement();
 
-            //base.OnInspectorGUIContents();
-
-            serializedObject.ApplyModifiedProperties();
+            return root;
         }
+        protected override void SetupVisualElement(VisualElement root)
+        {
+            root.Add(new PropertyField(m_PlayOnStart));
+            root.Add(new PropertyField(m_SceneDependencies));
+        }
+
+        //protected override void OnInspectorGUIContents()
+        //{
+        //    EditorGUILayout.PropertyField(m_PlayOnStart);
+        //    EditorGUILayout.PropertyField(m_SceneDependencies);
+
+        //    //base.OnInspectorGUIContents();
+
+        //    serializedObject.ApplyModifiedProperties();
+        //}
     }
 }

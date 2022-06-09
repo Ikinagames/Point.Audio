@@ -30,7 +30,7 @@ namespace Point.Audio
     {
         [SerializeField] private EventReference m_Event;
         [FMODParam(false, DisableReflection = true)]
-        [SerializeField] private ArrayWrapper<ParamField> m_Parameters = Array.Empty<ParamField>();
+        [SerializeField] private ParamField[] m_Parameters = Array.Empty<ParamField>();
 
         [Space]
         [SerializeField] private bool m_AllowFadeOut = true;
