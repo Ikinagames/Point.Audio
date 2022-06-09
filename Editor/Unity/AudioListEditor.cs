@@ -419,7 +419,7 @@ namespace Point.Audio.Editor
 
         private VisualTreeAsset VisualTreeAsset { get; set; }
 
-        Label listedLabel;
+        //Label listedLabel;
 
         private void OnEnable()
         {
@@ -450,16 +450,16 @@ namespace Point.Audio.Editor
             var tree = VisualTreeAsset.CloneTree();
             tree.Bind(serializedObject);
 
-            {
-                listedLabel = tree.Q<Label>("ListedText");
-                Button listedBtt = tree.Q<Button>("ListedButton");
+            //{
+            //    listedLabel = tree.Q<Label>("ListedText");
+            //    Button listedBtt = tree.Q<Button>("ListedButton");
 
-                bool isListed = AudioSettings.Instance.HasAudioList(target);
-                if (isListed) listedLabel.text = "Listed";
-                else listedLabel.text = "Unlisted";
+            //    bool isListed = AudioSettings.Instance.HasAudioList(target);
+            //    if (isListed) listedLabel.text = "Listed";
+            //    else listedLabel.text = "Unlisted";
 
-                listedBtt.clicked += ListedButton;
-            }
+            //    listedBtt.clicked += ListedButton;
+            //}
 
             IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
             friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
@@ -470,24 +470,24 @@ namespace Point.Audio.Editor
             return tree;
         }
 
-        private void ListedButton()
-        {
-            bool isListed = AudioSettings.Instance.HasAudioList(target);
-            if (!isListed)
-            {
-                listedLabel.text = "Listed";
+        //private void ListedButton()
+        //{
+        //    bool isListed = AudioSettings.Instance.HasAudioList(target);
+        //    if (!isListed)
+        //    {
+        //        listedLabel.text = "Listed";
 
-                AudioSettings.Instance.AddAudioList(target);
-                EditorUtility.SetDirty(AudioSettings.Instance);
-            }
-            else
-            {
-                listedLabel.text = "Unlisted";
+        //        AudioSettings.Instance.AddAudioList(target);
+        //        EditorUtility.SetDirty(AudioSettings.Instance);
+        //    }
+        //    else
+        //    {
+        //        listedLabel.text = "Unlisted";
 
-                AudioSettings.Instance.RemoveAudioList(target);
-                EditorUtility.SetDirty(AudioSettings.Instance);
-            }
-        }
+        //        AudioSettings.Instance.RemoveAudioList(target);
+        //        EditorUtility.SetDirty(AudioSettings.Instance);
+        //    }
+        //}
 
         private void FriendlyNamesGUI()
         {
