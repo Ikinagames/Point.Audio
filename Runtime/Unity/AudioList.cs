@@ -86,6 +86,19 @@ namespace Point.Audio
             public CompressedAudioData GetAudioData() => new CompressedAudioData(
                 m_AudioClip, m_Prefab, m_IgnoreTime, m_MasterVolume,
                 m_Volume.Min, m_Volume.Max, m_Pitch.Min, m_Pitch.Max);
+
+            public override string ToString()
+            {
+                var root = XmlParser.CreateRoot("Data");
+
+                root.Add(
+                    XmlParser.ConvertToXml("audioClip", m_AudioClip),
+                    XmlParser.ConvertToXml("prefab", m_Prefab)
+
+                    );
+
+                return root.ToString();
+            }
         }
 
         [SerializeField]

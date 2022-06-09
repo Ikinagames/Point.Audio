@@ -181,6 +181,10 @@ namespace Point.Audio.Editor
 
                         
                     }
+                    if (GUILayout.Button("Paste"))
+                    {
+
+                    }
 
                     EditorGUILayout.Space();
 
