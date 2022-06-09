@@ -168,10 +168,20 @@ namespace Point.Audio.Editor
 
             public bool OnGUI()
             {
+                int index = m_Property.GetArrayIndex();
+
                 CoreGUI.Line();
                 using (new CoreGUI.BoxBlock(Color.white))
                 {
                     CoreGUI.Label(AudioClipPath.IsNullOrEmpty() ? "Unknown" : AudioClipPath, 14, TextAnchor.MiddleCenter);
+
+                    if (GUILayout.Button("Copy"))
+                    {
+                        $"{index}".ToLog();
+
+                        
+                    }
+
                     EditorGUILayout.Space();
 
                     foreach (var item in m_Property.ForEachChild())

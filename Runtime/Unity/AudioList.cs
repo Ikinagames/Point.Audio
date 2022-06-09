@@ -95,6 +95,7 @@ namespace Point.Audio
         private Data[] m_Data = Array.Empty<Data>();
 
         public int Count => m_Data.Length;
+        public Data this[int index] => m_Data[index];
 
         public IEnumerable<Data> GetAudioData() => m_Data;
         public void RegisterFriendlyNames(Dictionary<Hash, Hash> map)
