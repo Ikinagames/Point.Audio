@@ -55,6 +55,18 @@ namespace Point.Audio
             return null;
         }
 
+        private ParamField FindParamField(FMOD.Studio.PARAMETER_DESCRIPTION desc)
+        {
+            for (int i = 0; i < m_Parameters.Length; i++)
+            {
+                if (m_Parameters[i].Name.Equals(desc.name.ToString()))
+                {
+                    return m_Parameters[i];
+                }
+            }
+            return null;
+        }
+
         public Snapshot GetSnapshot()
         {
             Snapshot snapshot = new Snapshot(FMODManager.GetEventDescription(m_Event));
@@ -85,10 +97,31 @@ namespace Point.Audio
             boxed.OverrideMinDistance = m_OverrideMinDistance;
             boxed.OverrideMaxDistance = m_OverrideMaxDistance;
 
+            var desc = boxed.eventDescription;
+            desc.getParameterDescriptionCount(out int count);
+            for (int i = 0; i < count; i++)
+            {
+                desc.getParameterDescriptionByIndex(i, out var paramDesc);
+                if ((paramDesc.flags & FMOD.Studio.PARAMETER_FLAGS.READONLY) != 0 ||
+                    (paramDesc.flags & FMOD.Studio.PARAMETER_FLAGS.GLOBAL) != 0 ||
+                    (paramDesc.flags & FMOD.Studio.PARAMETER_FLAGS.AUTOMATIC) != 0)
+                {
+                    //string name = paramDesc.name;
+                    //$"? {name} {TypeHelper.Enum<FMOD.Studio.PARAMETER_FLAGS>.ToString(paramDesc.flags)}".ToLog();
+                    continue;
+                }
+
+                var existingParamField = FindParamField(paramDesc);
+                if (existingParamField != null) continue;
+
+                float value = onProcessParam.Invoke(paramDesc, paramDesc.defaultvalue);
+                boxed.SetParameter(paramDesc, value);
+            }
+
             for (int i = 0; i < m_Parameters.Length; i++)
             {
-                var param = m_Parameters[i].GetParamReference(boxed.eventDescription);
-                param.value = onProcessParam.Invoke(param.description, param.value);
+                var param = m_Parameters[i].GetParamReference(desc);
+                param.value = onProcessParam.Invoke(param.description, m_Parameters[i].Value);
 
                 boxed.SetParameter(param);
             }

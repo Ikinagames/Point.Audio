@@ -136,6 +136,11 @@ namespace Point.Audio
         /// <summary>
         /// Audio 에 전달할 Parameter 값을 받아 수정할 수 있습니다.
         /// </summary>
+        /// <remarks>
+        /// 이벤트가 참조중인 모든 변수를 프로세싱합니다. 
+        /// <seealso cref="ParamField"/> 에 값이 있을 경우에 기본값이 <paramref name="existingValue"/> 에 들어오는 것이 아닌,
+        /// <seealso cref="ParamField.Value"/> 가 들어옵니다.
+        /// </remarks>
         /// <param name="ev"></param>
         /// <param name="existingValue"></param>
         /// <returns>수정된 값을 반환하여 적용시킵니다.</returns>

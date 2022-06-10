@@ -44,7 +44,21 @@ namespace Point.Audio
         {
             ev.getParameterDescriptionByName(name, out var description);
             this.description = description;
-            value = 0;
+            value = description.defaultvalue;
+            ignoreSeekSpeed = false;
+            isGlobal = false;
+        }
+        public ParamReference(FMOD.Studio.PARAMETER_DESCRIPTION desc)
+        {
+            this.description = desc;
+            value = desc.defaultvalue;
+            ignoreSeekSpeed = false;
+            isGlobal = false;
+        }
+        public ParamReference(FMOD.Studio.PARAMETER_DESCRIPTION desc, float value)
+        {
+            this.description = desc;
+            this.value = value;
             ignoreSeekSpeed = false;
             isGlobal = false;
         }
@@ -56,7 +70,7 @@ namespace Point.Audio
         {
             FMODManager.StudioSystem.getParameterDescriptionByName(name, out var description);
             this.description = description;
-            value = 0;
+            value = description.defaultvalue;
             ignoreSeekSpeed = false;
             isGlobal = true;
         }

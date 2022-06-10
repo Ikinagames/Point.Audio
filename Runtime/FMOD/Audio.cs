@@ -306,6 +306,45 @@ namespace Point.Audio
 
             return false;
         }
+        public void SetParameter(FMOD.Studio.PARAMETER_DESCRIPTION desc, float value)
+        {
+#if DEBUG_MODE
+            if (!IsValidID())
+            {
+                PointHelper.LogError(Channel.Audio,
+                    $"This audio has an invalid but trying access. " +
+                    $"This is not allowed.");
+
+                return;
+            }
+#endif
+            int index = -1;
+
+            ParamReference parameter = new ParamReference(desc, value);
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].Equals(parameter))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index < 0)
+            {
+                parameters.Add(parameter);
+            }
+            else
+            {
+                ref ParamReference temp = ref parameters.ElementAt(index);
+                temp = parameter;
+            }
+
+            if (IsValid())
+            {
+                audioHandler.Value.instance.setParameterByID(parameter.description.id, parameter.value, parameter.ignoreSeekSpeed);
+            }
+        }
         [NotBurstCompatible]
         public void SetParameter(string name, float value)
         {
