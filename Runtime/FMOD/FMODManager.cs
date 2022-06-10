@@ -514,7 +514,8 @@ namespace Point.Audio
             if (result != FMOD.RESULT.OK)
             {
                 PointHelper.LogError(Channel.Audio,
-                    $"Critical Error. Please fix other issues before play the game.");
+                    $"Critical Error. Please fix other issues before play the game. \n" +
+                    $"{result}");
                 Debug.Break();
                 throw new System.Exception();
             }

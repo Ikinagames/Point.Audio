@@ -33,27 +33,5 @@ namespace Point.Audio.FMODEditor
             m_SceneDependencies = GetSerializedProperty("m_SceneDependencies");
         }
         protected override bool ShouldHideOpenButton() => true;
-
-        protected override VisualElement CreateVisualElement()
-        {
-            VisualElement root = new VisualElement();
-
-            return root;
-        }
-        protected override void SetupVisualElement(VisualElement root)
-        {
-            root.Add(new PropertyField(m_PlayOnStart));
-            root.Add(new PropertyField(m_SceneDependencies));
-        }
-
-        //protected override void OnInspectorGUIContents()
-        //{
-        //    EditorGUILayout.PropertyField(m_PlayOnStart);
-        //    EditorGUILayout.PropertyField(m_SceneDependencies);
-
-        //    //base.OnInspectorGUIContents();
-
-        //    serializedObject.ApplyModifiedProperties();
-        //}
     }
 }

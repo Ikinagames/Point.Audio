@@ -22,7 +22,7 @@ using UnityEngine;
 namespace Point.Audio.FMODEditor
 {
     [CustomPropertyDrawer(typeof(FMODEventReference))]
-    public sealed class FMODEventReferencePropertyDrawer : PropertyDrawer<FMODEventReference>
+    public sealed class FMODEventReferencePropertyDrawer : PropertyDrawerUXML<FMODEventReference>
     {
         private sealed class Helper
         {
@@ -74,33 +74,35 @@ namespace Point.Audio.FMODEditor
             }
         }
 
-        protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
-        {
-            Rect block = rect.TotalRect;
-            block.x = rect.Current.x;
-            block.height = rect.Current.height;
-            CoreGUI.DrawBlock(EditorGUI.IndentedRect(block), Color.black);
 
-            property.isExpanded = LabelToggle(ref rect, property.isExpanded, label, 15, TextAnchor.MiddleLeft);
 
-            if (!property.isExpanded) return;
+        //protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
+        //{
+        //    Rect block = rect.TotalRect;
+        //    block.x = rect.Current.x;
+        //    block.height = rect.Current.height;
+        //    CoreGUI.DrawBlock(EditorGUI.IndentedRect(block), Color.black);
 
-            SerializedProperty 
-                parameterProp = Helper.GetParametersField(property),
+        //    property.isExpanded = LabelToggle(ref rect, property.isExpanded, label, 15, TextAnchor.MiddleLeft);
+
+        //    if (!property.isExpanded) return;
+
+        //    SerializedProperty 
+        //        parameterProp = Helper.GetParametersField(property),
                 
-                exposeGlobalEvProp = Helper.GetExposeGlobalEventField(property),
-                exposeNameProp = Helper.GetExposedNameField(property);
+        //        exposeGlobalEvProp = Helper.GetExposeGlobalEventField(property),
+        //        exposeNameProp = Helper.GetExposedNameField(property);
 
-            EditorGUI.indentLevel++;
-            PropertyField(ref rect, Helper.GetEventField(property));
-            EditorGUI.indentLevel--;
-            PropertyField(ref rect, parameterProp, parameterProp.isExpanded);
+        //    EditorGUI.indentLevel++;
+        //    PropertyField(ref rect, Helper.GetEventField(property));
+        //    EditorGUI.indentLevel--;
+        //    PropertyField(ref rect, parameterProp, parameterProp.isExpanded);
 
-            PropertyField(ref rect, exposeGlobalEvProp);
-            if (exposeGlobalEvProp.boolValue)
-            {
-                PropertyField(ref rect, exposeNameProp);
-            }
-        }
+        //    PropertyField(ref rect, exposeGlobalEvProp);
+        //    if (exposeGlobalEvProp.boolValue)
+        //    {
+        //        PropertyField(ref rect, exposeNameProp);
+        //    }
+        //}
     }
 }
