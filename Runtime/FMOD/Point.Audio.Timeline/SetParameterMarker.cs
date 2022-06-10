@@ -25,7 +25,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace Point.Audio
+namespace Point.Audio.Timeline
 {
     public sealed class SetParameterMarker : Marker, INotification, INotificationExecute
     {
