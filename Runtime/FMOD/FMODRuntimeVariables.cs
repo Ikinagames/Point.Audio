@@ -33,8 +33,8 @@ namespace Point.Audio
             [SerializeField] private SceneReference m_Scene;
 
             [FMODParam(true, true)]
-            [SerializeField] public ParamField[] m_GlobalParameters = Array.Empty<ParamField>();
-            [SerializeField] public FMODEventReference[] m_GlobalAudios = Array.Empty<FMODEventReference>();
+            [SerializeField] public ArrayWrapper<ParamField> m_GlobalParameters = Array.Empty<ParamField>();
+            [SerializeField] public ArrayWrapper<FMODEventReference> m_GlobalAudios = Array.Empty<FMODEventReference>();
 
             public bool IsTargetScene(Scene scene)
             {
@@ -42,8 +42,8 @@ namespace Point.Audio
             }
         }
 
-        [SerializeField] private FMODEventReference[] m_PlayOnStart = Array.Empty<FMODEventReference>();
-        [SerializeField] private SceneContainer[] m_SceneDependencies = Array.Empty<SceneContainer>();
+        [SerializeField] private ArrayWrapper<FMODEventReference> m_PlayOnStart = Array.Empty<FMODEventReference>();
+        [SerializeField] private ArrayWrapper<SceneContainer> m_SceneDependencies = Array.Empty<SceneContainer>();
 
         private readonly List<Audio> m_GlobalAudios = new List<Audio>();
 
