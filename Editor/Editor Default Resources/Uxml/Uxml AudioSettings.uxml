@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="/Assets/Plugins/Point/Point.Collections/Editor/Editor Default Resources/Uxml/default-uss.uss" />
+    <Style src="project://database/Assets/Plugins/Point/Point.Collections/Editor/Editor%20Default%20Resources/Uxml/default-uss.uss?fileID=7433441132597879392&amp;guid=c2e1af765731c5e4d830f487d77eacbf&amp;type=3#default-uss" />
     <ui:VisualElement>
         <ui:Label text="Audio Settings" display-tooltip-when-elided="true" class="header-label" />
         <uie:ObjectField label="Default Mixer Group" name="DefaultMixerGroupField" allow-scene-objects="true" type="UnityEngine.Audio.AudioMixerGroup, UnityEngine.AudioModule" binding-path="m_DefaultMixerGroup" />
