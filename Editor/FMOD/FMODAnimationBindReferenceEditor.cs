@@ -29,7 +29,7 @@ using UnityEngine;
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODAnimationBindReference))]
-    internal sealed class FMODAnimationBindReferenceEditor : InspectorEditor<FMODAnimationBindReference>
+    internal sealed class FMODAnimationBindReferenceEditor : InspectorEditorUXML<FMODAnimationBindReference>
     {
         private SerializedProperty m_Events, m_PlayWhileActive;
         //private ReorderableList m_EventList;
@@ -46,69 +46,69 @@ namespace Point.Audio.FMODEditor
             //m_EventList.drawElementCallback = DrawEventElement;
         }
 
-        private static void DrawEventHeader(Rect rect) => EditorGUI.LabelField(rect, "Events");
-        private float EventElementHeight(int index)
-        {
-            SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
+        //private static void DrawEventHeader(Rect rect) => EditorGUI.LabelField(rect, "Events");
+        //private float EventElementHeight(int index)
+        //{
+        //    SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
 
-            return PropertyDrawerHelper.GetPropertyHeight(serializedObject, element);
-            //if (element.isExpanded)
-            //{
-            //    if (GetSerializedProperty(element, "m_AudioReference.m_Parameters").isExpanded)
-            //    {
-            //        return PropertyDrawerHelper.GetPropertyHeight(14);
-            //    }
+        //    return PropertyDrawerHelper.GetPropertyHeight(serializedObject, element);
+        //    //if (element.isExpanded)
+        //    //{
+        //    //    if (GetSerializedProperty(element, "m_AudioReference.m_Parameters").isExpanded)
+        //    //    {
+        //    //        return PropertyDrawerHelper.GetPropertyHeight(14);
+        //    //    }
 
-            //    return PropertyDrawerHelper.GetPropertyHeight(7);
-            //}
-            //return PropertyDrawerHelper.GetPropertyHeight(1);
-        }
-        private void DrawEventElement(Rect rect, int index, bool isActive, bool isFocused)
-        {
-            rect = PropertyDrawerHelper.FixedIndentForList(rect);
-            AutoRect autoRect = new AutoRect(rect);
+        //    //    return PropertyDrawerHelper.GetPropertyHeight(7);
+        //    //}
+        //    //return PropertyDrawerHelper.GetPropertyHeight(1);
+        //}
+        //private void DrawEventElement(Rect rect, int index, bool isActive, bool isFocused)
+        //{
+        //    rect = PropertyDrawerHelper.FixedIndentForList(rect);
+        //    AutoRect autoRect = new AutoRect(rect);
 
-            SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
+        //    SerializedProperty element = m_Events.GetArrayElementAtIndex(index);
 
-            element.isExpanded =
-                EditorGUI.Foldout(autoRect.Pop(), element.isExpanded, element.displayName, true);
-            if (!element.isExpanded) return;
-            autoRect.Indent(14);
+        //    element.isExpanded =
+        //        EditorGUI.Foldout(autoRect.Pop(), element.isExpanded, element.displayName, true);
+        //    if (!element.isExpanded) return;
+        //    autoRect.Indent(14);
 
-            element.Next(true);
-            EditorGUI.PropertyField(autoRect.Pop(), element);
+        //    element.Next(true);
+        //    EditorGUI.PropertyField(autoRect.Pop(), element);
 
-            element.Next(false); // audio reference
-            SerializedProperty ev = GetSerializedProperty(element, "m_Event");
-            EditorGUI.PropertyField(autoRect.Pop(), ev);
+        //    element.Next(false); // audio reference
+        //    SerializedProperty ev = GetSerializedProperty(element, "m_Event");
+        //    EditorGUI.PropertyField(autoRect.Pop(), ev);
 
-            SerializedProperty overrides = GetSerializedProperty(element, "m_AllowFadeOut");
-            overrides.boolValue = EditorGUI.Toggle(autoRect.Pop(), "Allow Fade-Out", overrides.boolValue);
+        //    SerializedProperty overrides = GetSerializedProperty(element, "m_AllowFadeOut");
+        //    overrides.boolValue = EditorGUI.Toggle(autoRect.Pop(), "Allow Fade-Out", overrides.boolValue);
 
-            overrides.Next(false);
-            EditorGUI.PropertyField(autoRect.Pop(), overrides);
+        //    overrides.Next(false);
+        //    EditorGUI.PropertyField(autoRect.Pop(), overrides);
 
-            SerializedProperty minDis = GetSerializedProperty(element, "m_OverrideMinDistance");
-            SerializedProperty maxDis = GetSerializedProperty(element, "m_OverrideMaxDistance");
+        //    SerializedProperty minDis = GetSerializedProperty(element, "m_OverrideMinDistance");
+        //    SerializedProperty maxDis = GetSerializedProperty(element, "m_OverrideMaxDistance");
 
-            CoreGUI.MinMaxSlider(autoRect.Pop(), "Override Distance", minDis, maxDis, 1, 300);
+        //    CoreGUI.MinMaxSlider(autoRect.Pop(), "Override Distance", minDis, maxDis, 1, 300);
 
-            SerializedProperty parameters = GetSerializedProperty(element, "m_Parameters");
-            EditorGUI.PropertyField(autoRect.Pop(), parameters);
-        }
+        //    SerializedProperty parameters = GetSerializedProperty(element, "m_Parameters");
+        //    EditorGUI.PropertyField(autoRect.Pop(), parameters);
+        //}
 
-        public override string GetHeaderName() => "Animation Bind Reference";
-        protected override void OnInspectorGUIContents()
-        {
-            //m_EventList.DoLayoutList();
-            EditorGUILayout.PropertyField(m_Events);
-            EditorGUILayout.PropertyField(m_PlayWhileActive);
+        //public override string GetHeaderName() => "Animation Bind Reference";
+        //protected override void OnInspectorGUIContents()
+        //{
+        //    //m_EventList.DoLayoutList();
+        //    EditorGUILayout.PropertyField(m_Events);
+        //    EditorGUILayout.PropertyField(m_PlayWhileActive);
 
-            EditorGUILayout.Space();
+        //    EditorGUILayout.Space();
 
-            serializedObject.ApplyModifiedProperties();
-            //base.OnInspectorGUI();
-        }
+        //    serializedObject.ApplyModifiedProperties();
+        //    //base.OnInspectorGUI();
+        //}
     }
 }
 

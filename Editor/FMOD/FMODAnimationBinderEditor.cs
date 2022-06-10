@@ -25,7 +25,7 @@ using UnityEditor;
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODAnimationBinder), true)]
-    internal sealed class FMODAnimationBinderEditor : InspectorEditor<FMODAnimationBinder>
+    internal sealed class FMODAnimationBinderEditor : InspectorEditorUXML<FMODAnimationBinder>
     {
         //private SerializedProperty 
         //    m_BindReferenceProperty, m_EventsProperty;
