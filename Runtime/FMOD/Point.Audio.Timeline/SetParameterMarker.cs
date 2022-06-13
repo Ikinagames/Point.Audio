@@ -55,10 +55,18 @@ namespace Point.Audio.Timeline
             if (m_ExposedEventName.IsNullOrEmpty()) return;
 
             IFMODEvent ev = FMODManager.Instance[m_ExposedEventName];
-            if (ev == null || !ev.IsEvent()) return;
+            if (ev == null || !ev.IsEvent())
+            {
+                $"null:{ev == null} not valid:{ev.IsEvent()}".ToLogError();
+                return;
+            }
 
             Audio audio = (Audio)ev;
-            if (!audio.IsValid(true)) return;
+            if (!audio.IsValid(true))
+            {
+                $"not valid {m_ExposedEventName}".ToLogError();
+                return;
+            }
 
             for (int i = 0; i < m_Parameters.Length; i++)
             {

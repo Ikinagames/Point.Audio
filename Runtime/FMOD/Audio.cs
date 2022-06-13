@@ -641,5 +641,14 @@ namespace Point.Audio
             IEnumerator<FMOD.Studio.USER_PROPERTY> IEnumerable<FMOD.Studio.USER_PROPERTY>.GetEnumerator() => this;
             IEnumerator IEnumerable.GetEnumerator() => this;
         }
+
+        [NotBurstCompatible]
+        public override string ToString()
+        {
+            if (!eventDescription.isValid()) return "INVALIDAUDIO";
+
+            eventDescription.getPath(out string path);
+            return $"Event({path})";
+        }
     }
 }

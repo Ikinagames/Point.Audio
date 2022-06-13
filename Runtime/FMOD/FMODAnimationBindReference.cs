@@ -25,7 +25,7 @@ using UnityEngine;
 namespace Point.Audio
 {
     [CreateAssetMenu(menuName = "Point/Audio/Create Animation Bind Reference", fileName = "NewAnimBindRef")]
-    public sealed class FMODAnimationBindReference : ScriptableObject
+    public sealed class FMODAnimationBindReference : PointScriptableObject
     {
         [SerializeField]
         private ArrayWrapper<FMODAnimationEvent> m_Events = Array.Empty<FMODAnimationEvent>();
@@ -45,10 +45,10 @@ namespace Point.Audio
 
         internal IFMODEvent[] PlayWhileActive(Transform caller)
         {
-            if (m_PlayWhileActive.Count == 0) return Array.Empty<IFMODEvent>();
+            if (m_PlayWhileActive.Length == 0) return Array.Empty<IFMODEvent>();
 
-            IFMODEvent[] temp = new IFMODEvent[m_PlayWhileActive.Count];
-            for (int i = 0; i < m_PlayWhileActive.Count; i++)
+            IFMODEvent[] temp = new IFMODEvent[m_PlayWhileActive.Length];
+            for (int i = 0; i < m_PlayWhileActive.Length; i++)
             {
                 temp[i] = m_PlayWhileActive[i].GetEvent();
                 temp[i].Play();
@@ -60,6 +60,9 @@ namespace Point.Audio
                     audio.rotation = caller.rotation;
                     audio.bindTransform = caller;
                 }
+
+                PointHelper.Log(Channel.Audio,
+                    $"Playing Audio While Active ({temp})", this);
             }
 
             return temp;

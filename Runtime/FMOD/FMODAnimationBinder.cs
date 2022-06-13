@@ -54,7 +54,7 @@ namespace Point.Audio
         /// </summary>
         protected IReadOnlyList<FMODAnimationEvent> Events => m_Events;
 
-        private void Awake()
+        protected void Awake()
         {
             m_Parsed = new Dictionary<Hash, FMODAnimationEvent>();
 
@@ -70,11 +70,12 @@ namespace Point.Audio
                 m_Parsed.Add(new Hash(m_Events[i].Name), m_Events[i]);
             }
         }
-        private void OnEnable()
+        protected void OnEnable()
         {
             m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
+            $"{gameObject.name} playing {m_PlayedWhileActives.Length}".ToLog(this);
         }
-        private void OnDisable()
+        protected void OnDisable()
         {
             for (int i = 0; i < m_PlayedWhileActives.Length; i++)
             {

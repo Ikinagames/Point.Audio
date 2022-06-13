@@ -673,6 +673,8 @@ namespace Point.Audio
             Instance.ProcessUserProperty(ref audio);
 
             audio.audioHandler.Value.StartInstance();
+
+            //PointHelper.Log(Channel.Audio, $"Playing audio({audio})");
         }
         /// <summary>
         /// 오디오를 정지합니다.
@@ -689,6 +691,8 @@ namespace Point.Audio
             }
 #endif
             audio.audioHandler.Value.StopInstance(audio.AllowFadeout);
+
+            //PointHelper.Log(Channel.Audio, $"Stop audio({audio})");
         }
 
         #endregion
