@@ -16,8 +16,10 @@
 using log4net.Filter;
 using Point.Collections.Editor;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Point.Audio.FMODEditor
 {
@@ -74,8 +76,6 @@ namespace Point.Audio.FMODEditor
             }
         }
 
-
-
         //protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
         //{
         //    Rect block = rect.TotalRect;
@@ -89,7 +89,7 @@ namespace Point.Audio.FMODEditor
 
         //    SerializedProperty 
         //        parameterProp = Helper.GetParametersField(property),
-                
+
         //        exposeGlobalEvProp = Helper.GetExposeGlobalEventField(property),
         //        exposeNameProp = Helper.GetExposedNameField(property);
 
