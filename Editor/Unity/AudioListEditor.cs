@@ -116,6 +116,8 @@ namespace Point.Audio.Editor
                 m_VolumeProperty,
                 m_PitchProperty;
 
+            public VisualElement m_VisualElement;
+
             public Data(SerializedProperty property) : base(s_Index++, 0)
             {
                 m_Property = property;
@@ -134,6 +136,25 @@ namespace Point.Audio.Editor
                 m_MasterVolumeProperty = property.FindPropertyRelative("m_MasterVolume");
                 m_VolumeProperty = property.FindPropertyRelative("m_Volume");
                 m_PitchProperty = property.FindPropertyRelative("m_Pitch");
+
+                VisualElement root = new VisualElement();
+                root.style.flexGrow = 1;
+                root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
+                root.AddToClassList("content-container");
+                root.AddToClassList("inner-container");
+
+                Label label = new Label(displayName);
+                root.Add(label);
+
+                foreach (var item in m_Property.ForEachChild())
+                {
+                    PropertyField field = new PropertyField(item);
+                    root.Add(field);
+
+                    field.BindProperty(item);
+                }
+
+                m_VisualElement = root;
             }
 
             public override string displayName => AudioClip != null ? AudioClip.name : "Unknown";
@@ -166,40 +187,40 @@ namespace Point.Audio.Editor
                 set => m_IgnoreTimeProperty.floatValue = value;
             }
 
-            public bool OnGUI()
-            {
-                int index = m_Property.GetArrayIndex();
+            //public bool OnGUI()
+            //{
+            //    int index = m_Property.GetArrayIndex();
 
-                CoreGUI.Line();
-                using (new CoreGUI.BoxBlock(Color.white))
-                {
-                    CoreGUI.Label(AudioClipPath.IsNullOrEmpty() ? "Unknown" : AudioClipPath, 14, TextAnchor.MiddleCenter);
+            //    CoreGUI.Line();
+            //    using (new CoreGUI.BoxBlock(Color.white))
+            //    {
+            //        CoreGUI.Label(AudioClipPath.IsNullOrEmpty() ? "Unknown" : AudioClipPath, 14, TextAnchor.MiddleCenter);
 
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        if (GUILayout.Button("Copy"))
-                        {
-                            $"{index}".ToLog();
+            //        using (new EditorGUILayout.HorizontalScope())
+            //        {
+            //            if (GUILayout.Button("Copy"))
+            //            {
+            //                $"{index}".ToLog();
 
 
-                        }
-                        if (GUILayout.Button("Paste"))
-                        {
+            //            }
+            //            if (GUILayout.Button("Paste"))
+            //            {
 
-                        }
-                    }
+            //            }
+            //        }
 
-                    EditorGUILayout.Space();
+            //        EditorGUILayout.Space();
 
-                    foreach (var item in m_Property.ForEachChild())
-                    {
-                        EditorGUILayout.PropertyField(item);
-                    }
-                }
-                CoreGUI.Line();
+            //        foreach (var item in m_Property.ForEachChild())
+            //        {
+            //            EditorGUILayout.PropertyField(item);
+            //        }
+            //    }
+            //    CoreGUI.Line();
 
-                return true;
-            }
+            //    return true;
+            //}
 
             public void Reset()
             {
@@ -418,8 +439,7 @@ namespace Point.Audio.Editor
             m_FriendlyNameSearchField;
 
         private VisualTreeAsset VisualTreeAsset { get; set; }
-
-        //Label listedLabel;
+        private List<VisualElement> m_VisibleElements = new List<VisualElement>();
 
         private void OnEnable()
         {
@@ -439,7 +459,7 @@ namespace Point.Audio.Editor
 
             m_DataTreeViewState = new TreeViewState();
             m_DataTreeView = new DataTreeView(m_DataProperty, m_FriendlyNames, m_DataTreeViewState, m_Data);
-
+            
             if (m_Data.Count > 0) m_DataTreeView.Reload();
         }
 
@@ -450,44 +470,30 @@ namespace Point.Audio.Editor
             var tree = VisualTreeAsset.CloneTree();
             tree.Bind(serializedObject);
 
-            //{
-            //    listedLabel = tree.Q<Label>("ListedText");
-            //    Button listedBtt = tree.Q<Button>("ListedButton");
-
-            //    bool isListed = AudioSettings.Instance.HasAudioList(target);
-            //    if (isListed) listedLabel.text = "Listed";
-            //    else listedLabel.text = "Unlisted";
-
-            //    listedBtt.clicked += ListedButton;
-            //}
-
             IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
             friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
 
             IMGUIContainer dataGUI = tree.Q<IMGUIContainer>("DataGUI");
             dataGUI.onGUIHandler += DataGUI;
 
+            m_DataTreeView.OnSelection += t =>
+            {
+                foreach (var item in m_VisibleElements)
+                {
+                    item.RemoveFromHierarchy();
+                }
+                m_VisibleElements.Clear();
+
+                foreach (var item in t)
+                {
+                    dataGUI.parent.Add(item.m_VisualElement);
+
+                    m_VisibleElements.Add(item.m_VisualElement);
+                }
+            };
+
             return tree;
         }
-
-        //private void ListedButton()
-        //{
-        //    bool isListed = AudioSettings.Instance.HasAudioList(target);
-        //    if (!isListed)
-        //    {
-        //        listedLabel.text = "Listed";
-
-        //        AudioSettings.Instance.AddAudioList(target);
-        //        EditorUtility.SetDirty(AudioSettings.Instance);
-        //    }
-        //    else
-        //    {
-        //        listedLabel.text = "Unlisted";
-
-        //        AudioSettings.Instance.RemoveAudioList(target);
-        //        EditorUtility.SetDirty(AudioSettings.Instance);
-        //    }
-        //}
 
         private void FriendlyNamesGUI()
         {
@@ -542,22 +548,22 @@ namespace Point.Audio.Editor
 
             m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
 
-            if (m_Data.Count == 0) return;
+            //if (m_Data.Count == 0) return;
 
-            using (new CoreGUI.BoxBlock(Color.black))
-            using (var change = new EditorGUI.ChangeCheckScope())
-            {
-                if (m_DataTreeView.CurrentSelection != null &&
-                    m_DataTreeView.CurrentSelection.Any())
-                {
-                    foreach (var item in m_DataTreeView.CurrentSelection)
-                    {
-                        item.OnGUI();
-                    }
-                }
+            //using (new CoreGUI.BoxBlock(Color.black))
+            //using (var change = new EditorGUI.ChangeCheckScope())
+            //{
+            //    if (m_DataTreeView.CurrentSelection != null &&
+            //        m_DataTreeView.CurrentSelection.Any())
+            //    {
+            //        foreach (var item in m_DataTreeView.CurrentSelection)
+            //        {
+            //            item.OnGUI();
+            //        }
+            //    }
 
-                if (change.changed) serializedObject.ApplyModifiedProperties();
-            }
+            //    if (change.changed) serializedObject.ApplyModifiedProperties();
+            //}
         }
     }
 }

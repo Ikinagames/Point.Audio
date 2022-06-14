@@ -1333,10 +1333,14 @@ namespace Point.Audio
 
                     insAudio.clip = t as AudioClip;
                     insAudio.Play();
+#if DEBUG_MODE
+                    PointHelper.Log(Channel.Audio,
+                        string.Format(c_LogFormat, "Delayed Play Execute", audioKey.ToString()));
+#endif
                 };
 #if DEBUG_MODE
                 PointHelper.Log(Channel.Audio,
-                    string.Format(c_LogFormat, "Delayed Play", audioKey.ToString()));
+                    string.Format(c_LogFormat, "Delayed Play Queued", audioKey.ToString()));
 #endif
                 return audio;
             }
