@@ -73,7 +73,6 @@ namespace Point.Audio
         protected void OnEnable()
         {
             m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
-            $"{gameObject.name} playing {m_PlayedWhileActives.Length}".ToLog(this);
         }
         protected void OnDisable()
         {
