@@ -20,7 +20,7 @@ using Point.Audio.StateMachine;
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODStateBehaviour), true)]
-    internal sealed class DefaultFMODStateMachineEditor : InspectorEditor<FMODStateBehaviour>
+    internal sealed class DefaultFMODStateMachineEditor : InspectorEditorUXML<FMODStateBehaviour>
     {
 
     }

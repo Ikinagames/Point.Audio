@@ -19,5 +19,5 @@ using Point.Collections.Editor;
 namespace Point.Audio.FMODEditor
 {
     [CustomEditor(typeof(FMODBehaviour), true)]
-    internal sealed class DefaultFMODBehaviourEditor : InspectorEditor<FMODBehaviour> { }
+    internal sealed class DefaultFMODBehaviourEditor : InspectorEditorUXML<FMODBehaviour> { }
 }
