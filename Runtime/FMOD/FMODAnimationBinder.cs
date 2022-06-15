@@ -38,7 +38,7 @@ namespace Point.Audio
     public class FMODAnimationBinder : AnimationEventBinder
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;
-        [SerializeField] private FMODAnimationEvent[] m_Events = Array.Empty<FMODAnimationEvent>();
+        [SerializeField] private ArrayWrapper<FMODAnimationEvent> m_Events = Array.Empty<FMODAnimationEvent>();
 
         [Space]
         [SerializeField] private GameObject m_OverrideRoot = null;
