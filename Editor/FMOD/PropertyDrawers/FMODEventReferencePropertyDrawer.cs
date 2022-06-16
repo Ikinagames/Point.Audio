@@ -115,6 +115,8 @@ namespace Point.Audio.FMODEditor
             root.Add(headerContainer);
 
             VisualElement alignContainer = new VisualElement();
+            alignContainer.style.borderTopWidth = 1;
+            alignContainer.style.borderTopColor = new StyleColor(new Color(1, 1, 1, .19f));
             alignContainer.style.paddingLeft = 8;
             {
                 PropertyField evField = CoreGUI.VisualElement.PropertyField(Helper.GetEventField(property));
