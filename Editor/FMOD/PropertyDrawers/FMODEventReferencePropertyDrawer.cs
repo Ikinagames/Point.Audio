@@ -114,30 +114,35 @@ namespace Point.Audio.FMODEditor
             }
             root.Add(headerContainer);
 
-            PropertyField evField = CoreGUI.VisualElement.PropertyField(Helper.GetEventField(property));
-            evField.name = "EventField";
-            evField.style.paddingLeft = 12;
-            evField.style.Hide(useAsset);
-            root.Add(evField);
+            VisualElement alignContainer = new VisualElement();
+            alignContainer.style.paddingLeft = 8;
+            {
+                PropertyField evField = CoreGUI.VisualElement.PropertyField(Helper.GetEventField(property));
+                evField.name = "EventField";
+                evField.style.paddingLeft = 12;
+                evField.style.Hide(useAsset);
+                alignContainer.Add(evField);
 
-            PropertyField assetField = CoreGUI.VisualElement.PropertyField(assetProp);
-            assetField.name = "AssetField";
-            assetField.style.paddingTop = 8;
-            assetField.style.Hide(!useAsset);
-            root.Add(assetField);
+                PropertyField assetField = CoreGUI.VisualElement.PropertyField(assetProp);
+                assetField.name = "AssetField";
+                assetField.style.paddingTop = 8;
+                assetField.style.Hide(!useAsset);
+                alignContainer.Add(assetField);
 
-            VisualElement contentContainer = new VisualElement();
-            contentContainer.name = "ContentContainer";
-            contentContainer.AddToClassList("content-container");
-            contentContainer.AddToClassList("inner-container");
-            root.Add(contentContainer);
+                VisualElement contentContainer = new VisualElement();
+                contentContainer.name = "ContentContainer";
+                contentContainer.AddToClassList("content-container");
+                contentContainer.AddToClassList("inner-container");
+                alignContainer.Add(contentContainer);
 
-            VisualElement dataContainer = new VisualElement();
-            dataContainer.name = "DataContainer";
-            dataContainer.style.Hide(useAsset);
-            contentContainer.Add(dataContainer);
+                VisualElement dataContainer = new VisualElement();
+                dataContainer.name = "DataContainer";
+                dataContainer.style.Hide(useAsset);
+                contentContainer.Add(dataContainer);
 
-            AddContents(property, dataContainer);
+                AddContents(property, dataContainer);
+            }
+            root.Add(alignContainer);
 
             return root;
         }
