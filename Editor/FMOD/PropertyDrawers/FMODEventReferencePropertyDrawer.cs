@@ -26,7 +26,7 @@ using UnityEngine.UIElements;
 namespace Point.Audio.FMODEditor
 {
     [CustomPropertyDrawer(typeof(FMODEventReference))]
-    public sealed class FMODEventReferencePropertyDrawer : PropertyDrawerUXML<FMODEventReference>
+    internal sealed class FMODEventReferencePropertyDrawer : PropertyDrawerUXML<FMODEventReference>
     {
         private static Regex regex = new Regex(@".+:/(.+)");
         private sealed class Helper

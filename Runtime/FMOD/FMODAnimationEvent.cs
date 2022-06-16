@@ -30,6 +30,7 @@ namespace Point.Audio
     [Serializable]
     public sealed class FMODAnimationEvent : ICloneable
     {
+        [Tooltip("애니메이션의 키")]
         [SerializeField] private string m_Name;
         [SerializeField] private FMODEventReference m_AudioReference;
 
