@@ -29,6 +29,8 @@ namespace Point.Audio.FMODEditor
         private sealed class Helper
         {
             const string
+                c_Asset = "m_Asset",
+
                 c_Event = "m_Event",
                 c_Parameters = "m_Parameters",
 
@@ -53,10 +55,20 @@ namespace Point.Audio.FMODEditor
                 ExposedNameContent = new GUIContent("ExposedName",
                     "");
 
+            public static SerializedProperty GetAssetField(SerializedProperty property)
+                => property.FindPropertyRelative(c_Asset);
+
             public static SerializedProperty GetEventField(SerializedProperty property)
                 => property.FindPropertyRelative(c_Event);
             public static SerializedProperty GetParametersField(SerializedProperty property)
                 => property.FindPropertyRelative(c_Parameters);
+
+            public static SerializedProperty GetOverrideAttenField(SerializedProperty property)
+                => property.FindPropertyRelative(c_OverrideAttenuation);
+            public static SerializedProperty GetOverrideAttenMinField(SerializedProperty property)
+                => property.FindPropertyRelative(c_OverrideMinDistance);
+            public static SerializedProperty GetOverrideAttenMaxField(SerializedProperty property)
+                => property.FindPropertyRelative(c_OverrideMaxDistance);
 
             public static SerializedProperty GetExposeGlobalEventField(SerializedProperty property)
                 => property.FindPropertyRelative(c_ExposeGlobalEvent);
@@ -76,33 +88,124 @@ namespace Point.Audio.FMODEditor
             }
         }
 
-        //protected override void OnPropertyGUI(ref AutoRect rect, SerializedProperty property, GUIContent label)
-        //{
-        //    Rect block = rect.TotalRect;
-        //    block.x = rect.Current.x;
-        //    block.height = rect.Current.height;
-        //    CoreGUI.DrawBlock(EditorGUI.IndentedRect(block), Color.black);
+        protected override VisualElement CreateVisualElement(SerializedProperty property)
+        {
+            VisualElement root = new VisualElement();
+            root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
+            root.AddToClassList("content-container");
 
-        //    property.isExpanded = LabelToggle(ref rect, property.isExpanded, label, 15, TextAnchor.MiddleLeft);
+            SerializedProperty assetProp = Helper.GetAssetField(property);
+            bool useAsset = assetProp.isExpanded;
 
-        //    if (!property.isExpanded) return;
+            VisualElement headerContainer = new VisualElement();
+            headerContainer.style.flexDirection = FlexDirection.Row;
+            {
+                Label headerLabel = new Label(property.displayName);
+                headerLabel.name = "H3-Label";
+                headerLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                headerContainer.Add(headerLabel);
 
-        //    SerializedProperty 
-        //        parameterProp = Helper.GetParametersField(property),
+                ToolbarToggle toggle = new ToolbarToggle();
+                toggle.name = "UseAssetToogle";
+                toggle.value = useAsset;
+                toggle.label = useAsset ? "Use Data" : "Use Asset";
 
-        //        exposeGlobalEvProp = Helper.GetExposeGlobalEventField(property),
-        //        exposeNameProp = Helper.GetExposedNameField(property);
+                headerContainer.Add(toggle);
+            }
+            root.Add(headerContainer);
 
-        //    EditorGUI.indentLevel++;
-        //    PropertyField(ref rect, Helper.GetEventField(property));
-        //    EditorGUI.indentLevel--;
-        //    PropertyField(ref rect, parameterProp, parameterProp.isExpanded);
+            PropertyField evField = CoreGUI.VisualElement.PropertyField(Helper.GetEventField(property));
+            evField.name = "EventField";
+            evField.style.paddingLeft = 12;
+            evField.style.Hide(useAsset);
+            root.Add(evField);
 
-        //    PropertyField(ref rect, exposeGlobalEvProp);
-        //    if (exposeGlobalEvProp.boolValue)
-        //    {
-        //        PropertyField(ref rect, exposeNameProp);
-        //    }
-        //}
+            PropertyField assetField = CoreGUI.VisualElement.PropertyField(assetProp);
+            assetField.name = "AssetField";
+            assetField.style.paddingTop = 8;
+            assetField.style.Hide(!useAsset);
+            root.Add(assetField);
+
+            VisualElement contentContainer = new VisualElement();
+            contentContainer.name = "ContentContainer";
+            contentContainer.AddToClassList("content-container");
+            contentContainer.AddToClassList("inner-container");
+            root.Add(contentContainer);
+
+            VisualElement dataContainer = new VisualElement();
+            dataContainer.name = "DataContainer";
+            dataContainer.style.Hide(useAsset);
+            contentContainer.Add(dataContainer);
+
+            AddContents(property, dataContainer);
+
+            return root;
+        }
+        protected override void SetupVisualElement(SerializedProperty property, VisualElement root)
+        {
+            SerializedProperty assetProp = Helper.GetAssetField(property);
+            bool useAsset = assetProp.isExpanded;
+
+            VisualElement contentContainer = root.Q("ContentContainer");
+            if (!useAsset)
+            {
+                contentContainer.style.Hide(!property.isExpanded);
+            }
+            else contentContainer.style.Hide(true);
+
+            root[0].RegisterCallback<MouseDownEvent>(t =>
+            {
+                property.isExpanded = !property.isExpanded;
+                property.serializedObject.ApplyModifiedProperties();
+
+                bool useAsset = assetProp.isExpanded;
+                if (!useAsset)
+                {
+                    contentContainer.style.Hide(!property.isExpanded);
+                }
+            });
+
+            ToolbarToggle toggle = root.Q<ToolbarToggle>("UseAssetToogle");
+            toggle.RegisterValueChangedCallback(t =>
+            {
+                assetProp.isExpanded = t.newValue;
+                toggle.label = t.newValue ? "Use Data" : "Use Asset";
+
+                root.Q<PropertyField>("AssetField").style.Hide(!t.newValue);
+                root.Q<PropertyField>("EventField").style.Hide(t.newValue);
+
+                // use asset
+                if (t.newValue)
+                {
+                    root.Q("ContentContainer").style.Hide(true);
+                }
+                else
+                {
+                    root.Q("ContentContainer").style.Hide(!property.isExpanded);
+                }
+
+                assetProp.serializedObject.ApplyModifiedProperties();
+                toggle.MarkDirtyRepaint();
+            });
+        }
+        private void AddContents(SerializedProperty property, VisualElement contentContainer)
+        {
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetParametersField(property)));
+
+            contentContainer.Add(CoreGUI.VisualElement.Space());
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetOverrideAttenField(property)));
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetOverrideAttenMinField(property)));
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetOverrideAttenMaxField(property)));
+
+            contentContainer.Add(CoreGUI.VisualElement.Space());
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetExposeGlobalEventField(property)));
+            contentContainer.Add(
+                CoreGUI.VisualElement.PropertyField(Helper.GetExposedNameField(property)));
+        }
     }
 }

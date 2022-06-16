@@ -24,6 +24,7 @@ using Point.Collections;
 
 namespace Point.Audio
 {
+    [CreateAssetMenu(menuName = "Point/Audio/Create Event Reference Asset")]
     public sealed class FMODEventReferenceAsset : ScriptableObject, IFMODEventReference
     {
         [SerializeField] private EventReference m_Event;
