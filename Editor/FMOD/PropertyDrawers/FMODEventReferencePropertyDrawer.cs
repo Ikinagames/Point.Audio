@@ -14,7 +14,9 @@
 // limitations under the License.
 
 using log4net.Filter;
+using Point.Collections;
 using Point.Collections.Editor;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditorInternal;
@@ -26,6 +28,7 @@ namespace Point.Audio.FMODEditor
     [CustomPropertyDrawer(typeof(FMODEventReference))]
     public sealed class FMODEventReferencePropertyDrawer : PropertyDrawerUXML<FMODEventReference>
     {
+        private static Regex regex = new Regex(@".+:/(.+)");
         private sealed class Helper
         {
             const string
@@ -93,15 +96,31 @@ namespace Point.Audio.FMODEditor
             VisualElement root = new VisualElement();
             root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
             root.AddToClassList("content-container");
+            root.style.flexGrow = 1;
 
             SerializedProperty assetProp = Helper.GetAssetField(property);
             bool useAsset = assetProp.isExpanded;
+            SerializedProperty evPathProp = Helper.GetEventField(property).FindPropertyRelative("Path");
+            string eventPathStr = null;
+            if (!evPathProp.stringValue.IsNullOrEmpty())
+            {
+                var match = regex.Match(evPathProp.stringValue);
+                eventPathStr = match.Groups[1].Value;
+            }
 
             VisualElement headerContainer = new VisualElement();
+            headerContainer.style.flexGrow = 1;
             headerContainer.style.flexDirection = FlexDirection.Row;
             {
                 Label headerLabel = new Label(property.displayName);
+                if (!eventPathStr.IsNullOrEmpty())
+                {
+                    //headerLabel.text += $" {HTMLString.String(eventPathStr, 10)}";
+                    headerLabel.text = HTMLString.String(eventPathStr, 10);
+                }
+
                 headerLabel.name = "H3-Label";
+                headerLabel.style.flexGrow = 1;
                 headerLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
                 headerContainer.Add(headerLabel);
 
