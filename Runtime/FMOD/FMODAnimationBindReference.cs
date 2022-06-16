@@ -52,7 +52,7 @@ namespace Point.Audio
             {
                 temp[i] = m_PlayWhileActive[i].GetEvent();
                 temp[i].Play();
-                FMODEventReference.SetExposedEvent(m_PlayWhileActive[i], temp[i]);
+                m_PlayWhileActive[i].SetExposedEvent(temp[i]);
 
                 if (temp[i] is Audio audio && audio.Is3D)
                 {

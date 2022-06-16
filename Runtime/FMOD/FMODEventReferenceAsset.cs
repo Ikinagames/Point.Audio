@@ -20,17 +20,12 @@
 using UnityEngine;
 using System;
 using FMODUnity;
-using Unity.Mathematics;
 using Point.Collections;
 
 namespace Point.Audio
 {
-    [Serializable]
-    public sealed class FMODEventReference : IFMODEventReference, ICloneable
+    public sealed class FMODEventReferenceAsset : ScriptableObject, IFMODEventReference
     {
-        [SerializeField] private FMODEventReferenceAsset m_Asset;
-
-        [Space]
         [SerializeField] private EventReference m_Event;
         [FMODParam(false, DisableReflection = true)]
         [SerializeField] private ArrayWrapper<ParamField> m_Parameters = Array.Empty<ParamField>();
@@ -46,23 +41,12 @@ namespace Point.Audio
 
         public void SetExposedEvent(IFMODEvent ev)
         {
-            if (m_Asset != null)
-            {
-                m_Asset.SetExposedEvent(ev);
-                return;
-            }
-
             if (!m_ExposeGlobalEvent) return;
 
             FMODManager.Instance[m_ExposedName] = ev;
         }
         public IFMODEvent GetEvent()
         {
-            if (m_Asset != null)
-            {
-                return m_Asset.GetEvent();
-            }
-
             if (m_Event.IsSnapshot()) return GetSnapshot();
             else if (m_Event.IsEvent()) return GetAudio();
 
@@ -83,21 +67,11 @@ namespace Point.Audio
 
         public Snapshot GetSnapshot()
         {
-            if (m_Asset != null)
-            {
-                return m_Asset.GetSnapshot();
-            }
-
             Snapshot snapshot = new Snapshot(FMODManager.GetEventDescription(m_Event));
             return snapshot;
         }
         public Audio GetAudio()
         {
-            if (m_Asset != null)
-            {
-                return m_Asset.GetAudio();
-            }
-
             Audio boxed = FMODManager.GetAudio(m_Event);
             boxed.AllowFadeout = m_AllowFadeOut;
             boxed.OverrideAttenuation = m_OverrideAttenuation;
@@ -115,11 +89,6 @@ namespace Point.Audio
         }
         public Audio GetAudio(Func<FMOD.Studio.PARAMETER_DESCRIPTION, float, float> onProcessParam)
         {
-            if (m_Asset != null)
-            {
-                return m_Asset.GetAudio(onProcessParam);
-            }
-
             Audio boxed = FMODManager.GetAudio(m_Event);
             boxed.AllowFadeout = m_AllowFadeOut;
             boxed.OverrideAttenuation = m_OverrideAttenuation;
@@ -156,22 +125,6 @@ namespace Point.Audio
             }
 
             return boxed;
-        }
-
-        public object Clone()
-        {
-            FMODEventReference ev = (FMODEventReference)MemberwiseClone();
-
-            ParamField[] tempParams = new ParamField[m_Parameters.Length];
-            for (int i = 0; i < tempParams.Length; i++)
-            {
-                tempParams[i] = (ParamField)m_Parameters[i].Clone();
-            }
-            ev.m_Parameters = tempParams;
-
-            ev.m_ExposedName = String.Copy(m_ExposedName);
-
-            return ev;
         }
     }
 }
