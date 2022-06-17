@@ -431,13 +431,16 @@ namespace Point.Audio
                     parameter.description.id, 
                     parameter.value, 
                     parameter.ignoreSeekSpeed);
-
+#if DEBUG_MODE
                 if (result != FMOD.RESULT.OK)
                 {
                     eventDescription.getPath(out string evPath);
                     PointHelper.LogError(Channel.Audio,
-                        $"Set parameter({parameter.description.name} : {parameter.value}) faild with {result} at Audio({evPath}).");
+                        $"Set parameter({(string)parameter.description.name} : {parameter.value}) faild with {result} at Audio({evPath}).");
                 }
+#endif
+                //PointHelper.Log(Channel.Audio,
+                //    $"Set parameter({(string)parameter.description.name} : {parameter.value})");
             }
         }
         [NotBurstCompatible]

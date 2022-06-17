@@ -81,6 +81,17 @@ namespace Point.Audio.StateMachine
                 m_StateExitFired = true;
             }
         }
+        public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        {
+            base.OnStateUpdate(animator, stateInfo, layerIndex);
+
+            if (m_StateExitFired)
+            {
+                return;
+            }
+
+            OnPlayingAudio(m_Audio);
+        }
         public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
             base.OnStateExit(animator, stateInfo, layerIndex);
@@ -124,7 +135,14 @@ namespace Point.Audio.StateMachine
             PointHelper.Log(Channel.Audio,
                 $"Stop audio({path})");
 #endif
+            m_Audio = default(Audio);
         }
+
+        /// <summary>
+        /// 오디오가 재생 중인 동안, 매 프레임마다 호출되는 메소드입니다.
+        /// </summary>ㄴ
+        /// <param name="audio"></param>
+        protected virtual void OnPlayingAudio(Audio audio) { }
 
         protected ParamReference GetParamReference<TEnum>()
             where TEnum : struct, IConvertible
