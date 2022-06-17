@@ -51,6 +51,11 @@ namespace Point.Audio
             for (int i = 0; i < m_PlayWhileActive.Length; i++)
             {
                 temp[i] = m_PlayWhileActive[i].GetEvent();
+                if (temp[i] == null)
+                {
+                    $"?? {i}".ToLogError(this);
+                }
+
                 temp[i].Play();
                 m_PlayWhileActive[i].SetExposedEvent(temp[i]);
 
@@ -62,7 +67,7 @@ namespace Point.Audio
                 }
 
                 PointHelper.Log(Channel.Audio,
-                    $"Playing Audio While Active ({temp})", this);
+                    $"Playing Audio While Active ({temp[i]})", this);
             }
 
             return temp;

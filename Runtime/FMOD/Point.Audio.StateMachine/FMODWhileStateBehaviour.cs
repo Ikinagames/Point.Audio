@@ -33,11 +33,15 @@ namespace Point.Audio.StateMachine
         [SerializeField] private bool m_StopAudioOnExit = false;
 
         [NonSerialized] private Audio m_Audio;
-
+        [NonSerialized] private bool m_StateExitFired = false;
+        
         protected Audio CurrentAudio => m_Audio;
 
         public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
+            base.OnStateEnter(animator, stateInfo, layerIndex);
+
+            m_StateExitFired = false;
             m_Audio = m_AudioReference.GetAudio();
 
             bool is3D = m_Audio.Is3D;
@@ -57,19 +61,47 @@ namespace Point.Audio.StateMachine
 
             if (is3D) m_Audio.bindTransform = animator.transform;
         }
-        public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        protected override void OnExitTransition()
         {
-            for (int i = 0; i < m_OnExitParameters.Length; i++)
-            {
-                var param = m_OnExitParameters[i].GetParamReference(m_Audio.eventDescription);
-                m_Audio.SetParameter(param);
-            }
+            base.OnExitTransition();
 
-            if (m_StopAudioOnExit)
+            if (!m_StateExitFired)
             {
-                StopAudio();
+                for (int i = 0; i < m_OnExitParameters.Length; i++)
+                {
+                    var param = m_OnExitParameters[i].GetParamReference(m_Audio.eventDescription);
+                    m_Audio.SetParameter(param);
+                }
+
+                if (m_StopAudioOnExit)
+                {
+                    StopAudio();
+                }
+
+                m_StateExitFired = true;
             }
         }
+        public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+        {
+            base.OnStateExit(animator, stateInfo, layerIndex);
+
+            if (!m_StateExitFired)
+            {
+                for (int i = 0; i < m_OnExitParameters.Length; i++)
+                {
+                    var param = m_OnExitParameters[i].GetParamReference(m_Audio.eventDescription);
+                    m_Audio.SetParameter(param);
+                }
+
+                if (m_StopAudioOnExit)
+                {
+                    StopAudio();
+                }
+
+                m_StateExitFired = true;
+            }
+        }
+
         private void OnDisable()
         {
             StopAudio();
