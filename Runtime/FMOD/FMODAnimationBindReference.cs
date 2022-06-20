@@ -53,7 +53,12 @@ namespace Point.Audio
                 temp[i] = m_PlayWhileActive[i].GetEvent();
                 if (temp[i] == null)
                 {
-                    $"?? {i}".ToLogError(this);
+#if DEBUG_MODE
+                    PointHelper.LogError(Channel.Audio,
+                        $"Cannot play an empty EventReference(From {name}, caller: {caller.gameObject.name}). " +
+                        $"Assign a proper event or remove it.", this);
+#endif
+                    continue;
                 }
 
                 temp[i].Play();
@@ -65,9 +70,10 @@ namespace Point.Audio
                     audio.rotation = caller.rotation;
                     audio.bindTransform = caller;
                 }
-
+#if DEBUG_MODE
                 PointHelper.Log(Channel.Audio,
                     $"Playing Audio While Active ({temp[i]})", this);
+#endif
             }
 
             return temp;
