@@ -90,7 +90,29 @@ namespace Point.Audio.FMODEditor
                 return path.StartsWith(c_Snapshot);
             }
         }
+        private string GetDisplayName(SerializedProperty property)
+        {
+            SerializedProperty evPathProp = Helper.GetEventField(property).FindPropertyRelative("Path");
+            string name;
+            if (!evPathProp.stringValue.IsNullOrEmpty())
+            {
+                var match = regex.Match(evPathProp.stringValue);
+                name = HTMLString.String(match.Groups[1].Value, 10);
+            }
+            else
+            {
+                name = property.displayName;
+            }
 
+            if (property.isExpanded)
+            {
+                return $"{EditorStyleUtilities.FoldoutOpendString} {name}";
+            }
+            else
+            {
+                return $"{EditorStyleUtilities.FoldoutClosedString} {name}";
+            }
+        }
         protected override VisualElement CreateVisualElement(SerializedProperty property)
         {
             VisualElement root = new VisualElement();
@@ -100,24 +122,12 @@ namespace Point.Audio.FMODEditor
 
             SerializedProperty assetProp = Helper.GetAssetField(property);
             bool useAsset = assetProp.isExpanded;
-            SerializedProperty evPathProp = Helper.GetEventField(property).FindPropertyRelative("Path");
-            string eventPathStr = null;
-            if (!evPathProp.stringValue.IsNullOrEmpty())
-            {
-                var match = regex.Match(evPathProp.stringValue);
-                eventPathStr = match.Groups[1].Value;
-            }
 
             VisualElement headerContainer = new VisualElement();
             headerContainer.style.flexGrow = 1;
             headerContainer.style.flexDirection = FlexDirection.Row;
             {
-                Label headerLabel = new Label(property.displayName);
-                if (!eventPathStr.IsNullOrEmpty())
-                {
-                    //headerLabel.text += $" {HTMLString.String(eventPathStr, 10)}";
-                    headerLabel.text = HTMLString.String(eventPathStr, 10);
-                }
+                Label headerLabel = new Label(GetDisplayName(property));
 
                 headerLabel.name = "H3-Label";
                 headerLabel.style.flexGrow = 1;
@@ -182,6 +192,8 @@ namespace Point.Audio.FMODEditor
             root[0].RegisterCallback<MouseDownEvent>(t =>
             {
                 property.isExpanded = !property.isExpanded;
+                root[0].Q<Label>("H3-Label").text = GetDisplayName(property);
+
                 property.serializedObject.ApplyModifiedProperties();
 
                 bool useAsset = assetProp.isExpanded;
