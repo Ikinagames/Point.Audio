@@ -72,14 +72,11 @@ namespace Point.Audio
         }
         protected void OnEnable()
         {
-            m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
+            ResumeWhileEvents();
         }
         protected void OnDisable()
         {
-            for (int i = 0; i < m_PlayedWhileActives.Length; i++)
-            {
-                m_PlayedWhileActives[i].Stop();
-            }
+            StopAllWhileEvents();
         }
 
         /// <summary>
@@ -129,6 +126,33 @@ namespace Point.Audio
             }
 
             return ev;
+        }
+
+        /// <summary>
+        /// 오브젝트가 활성화되있는 동안 재생되는 이벤트 전부를 다시 시작합니다.
+        /// </summary>
+        /// <remarks>
+        /// 만약 이벤트가 이미 재생중이라면 요청을 무시합니다.
+        /// </remarks>
+        public void ResumeWhileEvents()
+        {
+            if (m_PlayedWhileActives.Length != 0)
+            {
+                return;
+            }
+
+            m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
+        }
+        /// <summary>
+        /// 오브젝트가 활성화되있는 동안 재생되는 이벤트 전부를 정지합니다.
+        /// </summary>
+        public void StopAllWhileEvents()
+        {
+            for (int i = 0; i < m_PlayedWhileActives.Length; i++)
+            {
+                m_PlayedWhileActives[i].Stop();
+            }
+            m_PlayedWhileActives = Array.Empty<IFMODEvent>();
         }
 
         #region Inhert
