@@ -464,36 +464,77 @@ namespace Point.Audio.Editor
         }
 
         protected override bool ShouldHideOpenButton() => true;
+
         protected override VisualElement CreateVisualElement()
         {
-            VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
-            var tree = VisualTreeAsset.CloneTree();
-            tree.Bind(serializedObject);
+            VisualElement root = new VisualElement();
+            root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
 
-            IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
-            friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
+            Label header = new Label("Audio List");
+            header.AddToClassList("header-label");
 
-            IMGUIContainer dataGUI = tree.Q<IMGUIContainer>("DataGUI");
-            dataGUI.onGUIHandler += DataGUI;
-
-            m_DataTreeView.OnSelection += t =>
+            VisualElement contentContainer = new VisualElement();
             {
-                foreach (var item in m_VisibleElements)
+                SearchableListContainerView list 
+                    = new SearchableListContainerView(FriendlyName.Header.text);
+                for (int i = 0; i < m_FriendlyNamesProperty.arraySize; i++)
                 {
-                    item.RemoveFromHierarchy();
+                    SerializedProperty elementProp = m_FriendlyNamesProperty.GetArrayElementAtIndex(i);
+
+                    VisualElement elementRoot = new VisualElement();
+                    elementRoot.style.flexGrow = 1;
+                    elementRoot.style.flexDirection = FlexDirection.Row;
+                    {
+                        TextField nameField = new TextField();
+                        nameField.style.flexGrow = 1;
+                        nameField.style.maxWidth = new StyleLength(new Length(40, LengthUnit.Percent));
+                        nameField.BindProperty(elementProp.FindPropertyRelative("m_FriendlyName"));
+                        elementRoot.Add(nameField);
+
+                        AssetPathFieldView assetPathFieldView = new AssetPathFieldView(
+                            elementProp.FindPropertyRelative("m_AudioClip")
+                            );
+                        assetPathFieldView.objectType = TypeHelper.TypeOf<AudioClip>.Type;
+                        elementRoot.Add(assetPathFieldView);
+                    }
+                    list.Add(elementRoot);
                 }
-                m_VisibleElements.Clear();
+                contentContainer.Add(list);
+            }
+            root.Add(contentContainer);
 
-                foreach (var item in t)
-                {
-                    dataGUI.parent.Add(item.m_VisualElement);
-
-                    m_VisibleElements.Add(item.m_VisualElement);
-                }
-            };
-
-            return tree;
+            return root;
         }
+        //protected override VisualElement CreateVisualElement()
+        //{
+        //    VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
+        //    var tree = VisualTreeAsset.CloneTree();
+        //    tree.Bind(serializedObject);
+
+        //    IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
+        //    friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
+
+        //    IMGUIContainer dataGUI = tree.Q<IMGUIContainer>("DataGUI");
+        //    dataGUI.onGUIHandler += DataGUI;
+
+        //    m_DataTreeView.OnSelection += t =>
+        //    {
+        //        foreach (var item in m_VisibleElements)
+        //        {
+        //            item.RemoveFromHierarchy();
+        //        }
+        //        m_VisibleElements.Clear();
+
+        //        foreach (var item in t)
+        //        {
+        //            dataGUI.parent.Add(item.m_VisualElement);
+
+        //            m_VisibleElements.Add(item.m_VisualElement);
+        //        }
+        //    };
+
+        //    return tree;
+        //}
 
         private void FriendlyNamesGUI()
         {
