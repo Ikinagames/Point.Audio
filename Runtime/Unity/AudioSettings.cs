@@ -23,6 +23,7 @@ using UnityEngine.Audio;
 
 namespace Point.Audio
 {
+    [PreferBinarySerialization]
     public sealed class AudioSettings : StaticScriptableObject<AudioSettings>
     {
         [SerializeField]
