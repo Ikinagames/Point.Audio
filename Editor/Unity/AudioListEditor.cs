@@ -512,7 +512,14 @@ namespace Point.Audio.Editor
                     }
                     friendlyNameList.Add(elementRoot);
                 }
+                friendlyNameList.isExpanded = m_FriendlyNamesProperty.isExpanded;
                 contentContainer.Add(friendlyNameList);
+
+                friendlyNameList.onExpand += delegate (bool expand)
+                {
+                    m_FriendlyNamesProperty.isExpanded = expand;
+                    m_FriendlyNamesProperty.serializedObject.ApplyModifiedProperties();
+                };
 
                 friendlyNameList.onAddButtonClicked += delegate(int index)
                 {
