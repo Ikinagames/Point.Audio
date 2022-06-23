@@ -435,10 +435,6 @@ namespace Point.Audio.Editor
         private DataTreeView
             m_DataTreeView;
 
-        private SearchField 
-            m_FriendlyNameSearchField;
-
-        private VisualTreeAsset VisualTreeAsset { get; set; }
         private List<VisualElement> m_VisibleElements = new List<VisualElement>();
 
         private void OnEnable()
@@ -448,8 +444,6 @@ namespace Point.Audio.Editor
 
             //
             m_FriendlyNames = new FriendlyNameCollection(m_FriendlyNamesProperty);
-            
-            m_FriendlyNameSearchField = new SearchField();
             //
             m_Data = new List<Data>();
             for (int i = 0; i < m_DataProperty.arraySize; i++)
@@ -465,6 +459,25 @@ namespace Point.Audio.Editor
 
         protected override bool ShouldHideOpenButton() => true;
 
+        private static VisualElement FriendlyNameElementFactory(
+            out TextField nameField, out AssetPathFieldView assetPathField)
+        {
+            VisualElement root = new VisualElement();
+            root.style.flexGrow = 1;
+            root.style.flexDirection = FlexDirection.Row;
+            {
+                nameField = new TextField();
+                nameField.style.flexGrow = 1;
+                nameField.style.maxWidth = new StyleLength(new Length(40, LengthUnit.Percent));
+                root.Add(nameField);
+
+                assetPathField = new AssetPathFieldView();
+                assetPathField.objectType = TypeHelper.TypeOf<AudioClip>.Type;
+                root.Add(assetPathField);
+            }
+
+            return root;
+        }
         protected override VisualElement CreateVisualElement()
         {
             VisualElement root = new VisualElement();
@@ -475,7 +488,7 @@ namespace Point.Audio.Editor
 
             VisualElement contentContainer = new VisualElement();
             {
-                SearchableListContainerView list 
+                SearchableListContainerView friendlyNameList 
                     = new SearchableListContainerView(FriendlyName.Header.text);
                 for (int i = 0; i < m_FriendlyNamesProperty.arraySize; i++)
                 {
@@ -497,89 +510,60 @@ namespace Point.Audio.Editor
                         assetPathFieldView.objectType = TypeHelper.TypeOf<AudioClip>.Type;
                         elementRoot.Add(assetPathFieldView);
                     }
-                    list.Add(elementRoot);
+                    friendlyNameList.Add(elementRoot);
                 }
-                contentContainer.Add(list);
+                contentContainer.Add(friendlyNameList);
+
+                friendlyNameList.onAddButtonClicked += delegate(int index)
+                {
+                    m_FriendlyNamesProperty.InsertArrayElementAtIndex(index);
+                    var prop = m_FriendlyNamesProperty.GetArrayElementAtIndex(index);
+                    prop.SetDefaultValue();
+                    m_FriendlyNamesProperty.serializedObject.ApplyModifiedProperties();
+
+                    var ve = FriendlyNameElementFactory(out var nameField, out var assetPathField);
+                    {
+                        nameField.BindProperty(prop.FindPropertyRelative("m_FriendlyName"));
+                        assetPathField.BindProperty(prop.FindPropertyRelative("m_AudioClip"));
+                        assetPathField.label = String.Empty;
+                    }
+
+                    return ve;
+                };
+                friendlyNameList.onRemoveButtonClicked += delegate (int index)
+                {
+                    m_FriendlyNamesProperty.DeleteArrayElementAtIndex(index);
+                    m_FriendlyNamesProperty.serializedObject.ApplyModifiedProperties();
+                };
+
+                VisualElement dataContainer = new VisualElement();
+                dataContainer.AddToClassList("content-container");
+                {
+                    IMGUIContainer imgui = new IMGUIContainer(DataGUI);
+                    dataContainer.Add(imgui);
+                    m_DataTreeView.OnSelection += t =>
+                    {
+                        foreach (var item in m_VisibleElements)
+                        {
+                            item.RemoveFromHierarchy();
+                        }
+                        m_VisibleElements.Clear();
+
+                        foreach (var item in t)
+                        {
+                            dataContainer.Add(item.m_VisualElement);
+
+                            m_VisibleElements.Add(item.m_VisualElement);
+                        }
+                    };
+                }
+                contentContainer.Add(dataContainer);
             }
             root.Add(contentContainer);
 
             return root;
         }
-        //protected override VisualElement CreateVisualElement()
-        //{
-        //    VisualTreeAsset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList", "PointEditor");
-        //    var tree = VisualTreeAsset.CloneTree();
-        //    tree.Bind(serializedObject);
 
-        //    IMGUIContainer friendlyNamesGUI = tree.Q<IMGUIContainer>("FriendlyNamesGUI");
-        //    friendlyNamesGUI.onGUIHandler += FriendlyNamesGUI;
-
-        //    IMGUIContainer dataGUI = tree.Q<IMGUIContainer>("DataGUI");
-        //    dataGUI.onGUIHandler += DataGUI;
-
-        //    m_DataTreeView.OnSelection += t =>
-        //    {
-        //        foreach (var item in m_VisibleElements)
-        //        {
-        //            item.RemoveFromHierarchy();
-        //        }
-        //        m_VisibleElements.Clear();
-
-        //        foreach (var item in t)
-        //        {
-        //            dataGUI.parent.Add(item.m_VisualElement);
-
-        //            m_VisibleElements.Add(item.m_VisualElement);
-        //        }
-        //    };
-
-        //    return tree;
-        //}
-
-        private void FriendlyNamesGUI()
-        {
-            m_FriendlyNamesProperty.isExpanded
-                = CoreGUI.LabelToggle(m_FriendlyNamesProperty.isExpanded, FriendlyName.Header, 15, TextAnchor.MiddleCenter);
-
-            if (m_FriendlyNamesProperty.isExpanded)
-            {
-                FriendlyName.SearchText = m_FriendlyNameSearchField.OnGUI(FriendlyName.SearchText);
-
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("+"))
-                    {
-                        m_FriendlyNames.Add();
-                    }
-                    if (GUILayout.Button("-"))
-                    {
-                        m_FriendlyNames.RemoveAt(m_FriendlyNamesProperty.arraySize - 1);
-                    }
-                }
-
-                for (int i = 0; i < m_FriendlyNames.Count; i++)
-                {
-                    bool drawLine;
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        using (new EditorGUILayout.VerticalScope())
-                        {
-                            drawLine = m_FriendlyNames[i].OnGUI() && i + 1 < m_FriendlyNames.Count;
-                        }
-
-                        if (GUILayout.Button("-", GUILayout.Width(20)))
-                        {
-                            m_FriendlyNames.RemoveAt(i);
-
-                            i--;
-                            continue;
-                        }
-                    }
-
-                    if (drawLine) CoreGUI.Line();
-                }
-            }
-        }
         private void DataGUI()
         {
             m_DataProperty.isExpanded
@@ -588,23 +572,6 @@ namespace Point.Audio.Editor
             if (!m_DataProperty.isExpanded) return;
 
             m_DataTreeView.OnGUI(GUILayoutUtility.GetRect(Screen.width, 200));
-
-            //if (m_Data.Count == 0) return;
-
-            //using (new CoreGUI.BoxBlock(Color.black))
-            //using (var change = new EditorGUI.ChangeCheckScope())
-            //{
-            //    if (m_DataTreeView.CurrentSelection != null &&
-            //        m_DataTreeView.CurrentSelection.Any())
-            //    {
-            //        foreach (var item in m_DataTreeView.CurrentSelection)
-            //        {
-            //            item.OnGUI();
-            //        }
-            //    }
-
-            //    if (change.changed) serializedObject.ApplyModifiedProperties();
-            //}
         }
     }
 }
