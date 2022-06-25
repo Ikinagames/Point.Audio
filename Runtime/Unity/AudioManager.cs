@@ -47,7 +47,7 @@ namespace Point.Audio
         [NonSerialized] private AudioSettings m_Settings;
         [NonSerialized] private int EntryCount;
         [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
-        [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+        [NonSerialized] private NativeParallelHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
         [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_CachedManagedDataMap;
 
         //
@@ -77,7 +77,7 @@ namespace Point.Audio
 
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                   Critical Section                                   */
-        /*                                       ¼öÁ¤±ÝÁö                                        */
+        /*                                       ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½                                        */
         //////////////////////////////////////////////////////////////////////////////////////////
 
         #region Critical Section
@@ -90,7 +90,7 @@ namespace Point.Audio
 
             EntryCount = m_Settings.CalculateEntryCount();
             m_FriendlyNameMap = new Dictionary<Hash, Hash>();
-            m_DataHashMap = new NativeHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
+            m_DataHashMap = new NativeParallelHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
             m_CachedManagedDataMap = new Dictionary<AudioKey, ManagedAudioData>();
 
             m_Settings.RegisterFriendlyNames(m_FriendlyNameMap);
@@ -223,7 +223,7 @@ namespace Point.Audio
             if (!cachedPrefabInfo.TryGetValue(prefabKey, out IPrefabInfo info))
             {
                 if (!audioBundle.TryLoadAsset<AudioSource>(prefabKey, out AssetInfo<AudioSource> prefabAsset))
-                // ÇÁ¸®ÆÕÀÌ ¾ø´Ù?
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½?
                 {
 #if UNITY_EDITOR
                     string editorPrefabKey = prefabKey.Key.Key;
@@ -265,7 +265,7 @@ namespace Point.Audio
         private static IPrefabInfo GetPool(in AudioKey audioKey)
         {
             AudioKey concreteKey = GetConcreteKey(in audioKey);
-            /// <see cref="AudioList"/> ¿¡ ¼¼ºÎ Á¤º¸°¡ µî·ÏµÇÁö ¾ÊÀº ¿Àµð¿À Å¬¸³
+            /// <see cref="AudioList"/> ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½
             if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
                 return Instance.m_DefaultAudioPool;
@@ -302,7 +302,7 @@ namespace Point.Audio
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                   Critical Section                                   */
-            /*                                       ¼öÁ¤±ÝÁö                                        */
+            /*                                       ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½                                        */
             //////////////////////////////////////////////////////////////////////////////////////////
             if (!ins.m_AudioBundle.IsValid())
             {
@@ -430,7 +430,7 @@ namespace Point.Audio
                 return result;
             }
 
-            /// <see cref="AudioList"/> ¿¡ ¼¼ºÎ Á¤º¸°¡ µî·ÏµÇÁö ¾ÊÀº ¿Àµð¿À Å¬¸³
+            /// <see cref="AudioList"/> ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½
             if (!TryGetCompressedAudioData(concreteKey, out data))
             {
                 audioSource = Instance.m_DefaultAudioPool.Get();
@@ -1115,7 +1115,7 @@ namespace Point.Audio
         //////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// ¸ðµç ¿Àµð¿ÀÀÇ ÀüÃ¼ º¼·ýÀÔ´Ï´Ù.
+        /// ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
         /// </summary>
         public static float MasterVolume
         {
@@ -1130,7 +1130,7 @@ namespace Point.Audio
             }
         }
         /// <summary>
-        /// ¿Àµð¿À°¡ À½¼Ò°ÅµÇ¾ú³ª¿ä?
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ò°ÅµÇ¾ï¿½ï¿½ï¿½ï¿½ï¿½?
         /// </summary>
         public static bool Mute
         {
@@ -1428,10 +1428,10 @@ namespace Point.Audio
         [Obsolete("", true)]
         public static void Test()
         {
-            // ¿¡¼Â ¹øµé µî·Ï
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
             AudioManager.Initialize(String.Empty);
 
-            // ¿Àµð¿À Àç»ý
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
             AudioManager.Play(
                 ///<see cref="AudioList.FriendlyName"/>
                 "Soundtrack01"
