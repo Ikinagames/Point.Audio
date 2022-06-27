@@ -40,7 +40,7 @@ namespace Point.Audio.LowLevel
         {
             [NativeDisableUnsafePtrRestriction]
             private UnsafeAllocator<UnsafeAudioHandler> m_Buffer;
-            private UnsafeHashMap<Hash, int> m_HandlerHashMap;
+            private UnsafeParallelHashMap<Hash, int> m_HandlerHashMap;
 
             private JobHandle m_JobHandle;
             private bool m_Disposed;
@@ -48,7 +48,7 @@ namespace Point.Audio.LowLevel
             public Buffer(int length)
             {
                 m_Buffer = new UnsafeAllocator<UnsafeAudioHandler>(length, Allocator.Persistent, NativeArrayOptions.ClearMemory);
-                m_HandlerHashMap = new UnsafeHashMap<Hash, int>(length * 2, Allocator.Persistent);
+                m_HandlerHashMap = new UnsafeParallelHashMap<Hash, int>(length * 2, Allocator.Persistent);
                 for (int i = 0; i < length; i++)
                 {
                     m_Buffer[i] = new UnsafeAudioHandler(Hash.NewHash());
