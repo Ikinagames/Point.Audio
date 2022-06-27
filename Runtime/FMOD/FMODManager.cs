@@ -286,11 +286,11 @@ namespace Point.Audio
         public static FMODUnity.StudioListener GetMainListener()
         {
             int main = GetMainListenerIndex();
-            for (int i = 0; i < FMODUnity.RuntimeManager.listeners.Count; i++)
+            for (int i = 0; i < FMODUnity.StudioListener.listeners.Count; i++)
             {
-                if (FMODUnity.RuntimeManager.listeners[i].ListenerNumber == main)
+                if (FMODUnity.StudioListener.listeners[i].ListenerNumber == main)
                 {
-                    return FMODUnity.RuntimeManager.listeners[i];
+                    return FMODUnity.StudioListener.listeners[i];
                 }
             }
 

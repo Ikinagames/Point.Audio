@@ -62,7 +62,7 @@ namespace Point.Audio
 
         private void OnEnteredHandler()
         {
-            m_PlayOnEnter.Play(m_PlayedEvents);
+            m_PlayOnEnter.Play(transform.position, m_PlayedEvents);
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
                 $"Play events({m_PlayedEvents.Length}) on enter at {(string.IsNullOrEmpty(m_DebugName) ? gameObject.name : m_DebugName)}");

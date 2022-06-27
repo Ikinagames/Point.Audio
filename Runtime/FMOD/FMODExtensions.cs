@@ -23,6 +23,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Burst.CompilerServices;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Point.Audio
@@ -259,7 +260,33 @@ namespace Point.Audio
             {
                 IFMODEvent temp = t[i].GetEvent();
                 if (temp == null) continue;
+
                 temp.Play();
+
+                result[i] = temp;
+            }
+        }
+        public static void Play(this IList<FMODEventReference> t, float3 position, IFMODEvent[] result)
+        {
+            if (result == null)
+            {
+                for (int i = 0; i < t.Count; i++)
+                {
+                    t[i].GetEvent().Play();
+                }
+                return;
+            }
+
+            for (int i = 0; i < t.Count && i < result.Length; i++)
+            {
+                IFMODEvent temp = t[i].GetEvent();
+                if (temp == null) continue;
+
+                temp.Play();
+                if (temp is Audio audio)
+                {
+                    audio.position = position;
+                }
 
                 result[i] = temp;
             }
