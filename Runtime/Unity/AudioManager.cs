@@ -47,7 +47,11 @@ namespace Point.Audio
         [NonSerialized] private AudioSettings m_Settings;
         [NonSerialized] private int EntryCount;
         [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
+#if UNITY_COLLECTIONS_NEW
         [NonSerialized] private NativeParallelHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+#else
+        [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+#endif
         [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_CachedManagedDataMap;
 
         //
@@ -90,7 +94,11 @@ namespace Point.Audio
 
             EntryCount = m_Settings.CalculateEntryCount();
             m_FriendlyNameMap = new Dictionary<Hash, Hash>();
+#if UNITY_COLLECTIONS_NEW
             m_DataHashMap = new NativeParallelHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
+#else
+            m_DataHashMap = new NativeHashMap<AudioKey, CompressedAudioData>(EntryCount, AllocatorManager.Persistent);
+#endif
             m_CachedManagedDataMap = new Dictionary<AudioKey, ManagedAudioData>();
 
             m_Settings.RegisterFriendlyNames(m_FriendlyNameMap);
