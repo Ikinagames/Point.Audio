@@ -38,6 +38,7 @@ namespace Point.Audio
     public class FMODAnimationBinder : AnimationEventBinder
     {
         [SerializeField] private FMODAnimationBindReference m_BindReference;
+        [SerializeField] private ArrayWrapper<FMODAnimationBindReference> m_BindReferences = ArrayWrapper<FMODAnimationBindReference>.Empty;
         [SerializeField] private ArrayWrapper<FMODAnimationEvent> m_Events = Array.Empty<FMODAnimationEvent>();
 
         [Space]
@@ -61,6 +62,12 @@ namespace Point.Audio
             if (m_BindReference != null)
             {
                 m_BindReference.AddToHashMap(ref m_Parsed);
+            }
+            for (int i = 0; i < m_BindReferences.Count; i++)
+            {
+                if (m_BindReferences[i] == null) continue;
+
+                m_BindReferences[i].AddToHashMap(ref m_Parsed);
             }
             
             for (int i = 0; i < m_Events.Length; i++)
