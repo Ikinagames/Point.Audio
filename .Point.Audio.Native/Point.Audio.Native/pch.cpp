@@ -25,6 +25,11 @@
 #include "downsampler.h"
 #include "fmod_gain.h"
 
+// http://ffmpeg.org/
+// https://www.openal.org/
+// http://audiere.sourceforge.net/
+// https://github.com/micknoise/Maximilian
+
 static FMOD_PLUGINLIST Plugin_List[] = {
 	{ FMOD_PLUGINTYPE_DSP, get_downsampler() },
 	{ FMOD_PLUGINTYPE_DSP, get_doubler() },

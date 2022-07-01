@@ -88,7 +88,6 @@ namespace Point.Audio
         {
             m_IsFocusing = true;
 
-            m_ResonanceAudioHelper = new ResonanceAudioHelper();
             m_Handlers = new UnsafeAudioHandlerContainer(128);
 
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
@@ -96,6 +95,8 @@ namespace Point.Audio
 
             LoadDynamicPlugins();
             LoadBanks();
+
+            m_ResonanceAudioHelper = new ResonanceAudioHelper();
         }
         private void SetupObjectPool()
         {
