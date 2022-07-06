@@ -61,7 +61,8 @@ namespace Point.Audio.FMODEditor
             return true;
         }
 
-        private bool m_HasX86Win, m_HasX86_64Win;
+        private FMODUnity.Platform m_DefaultPlatform;
+        private bool m_HasDynamicPluginAdded, m_HasX86Win, m_HasX86_64Win;
 
         public FMODAudioSetupWizardMenuItem()
         {
@@ -69,37 +70,60 @@ namespace Point.Audio.FMODEditor
             m_HasX86Win = File.Exists(Path.Combine(path, c_PluginName));
             path = GetDllPath(platform.win, archtect.x86_64);
             m_HasX86_64Win = File.Exists(Path.Combine(path, c_PluginName));
+
+            m_DefaultPlatform = FMODUnity.EditorSettings.Instance.RuntimeSettings.DefaultPlatform;
+            m_HasDynamicPluginAdded = m_DefaultPlatform.Plugins.Contains(Path.GetFileNameWithoutExtension(c_PluginName));
         }
         public override void OnGUI()
         {
-            //using (new EditorGUI.DisabledGroupScope(m_HasX86Win))
+            using (new CoreGUI.BoxBlock(Color.black))
             {
-                if (GUILayout.Button("Copy x86"))
+                if (m_HasDynamicPluginAdded)
                 {
-                    string path = Path.Combine(GetOriginalDllPath(archtect.x86), c_PluginName);
-                    string targetPath = Path.Combine(GetDllPath(platform.win, archtect.x86), c_PluginName);
-                    if (File.Exists(targetPath))
-                    {
-                        File.Delete(targetPath);
-                    }
-                    File.Copy(path, targetPath);
+                    EditorGUILayout.HelpBox("All plugins has been registered", MessageType.Info);
                 }
-            }
-            //using (new EditorGUI.DisabledGroupScope(m_HasX86_64Win))
-            {
-                if (GUILayout.Button("Copy x64"))
+                else
                 {
-                    string path = Path.Combine(GetOriginalDllPath(archtect.x86_64), c_PluginName);
-                    string targetPath = Path.Combine(GetDllPath(platform.win, archtect.x86_64), c_PluginName);
-                    if (File.Exists(targetPath))
+                    EditorGUILayout.HelpBox("Require registration", MessageType.Info);
+                }
+                using (new EditorGUI.DisabledGroupScope(m_HasDynamicPluginAdded))
+                {
+                    if (GUILayout.Button("Register Dynamic Plugin"))
                     {
-                        File.Delete(targetPath);
+                        m_DefaultPlatform.Plugins.Add(Path.GetFileNameWithoutExtension(c_PluginName));
                     }
-                    File.Copy(path, targetPath);
                 }
             }
 
-            
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                //using (new EditorGUI.DisabledGroupScope(m_HasX86Win))
+                {
+                    if (GUILayout.Button("Copy x86"))
+                    {
+                        string path = Path.Combine(GetOriginalDllPath(archtect.x86), c_PluginName);
+                        string targetPath = Path.Combine(GetDllPath(platform.win, archtect.x86), c_PluginName);
+                        if (File.Exists(targetPath))
+                        {
+                            File.Delete(targetPath);
+                        }
+                        File.Copy(path, targetPath);
+                    }
+                }
+                //using (new EditorGUI.DisabledGroupScope(m_HasX86_64Win))
+                {
+                    if (GUILayout.Button("Copy x64"))
+                    {
+                        string path = Path.Combine(GetOriginalDllPath(archtect.x86_64), c_PluginName);
+                        string targetPath = Path.Combine(GetDllPath(platform.win, archtect.x86_64), c_PluginName);
+                        if (File.Exists(targetPath))
+                        {
+                            File.Delete(targetPath);
+                        }
+                        File.Copy(path, targetPath);
+                    }
+                }
+            }
         }
     }
 }
