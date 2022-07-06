@@ -86,6 +86,14 @@ namespace Point.Audio
             StopAllWhileEvents();
         }
 
+        public void AddBindReferences(IEnumerable<FMODAnimationBindReference> iter)
+        {
+            foreach (var item in iter)
+            {
+                item.AddToHashMap(ref m_Parsed);
+            }
+        }
+
         /// <summary>
         /// 이 메소드는 <see cref="AnimationClip"/> 내 <see cref="AnimationEvent"/> 호출용 메소드입니다.
         /// </summary>
@@ -148,7 +156,20 @@ namespace Point.Audio
                 return;
             }
 
-            m_PlayedWhileActives = m_BindReference.PlayWhileActive(transform);
+            List<IFMODEvent> playWhileEvents = new List<IFMODEvent>();
+            if (m_BindReference != null)
+            {
+                playWhileEvents.AddRange(m_BindReference.PlayWhileActive(transform));
+            }
+
+            for (int i = 0; i < m_BindReferences.Count; i++)
+            {
+                if (m_BindReferences[i] == null) continue;
+
+                playWhileEvents.AddRange(m_BindReferences[i].PlayWhileActive(transform));
+            }
+
+            m_PlayedWhileActives = playWhileEvents.ToArray();
         }
         /// <summary>
         /// 오브젝트가 활성화되있는 동안 재생되는 이벤트 전부를 정지합니다.

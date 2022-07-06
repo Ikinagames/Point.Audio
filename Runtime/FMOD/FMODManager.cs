@@ -95,8 +95,6 @@ namespace Point.Audio
 
             LoadDynamicPlugins();
             LoadBanks();
-
-            m_ResonanceAudioHelper = new ResonanceAudioHelper();
         }
         private void SetupObjectPool()
         {
@@ -241,6 +239,8 @@ namespace Point.Audio
             FMODRuntimeVariables variables = FMODRuntimeVariables.Instance;
             variables.Initialize();
             variables.StartSceneDependencies(currentScene);
+
+            m_ResonanceAudioHelper = new ResonanceAudioHelper();
         }
         private void FixedUpdate()
         {

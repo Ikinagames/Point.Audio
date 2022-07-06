@@ -74,12 +74,15 @@ namespace Point.Audio
 
         void OnEnable()
         {
+            if (FMODManager.ResonanceAudio == null) return;
+
             ExecuteTriggerAction(FMODExtensions.IsListenerInsideRoom(this));
             FMODManager.ResonanceAudio.UpdateAudioRoom(this, m_IsEntered);
         }
         void OnDisable()
         {
             if (PointApplication.IsShutdown) return;
+            else if (FMODManager.ResonanceAudio == null) return;
 
             FMODManager.ResonanceAudio.UpdateAudioRoom(this, false);
             m_IsEntered = false;

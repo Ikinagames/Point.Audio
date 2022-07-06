@@ -73,7 +73,9 @@ namespace Point.Audio
         {
             // Compute the room position relative to the listener.
             //FMODManager.StudioSystem.getListenerAttributes(0, out FMOD.ATTRIBUTES_3D att);
-            
+
+            if (FMODManager.ResonanceAudio == null) return false;
+
             Quaternion rotationInverse = Quaternion.Inverse(room.transform.rotation);
             Vector3 listenerPosition = rotationInverse * FMODManager.ResonanceAudio.RoomTargetPosition;
 
