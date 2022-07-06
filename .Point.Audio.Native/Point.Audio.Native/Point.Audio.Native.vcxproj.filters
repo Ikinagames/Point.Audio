@@ -13,15 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Effects">
-      <UniqueIdentifier>{5b2feb45-35a2-4e3f-a752-9b568fd18a80}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Effects\Downsampler">
-      <UniqueIdentifier>{dd0a686e-def5-4d02-a02e-2173a137533c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Effects\Doubler">
-      <UniqueIdentifier>{a6261790-d08a-4f43-8da3-a8d93201dbe2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -30,15 +21,6 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fmod_gain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="downsampler.h">
-      <Filter>Effects\Downsampler</Filter>
-    </ClInclude>
-    <ClInclude Include="doubler.h">
-      <Filter>Effects\Doubler</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -46,18 +28,6 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fmod_noise.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fmod_gain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="downsampler.cpp">
-      <Filter>Effects\Downsampler</Filter>
-    </ClCompile>
-    <ClCompile Include="doubler.cpp">
-      <Filter>Effects\Doubler</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -93,8 +93,8 @@ namespace Point.Audio
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
-            LoadDynamicPlugins();
-            LoadBanks();
+            //LoadDynamicPlugins();
+            //LoadBanks();
         }
         private void SetupObjectPool()
         {

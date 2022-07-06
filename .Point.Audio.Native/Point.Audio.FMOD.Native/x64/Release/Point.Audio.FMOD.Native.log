@@ -1,0 +1,29 @@
+﻿  pch.cpp
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\pch.h(43,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': macro redefinition
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\pch.cpp : message : see previous definition of '_CRT_SECURE_NO_WARNINGS'
+  dllmain.cpp
+  doubler.cpp
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(130,22): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(131,22): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(132,22): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(140,11): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(212,11): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(241,44): warning C4018: '<': signed/unsigned mismatch
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(263,42): warning C4018: '<': signed/unsigned mismatch
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(426,2): warning C4065: switch statement contains 'default' but no 'case' labels
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\doubler.cpp(438,2): warning C4065: switch statement contains 'default' but no 'case' labels
+  downsampler.cpp
+  fmod_gain.cpp
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\fmod_gain.cpp(9,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': macro redefinition
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\fmod_gain.cpp : message : see previous definition of '_CRT_SECURE_NO_WARNINGS'
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\fmod_gain.cpp(39,1): warning C4005: 'DECIBELS_TO_LINEAR': macro redefinition
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\pch.h(52): message : see previous definition of 'DECIBELS_TO_LINEAR'
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\fmod_gain.cpp(40,1): warning C4005: 'LINEAR_TO_DECIBELS': macro redefinition
+D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\Point.Audio.FMOD.Native\pch.h(53): message : see previous definition of 'LINEAR_TO_DECIBELS'
+  fmod_noise.cpp
+     Creating library D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\x64\Release\Point.Audio.FMOD.Native.lib and object D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\x64\Release\Point.Audio.FMOD.Native.exp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 84 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Point.Audio.FMOD.Native.vcxproj -> D:\Origin\Client\Origin\Assets\Plugins\Point\Point.Audio\.Point.Audio.Native\x64\Release\Point.Audio.FMOD.Native.dll

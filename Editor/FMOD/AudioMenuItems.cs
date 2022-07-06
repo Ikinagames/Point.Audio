@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using UnityEditor;
+using UnityEditor.TextCore.Text;
 
 namespace Point.Audio.FMODEditor
 {

@@ -19,28 +19,3 @@
 #include <math.h>
 
 #include "pch.h"
-#include "fmod.hpp"
-#include "fmod_common.h"
-
-#include "downsampler.h"
-#include "fmod_gain.h"
-
-// http://ffmpeg.org/
-// https://www.openal.org/
-// http://audiere.sourceforge.net/
-// https://github.com/micknoise/Maximilian
-
-static FMOD_PLUGINLIST Plugin_List[] = {
-	{ FMOD_PLUGINTYPE_DSP, get_downsampler() },
-	{ FMOD_PLUGINTYPE_DSP, get_doubler() },
-	//{ FMOD_PLUGINTYPE_DSP, },
-};
-
-DLLEXPORT FMOD_PLUGINLIST* F_CALL FMODGetPluginDescriptionList() {
-	return Plugin_List;
-}
-
-//void Calculate(int blocksize) {
-//	const double forthSamplerateSec = 2.2675736961451248e-05;
-//	return forthSamplerateSec * blocksize;
-//}

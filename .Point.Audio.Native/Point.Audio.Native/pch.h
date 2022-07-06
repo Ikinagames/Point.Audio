@@ -30,27 +30,12 @@
 
 #include "framework.h"
 
-#include "downsampler.h"
-#include "doubler.h"
-#include "fmod_gain.h"
-
-#include "fmod.hpp"
-#include "fmod_dsp.h"
-#include "fmod_studio.hpp"
-
 #endif //PCH_H
 
 #define _CRT_SECURE_NO_WARNINGS
 
 #define DLLEXPORT extern "C" _declspec(dllexport)
 #define TYPECAST(type, value) reinterpret_cast<type>(value)
-
-#define FMOD_NOISE_RAMPCOUNT 256
-#define GAIN_MIN -80.0f
-#define GAIN_MAX 10.0f
-
-#define DECIBELS_TO_LINEAR(__dbval__)  ((__dbval__ <= -80.0f) ? 0.0f : powf(10.0f, __dbval__ / 20.0f))
-#define LINEAR_TO_DECIBELS(__linval__) ((__linval__ <= 0.0f) ? -80.0f : 20.0f * log10f((float)__linval__))
 
 // Math
 //#define MINUSONE_TO_ONE ((float)rand() / (RAND_MAX))
