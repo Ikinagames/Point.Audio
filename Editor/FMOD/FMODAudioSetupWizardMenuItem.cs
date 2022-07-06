@@ -98,6 +98,8 @@ namespace Point.Audio.FMODEditor
                     File.Copy(path, targetPath);
                 }
             }
+
+            
         }
     }
 }

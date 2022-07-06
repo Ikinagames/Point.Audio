@@ -8,7 +8,9 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "com.alelievr.NodeGraphProcessor.Runtime",
-        "com.alelievr.NodeGraphProcessor.Editor"
+        "com.alelievr.NodeGraphProcessor.Editor",
+        "FMODUnity",
+        "FMODUnityEditor"
     ],
     "includePlatforms": [
         "Editor"
