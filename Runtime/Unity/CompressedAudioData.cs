@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using Point.Collections.ResourceControl;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine;
@@ -34,10 +35,10 @@ namespace Point.Audio
             m_MinVolume, m_MaxVolume,
             m_MinPitch, m_MaxPitch;
         private readonly AudioKey m_AudioClipPath;
-        private readonly Hash m_PrefabPath;
+        private readonly AssetRuntimeKey m_PrefabPath;
 
         public AudioKey AudioKey => m_AudioClipPath;
-        public Hash PrefabKey => m_PrefabPath;
+        public AssetRuntimeKey PrefabKey => m_PrefabPath;
 
         public float IgnoreTime => m_IgnoreTime;
 
@@ -60,7 +61,7 @@ namespace Point.Audio
             m_MaxPitch = maxPitch;
             
             m_AudioClipPath = new Hash(audioClip.AssetPath.ToLowerInvariant());
-            m_PrefabPath = prefab.AssetPath.IsNullOrEmpty() ? Hash.Empty : new Hash(prefab.AssetPath.ToLowerInvariant());
+            m_PrefabPath = new AssetRuntimeKey(prefab.AssetPath);
         }
 
         public float GetVolume() => UnityEngine.Random.Range(m_MinVolume, m_MaxVolume);

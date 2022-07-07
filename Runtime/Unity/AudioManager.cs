@@ -276,6 +276,7 @@ namespace Point.Audio
             /// <see cref="AudioList"/> �� ���� ������ ��ϵ��� ���� ����� Ŭ��
             if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
+                $"key({concreteKey}) is not in list".ToLog();
                 return Instance.m_DefaultAudioPool;
             }
 
@@ -438,7 +439,7 @@ namespace Point.Audio
                 return result;
             }
 
-            /// <see cref="AudioList"/> �� ���� ������ ��ϵ��� ���� ����� Ŭ��
+            /// if the data does not exist at <see cref="AudioList"/>
             if (!TryGetCompressedAudioData(concreteKey, out data))
             {
                 audioSource = Instance.m_DefaultAudioPool.Get();
@@ -455,6 +456,7 @@ namespace Point.Audio
 
             managedData = Instance.m_CachedManagedDataMap[data.AudioKey];
             audioSource = GetPool(data.PrefabKey).Get();
+            $"getaudio source {data.PrefabKey} : {audioSource.name}".ToLog();
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                                                                      */
             audioSource.outputAudioMixerGroup = managedData.audioMixerGroup;
@@ -1123,7 +1125,7 @@ namespace Point.Audio
         //////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// ��� ������� ��ü �����Դϴ�.
+        /// Master Vplume
         /// </summary>
         public static float MasterVolume
         {
@@ -1138,7 +1140,7 @@ namespace Point.Audio
             }
         }
         /// <summary>
-        /// ������� ���ҰŵǾ�����?
+        /// Mute all audio
         /// </summary>
         public static bool Mute
         {
