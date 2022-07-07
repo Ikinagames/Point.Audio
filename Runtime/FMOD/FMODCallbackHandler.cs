@@ -31,7 +31,8 @@ namespace Point.Audio
     [CreateAssetMenu(menuName = "Point/Audio/Create Callback Handler", fileName = "FMODCallbackHandler")]
     public sealed class FMODCallbackHandler : FMODUnity.PlatformCallbackHandler
     {
-        public override void PreInitialize(FMOD.Studio.System studioSystem, Action<RESULT, string> reportResult)
+        public override void PreInitialize(
+            FMOD.Studio.System studioSystem, Action<RESULT, string> reportResult)
         {
             FMOD.RESULT result;
 
