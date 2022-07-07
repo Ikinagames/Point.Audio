@@ -286,6 +286,10 @@ namespace Point.Audio
         {
             return Instance.m_AudioContainer.GetAudioSource(in audio);
         }
+        internal static AudioSource GetAudioSource(in int instanceID)
+        {
+            return Instance.m_AudioContainer.GetAudioSource(instanceID);
+        }
 
         internal static AudioKey GetConcreteKey(in AudioKey audioKey)
         {
@@ -991,6 +995,16 @@ namespace Point.Audio
 
                 return m_Audio[audio.m_Index];
             }
+            public AudioSource GetAudioSource(int instanceID)
+            {
+                if (instanceID <= 0) return null;
+
+                var result = m_Audio.Where(t => t.GetInstanceID().Equals(instanceID));
+                if (!result.Any()) return null;
+
+                return result.First();
+            }
+
             public Audio GetAudio(AudioSource audioSource, in AssetInfo audioKey, in AudioKey parent)
             {
                 int index = Array.IndexOf(m_Audio, audioSource);
@@ -1342,6 +1356,8 @@ namespace Point.Audio
                     }
 
                     insAudio.clip = t as AudioClip;
+                    ProcessOnPlay(audio, insAudio);
+
                     insAudio.Play();
 #if DEBUG_MODE
                     PointHelper.Log(Channel.Audio,

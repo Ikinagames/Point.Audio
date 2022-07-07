@@ -33,7 +33,6 @@ namespace Point.Audio
     {
         public static Audio Invalid => new Audio(AssetInfo.Invalid, default(AudioKey), -1, -1, default(UnsafeAllocator<Transformation>));
 
-        //[SerializeField] private AudioKey m_AudioKey;
         internal AssetInfo m_AudioClip;
         internal AudioKey m_Parent;
         internal int m_Index, m_InstanceID;
@@ -195,9 +194,15 @@ namespace Point.Audio
         internal bool RequireSetup() => m_InstanceID == 0;
         public bool IsValid()
         {
-            if (!m_AudioClip.IsValid() || m_InstanceID == 0 || m_Index < 0) return false;
+            AudioSource audioSource;
+            if (m_InstanceID == 0) return false;
+            else
+            {
+                if (!m_AudioClip.IsValid() || m_Index < 0) return false;
 
-            AudioSource audioSource = AudioManager.GetAudioSource(in this);
+                audioSource = AudioManager.GetAudioSource(in this);
+            }
+
             if (audioSource == null || audioSource.GetInstanceID() != m_InstanceID) return false;
 
             return true;
@@ -234,6 +239,8 @@ namespace Point.Audio
                     $"You\'re trying to stop an invalid audio. This is not allowed.");
                 return;
             }
+
+            "stop audio".ToLog();
             AudioManager.StopAudio(in this);
         }
 
@@ -243,7 +250,11 @@ namespace Point.Audio
         [NotBurstCompatible]
         public void Reserve()
         {
-            if (!IsValid()) return;
+            if (!IsValid())
+            {
+                "not valid falid to reserve".ToLog();
+                return;
+            }
 
             AudioManager.ReserveAudio(ref this);
 
