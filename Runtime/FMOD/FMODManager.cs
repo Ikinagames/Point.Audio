@@ -94,7 +94,8 @@ namespace Point.Audio
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
             //LoadDynamicPlugins();
-            //LoadBanks();
+            RegisterUserPropertyProcessors();
+            RegisterGlobalParameterProcessors();
         }
         private void SetupObjectPool()
         {
@@ -106,6 +107,8 @@ namespace Point.Audio
                 );
 
         }
+        [Obsolete("Do not use. This method has been deprecated by replacing native plugin " +
+            "in to FMOD plugins folder.", true)]
         private void LoadDynamicPlugins()
         {
             const string pluginName = "Point.Audio.Native";
@@ -147,14 +150,7 @@ namespace Point.Audio
             }
 #endif
         }
-        private void LoadBanks()
-        {
-            const string
-                c_MasterBank = "Master";
 
-            FMODUnity.RuntimeManager.LoadBank(c_MasterBank);
-            FMODUnity.RuntimeManager.LoadBank(c_MasterBank + ".strings");
-        }
         private void RegisterUserPropertyProcessors()
         {
             List<IUserPropertyProcessor> global = new List<IUserPropertyProcessor>();
@@ -548,6 +544,10 @@ namespace Point.Audio
 #if DEBUG_MODE
             if (result != FMOD.RESULT.OK)
             {
+                PointHelper.LogError(Channel.Audio,
+                    $"Critical Error. Please fix other issues before play the game. \n" +
+                    $"{result}");
+                Debug.Break();
                 throw new System.Exception();
             }
 #endif
