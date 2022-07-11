@@ -29,6 +29,7 @@ using UnityEngine.Timeline;
 
 namespace Point.Audio
 {
+    [TrackClipType(typeof(AudioClipAsset))]
     public sealed class AudioTrackAsset : TrackAsset
     {
         public override Playable CreateTrackMixer(PlayableGraph graph, GameObject go, int inputCount)
