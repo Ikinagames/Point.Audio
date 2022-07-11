@@ -21,5 +21,5 @@ using UnityEngine;
 
 namespace Point.Audio
 {
-    public abstract class FMODBehaviour : MonoBehaviour { }
+    public abstract class FMODBehaviour : Point.Collections.PointMonobehaviour { }
 }
