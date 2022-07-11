@@ -28,6 +28,13 @@ using UnityEngine;
 
 namespace Point.Audio.LowLevel
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                          Unsafe pointer를 포함하는 코드입니다                          */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [BurstCompatible]
     internal unsafe struct UnsafeAudioHandler : IEmpty, IEquatable<UnsafeAudioHandler>
     {
@@ -271,4 +278,8 @@ namespace Point.Audio.LowLevel
 
         public bool Equals(UnsafeAudioHandler other) => hash.Equals(other.hash);
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

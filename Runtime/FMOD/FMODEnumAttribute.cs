@@ -19,6 +19,14 @@
 
 namespace Point.Audio
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                               Do not modify this script                              */
+    /*                              Unless know what you doing.                             */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [System.AttributeUsage(System.AttributeTargets.Enum, AllowMultiple = false)]
     public class FMODEnumAttribute : System.Attribute
     {
@@ -33,4 +41,8 @@ namespace Point.Audio
             Name = name;
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

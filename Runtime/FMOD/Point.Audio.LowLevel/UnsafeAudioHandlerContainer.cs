@@ -30,6 +30,13 @@ using System.Collections;
 
 namespace Point.Audio.LowLevel
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                          Unsafe pointer를 포함하는 코드입니다                          */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [BurstCompatible]
     internal unsafe struct UnsafeAudioHandlerContainer : IDisposable
     {
@@ -286,4 +293,8 @@ namespace Point.Audio.LowLevel
             m_Buffer.Dispose();
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

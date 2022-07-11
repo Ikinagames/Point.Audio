@@ -21,6 +21,14 @@ using System;
 
 namespace Point.Audio
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                               Do not modify this script                              */
+    /*                              Unless know what you doing.                             */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     /// <summary>
     /// <see cref="ParamField"/> 에 대한 LowLevel 컨트롤 Attribute 입니다.
     /// </summary>
@@ -44,4 +52,8 @@ namespace Point.Audio
             DisableReflection = disableReflection;
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

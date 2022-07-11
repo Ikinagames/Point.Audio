@@ -24,6 +24,14 @@ using Point.Collections;
 
 namespace Point.Audio
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                               Do not modify this script                              */
+    /*                              Unless know what you doing.                             */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [CreateAssetMenu(menuName = "Point/Audio/Create Event Reference Asset")]
     public sealed class FMODEventReferenceAsset : ScriptableObject, IFMODEventReference
     {
@@ -128,4 +136,8 @@ namespace Point.Audio
             return boxed;
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

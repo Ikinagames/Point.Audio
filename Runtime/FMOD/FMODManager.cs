@@ -36,6 +36,13 @@ using Sirenix.Utilities;
 
 namespace Point.Audio
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                          Unsafe pointer를 포함하는 코드입니다                          */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [AddComponentMenu("")]
     public sealed class FMODManager : StaticMonobehaviour<FMODManager>, IStaticInitializer
     {
@@ -930,26 +937,7 @@ namespace Point.Audio
         #endregion
     }
 
-    public interface IGlobalParameterProcessor
-    {
-        
-    }
-    public interface IGlobalParameterUpdate : IGlobalParameterProcessor
-    {
-        string Name { get; }
-        bool Enable { get; }
-        float Update();
-    }
-    //struct DefaultParameterProcessor : IGlobalParameterUpdate
-    //{
-    //    private readonly FixedString512Bytes m_Name;
-
-    //    bool IGlobalParameterUpdate.EnableUpdate => true;
-    //    string IGlobalParameterName.Name => m_Name.ToString();
-
-    //    public float Update()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-    //}
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }

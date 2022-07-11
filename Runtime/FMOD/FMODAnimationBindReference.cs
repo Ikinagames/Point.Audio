@@ -24,6 +24,14 @@ using UnityEngine;
 
 namespace Point.Audio
 {
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                   Critical Section                                   */
+    /*                                       수정금지                                        */
+    /*                                                                                      */
+    /*                               Do not modify this script                              */
+    /*                              Unless know what you doing.                             */
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     [CreateAssetMenu(menuName = "Point/Audio/Create Animation Bind Reference", fileName = "NewAnimBindRef")]
     public sealed class FMODAnimationBindReference : PointScriptableObject
     {
@@ -79,4 +87,8 @@ namespace Point.Audio
             return temp;
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /*                                End of Critical Section                               */
+    //////////////////////////////////////////////////////////////////////////////////////////
 }
