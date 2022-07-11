@@ -21,23 +21,14 @@
 
 using Point.Collections.Editor;
 using UnityEditor;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 namespace Point.Audio.Editor
 {
-    [CustomEditor(typeof(AudioPlayableAsset))]
-    internal sealed class AudioPlayableAssetEditor : InspectorEditor<AudioPlayableAsset>
+    //[CustomTimelineEditor(typeof(AudioTrackAsset))]
+    internal sealed class AudioTrackAssetEditor : TrackEditor
     {
-        protected override void OnInspectorGUIContents()
-        {
-            base.OnInspectorGUIContents();
-
-            EditorGUILayout.Space();
-            if (GUILayout.Button("Open"))
-            {
-                
-            }
-        }
     }
 }
 

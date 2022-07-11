@@ -18,40 +18,18 @@
 #endif
 
 #if UNITY_EDITOR
-using UnityEditor;
 #endif
 
 using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using Point.Collections;
-using Point.Collections.ResourceControl;
-using System.Collections.Generic;
+using UnityEngine.Timeline;
 
 namespace Point.Audio
 {
-    [CreateAssetMenu(menuName = "Point/Audio/Create Audio Playable")]
-    public sealed class AudioPlayableAsset : PlayableAsset
-    {
-        [SerializeField]
-        private AudioTrackAsset[] m_Tracks = Array.Empty<AudioTrackAsset>();
-
-        public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
-        {
-            throw new NotImplementedException();
-        }
-    }
-    public sealed class AudioTrackAsset : PlayableAsset
-    {
-        [SerializeField]
-        private AudioClipAsset[] m_Clips = Array.Empty<AudioClipAsset>();
-
-        public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
-        {
-            return Playable.Null;
-        }
-    }
-    public sealed class AudioClipAsset : PlayableAsset
+    [Serializable]
+    public sealed class AudioClipAsset : PlayableAsset, ITimelineClipAsset
     {
         [SerializeField] private string m_DisplayName;
         [SerializeField] private AssetPathField<AudioClip> m_Clip = new AssetPathField<AudioClip>();
@@ -63,6 +41,8 @@ namespace Point.Audio
         [SerializeField] private double m_Start, m_Duration;
 
         public override double duration => m_Start + m_Duration;
+
+        public ClipCaps clipCaps => ClipCaps.Extrapolation | ClipCaps.Blending;
 
         public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
         {

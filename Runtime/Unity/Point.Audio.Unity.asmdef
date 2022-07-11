@@ -5,7 +5,8 @@
         "Point.Collections",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst"
+        "Unity.Burst",
+        "Unity.Timeline"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
