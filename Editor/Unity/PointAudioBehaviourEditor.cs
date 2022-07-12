@@ -21,6 +21,7 @@
 
 using Point.Collections.Editor;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Point.Audio.Editor
@@ -28,14 +29,144 @@ namespace Point.Audio.Editor
     [CustomEditor(typeof(PointAudioBehaviour))]
     internal sealed class PointAudioBehaviourEditor : InspectorEditorUXML<PointAudioBehaviour>
     {
+        SerializedProperty m_ClipPathProperty;
+        AudioClip m_TargetClip;
+
+        AnimationToolbarView toolbarView;
+        RulerView rulerView;
+        private int samplePosition;
+
+        float samplePerFrame => m_TargetClip.frequency / rulerView.frameRate;
+
         protected override VisualElement CreateVisualElement()
         {
+            m_ClipPathProperty = serializedObject.FindProperty("m_Clip");
+
+            m_TargetClip = SerializedPropertyHelper.GetAssetPathField<AudioClip>(m_ClipPathProperty);
+
             var root = base.CreateVisualElement();
 
-            root.Add(new AnimationToolbarView());
-            root.Add(new RulerView());
+            toolbarView = new AnimationToolbarView();
+            rulerView = new RulerView();
+            IMGUIContainer rulerViewGUI = new IMGUIContainer();
+            rulerViewGUI.onGUIHandler += OnGUIControl;
+            rulerView.Add(rulerViewGUI);
+            if (m_TargetClip != null)
+            {
+                rulerView.stopTime = m_TargetClip.length;
+                rulerView.rangeStartFrame = 0;
+                rulerView.rangeStopFrame = rulerView.stopFrame;
+            }
+
+            toolbarView.OnFirstKeyButton += ToolbarView_OnFirstKeyButton;
+            toolbarView.OnPrevKeyButton += ToolbarView_OnPrevKeyButton;
+            toolbarView.OnPlayKeyButton += ToolbarView_OnPlayKeyButton;
+            toolbarView.OnNextKeyButton += ToolbarView_OnNextKeyButton;
+            toolbarView.OnLastKeyButton += ToolbarView_OnLastKeyButton;
+
+            toolbarView.OnFrameChanged += ToolbarView_OnFrameChanged;
+
+            root.Add(toolbarView);
+            root.Add(rulerView);
 
             return root;
+        }
+
+        private void ToolbarView_OnFirstKeyButton()
+        {
+            if (AudioUtilExt.IsPlaying)
+            {
+                AudioUtilExt.PausePreviewClip();
+            }
+
+            samplePosition = 0;
+            rulerView.cursorTime = 0;
+            toolbarView.SetFrameWithoutNotify(0);
+
+            AudioUtilExt.SetPreviewClipSamplePosition(m_TargetClip, 0);
+        }
+        private void ToolbarView_OnLastKeyButton()
+        {
+            if (AudioUtilExt.IsPlaying)
+            {
+                AudioUtilExt.PausePreviewClip();
+            }
+
+            samplePosition = m_TargetClip.samples - 1;
+            rulerView.cursorTime = m_TargetClip.length;
+            toolbarView.SetFrameWithoutNotify(rulerView.cursorFrame);
+
+            AudioUtilExt.SetPreviewClipSamplePosition(m_TargetClip, samplePosition);
+        }
+        private void ToolbarView_OnPrevKeyButton()
+        {
+            if (AudioUtilExt.IsPlaying)
+            {
+                AudioUtilExt.PausePreviewClip();
+            }
+
+            rulerView.cursorFrame--;
+            toolbarView.SetFrameWithoutNotify(rulerView.cursorFrame);
+
+            samplePosition = Mathf.RoundToInt(rulerView.cursorFrame * samplePerFrame);
+            AudioUtilExt.SetPreviewClipSamplePosition(m_TargetClip, samplePosition);
+        }
+        private void ToolbarView_OnNextKeyButton()
+        {
+            if (AudioUtilExt.IsPlaying)
+            {
+                AudioUtilExt.PausePreviewClip();
+            }
+
+            rulerView.cursorFrame++;
+            toolbarView.SetFrameWithoutNotify(rulerView.cursorFrame);
+
+            samplePosition = Mathf.RoundToInt(rulerView.cursorFrame * samplePerFrame);
+            AudioUtilExt.SetPreviewClipSamplePosition(m_TargetClip, samplePosition);
+        }
+        private void ToolbarView_OnPlayKeyButton()
+        {
+            if (m_TargetClip == null) return;
+            else if (AudioUtilExt.IsPaused)
+            {
+                AudioUtilExt.ResumePreviewClip();
+                return;
+            }
+            else if (AudioUtilExt.IsPlaying)
+            {
+                AudioUtilExt.PausePreviewClip();
+                return;
+            }
+
+            Debug.Log($"{samplePosition} >= {m_TargetClip.samples}");
+            if (samplePosition >= m_TargetClip.samples)
+            {
+                samplePosition = 0;
+                toolbarView.SetFrameWithoutNotify(0);
+                rulerView.cursorFrame = 0;
+            }
+
+            AudioUtilExt.PlayPreviewClip(m_TargetClip, samplePosition, false);
+        }
+
+        private void ToolbarView_OnFrameChanged(ChangeEvent<float> evt)
+        {
+            if (m_TargetClip == null) return;
+
+            rulerView.cursorFrame = evt.newValue;
+
+            samplePosition = Mathf.RoundToInt(rulerView.cursorFrame * samplePerFrame);
+            AudioUtilExt.SetPreviewClipSamplePosition(m_TargetClip, samplePosition);
+        }
+
+        private void OnGUIControl()
+        {
+            if (m_TargetClip == null || !AudioUtilExt.IsPlaying) return;
+
+            samplePosition = AudioUtilExt.GetPreviewClipSamplePosition();
+            int frame = Mathf.CeilToInt(samplePosition / samplePerFrame);
+            toolbarView.SetFrameWithoutNotify(frame);
+            rulerView.cursorFrame = frame;
         }
     }
 }
