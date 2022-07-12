@@ -31,6 +31,7 @@ namespace Point.Audio.Editor
     {
         SerializedProperty m_ClipPathProperty;
         AudioClip m_TargetClip;
+        Texture2D m_TargetClipTexture;
 
         AnimationToolbarView toolbarView;
         RulerView rulerView;
@@ -56,6 +57,8 @@ namespace Point.Audio.Editor
                 rulerView.stopTime = m_TargetClip.length;
                 rulerView.rangeStartFrame = 0;
                 rulerView.rangeStopFrame = rulerView.stopFrame;
+
+                m_TargetClipTexture = m_TargetClip.PaintWaveformSpectrum(.5f, 500, 100, Color.gray);
             }
 
             toolbarView.OnFirstKeyButton += ToolbarView_OnFirstKeyButton;
@@ -68,6 +71,12 @@ namespace Point.Audio.Editor
 
             root.Add(toolbarView);
             root.Add(rulerView);
+
+            VisualElement tex = new VisualElement();
+            tex.style.width = 500;
+            tex.style.height = 100;
+            tex.style.backgroundImage = m_TargetClipTexture;
+            root.Add(tex);
 
             return root;
         }
@@ -164,7 +173,7 @@ namespace Point.Audio.Editor
             if (m_TargetClip == null || !AudioUtilExt.IsPlaying) return;
 
             samplePosition = AudioUtilExt.GetPreviewClipSamplePosition();
-            int frame = Mathf.CeilToInt(samplePosition / samplePerFrame);
+            float frame = samplePosition / samplePerFrame;
             toolbarView.SetFrameWithoutNotify(frame);
             rulerView.cursorFrame = frame;
         }
