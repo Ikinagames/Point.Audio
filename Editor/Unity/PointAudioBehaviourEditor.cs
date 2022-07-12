@@ -43,7 +43,7 @@ namespace Point.Audio.Editor
 
         protected override VisualElement CreateVisualElement()
         {
-            m_ClipPathProperty = serializedObject.FindProperty("m_Clip");
+            m_ClipPathProperty = serializedObject.FindProperty("m_Clip").FindPropertyRelative("m_Clip");
 
             m_TargetClip = SerializedPropertyHelper.GetAssetPathField<AudioClip>(m_ClipPathProperty);
 
