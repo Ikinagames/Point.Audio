@@ -32,5 +32,8 @@ namespace Point.Audio
 
         // if audio clip is loading, play after when loading is finished.
         public bool playAfterIfAudioClipIsLoading;
+
+        public int[] volumeIndices;
+        public float[] volumes;
     }
 }

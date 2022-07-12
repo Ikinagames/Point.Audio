@@ -39,12 +39,13 @@ namespace Point.Audio
             FadeOut
         }
 
+        [HelpBox("Working in progress. Will not work.", Type = UnityEngine.UIElements.HelpBoxMessageType.Error)]
         [SerializeField]
         protected PlayOption m_PlayOption = PlayOption.OnEnable;
         [SerializeField]
         protected StopOption m_StopOption = StopOption.FadeOut;
         [SerializeField]
-        protected AssetPathField<AudioClip> m_Clip;
+        protected PlayableAudioClip m_Clip;
 
         [NonSerialized]
         private Audio m_Audio;
@@ -53,7 +54,7 @@ namespace Point.Audio
         {
             if (m_PlayOption != PlayOption.OnEnable) return;
 
-            m_Audio = AudioManager.Play(m_Clip);
+            //m_Audio = AudioManager.Play(m_Clip);
         }
         protected virtual void OnDisable()
         {
@@ -61,5 +62,14 @@ namespace Point.Audio
 
             m_Audio.Reserve();
         }
+    }
+
+    [Serializable]
+    public class PlayableAudioClip
+    {
+        [SerializeField] private AssetPathField<AudioClip> m_Clip;
+
+        [SerializeField] private int[] m_VolumeIndices = Array.Empty<int>();
+        [SerializeField] private float[] m_Volumes = Array.Empty<float>();
     }
 }
