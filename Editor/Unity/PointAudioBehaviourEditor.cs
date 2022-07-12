@@ -19,6 +19,7 @@
 #endif
 #define UNITYENGINE
 
+using Point.Collections;
 using Point.Collections.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -31,9 +32,10 @@ namespace Point.Audio.Editor
     {
         SerializedProperty m_ClipPathProperty;
         AudioClip m_TargetClip;
-        Texture2D m_TargetClipTexture;
+        //Texture2D m_TargetClipTexture;
 
         AnimationToolbarView toolbarView;
+        AudioClipTextureView m_AudioClipTextureView;
         RulerView rulerView;
         private int samplePosition;
 
@@ -49,6 +51,12 @@ namespace Point.Audio.Editor
 
             toolbarView = new AnimationToolbarView();
             rulerView = new RulerView();
+            m_AudioClipTextureView = new AudioClipTextureView();
+
+            root.Add(toolbarView);
+            root.Add(rulerView);
+            root.Add(m_AudioClipTextureView);
+
             IMGUIContainer rulerViewGUI = new IMGUIContainer();
             rulerViewGUI.onGUIHandler += OnGUIControl;
             rulerView.Add(rulerViewGUI);
@@ -58,7 +66,8 @@ namespace Point.Audio.Editor
                 rulerView.rangeStartFrame = 0;
                 rulerView.rangeStopFrame = rulerView.stopFrame;
 
-                m_TargetClipTexture = m_TargetClip.PaintWaveformSpectrum(.5f, 500, 100, Color.gray);
+                m_AudioClipTextureView.audioClip = m_TargetClip;
+                //m_TargetClipTexture = m_TargetClip.PaintWaveformSpectrum(.5f, 500, 100, Color.gray);
             }
 
             toolbarView.OnFirstKeyButton += ToolbarView_OnFirstKeyButton;
@@ -69,14 +78,7 @@ namespace Point.Audio.Editor
 
             toolbarView.OnFrameChanged += ToolbarView_OnFrameChanged;
 
-            root.Add(toolbarView);
-            root.Add(rulerView);
-
-            VisualElement tex = new VisualElement();
-            tex.style.width = 500;
-            tex.style.height = 100;
-            tex.style.backgroundImage = m_TargetClipTexture;
-            root.Add(tex);
+            
 
             return root;
         }
