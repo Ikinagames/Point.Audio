@@ -24,6 +24,7 @@ using Point.Collections.Editor;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -98,10 +99,12 @@ namespace Point.Audio.Editor
             private UnityEngine.Object target;
 
             AssetPathFieldView assetPathView;
+            ObjectField bakedClipView;
+
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
 
-            string m_ClipPath, m_VolumesPath;
+            string m_ClipPath, m_BakeClipPath, m_VolumesPath;
 
             public PlayableAudioClipView(SerializedProperty property)
             {
@@ -111,8 +114,10 @@ namespace Point.Audio.Editor
 
                 SerializedProperty
                     clipProp = property.FindPropertyRelative("m_Clip"),
+                    bakedClipProp = property.FindPropertyRelative("m_BakedClip"),
                     volumesProp = property.FindPropertyRelative("m_Volumes");
                 m_ClipPath = clipProp.propertyPath;
+                m_BakeClipPath = bakedClipProp.propertyPath;
                 m_VolumesPath = volumesProp.propertyPath;
 
                 assetPathView = new AssetPathFieldView()
@@ -120,9 +125,19 @@ namespace Point.Audio.Editor
                     objectType = TypeHelper.TypeOf<UnityEngine.AudioClip>.Type,
                     label = property.displayName
                 };
+                bakedClipView = new ObjectField("Baked Clip");
+                bakedClipView.SetEnabled(false);
                 audioClipTextureView = new AudioClipTextureView();
 
-                Add(assetPathView);
+                if (bakedClipProp.objectReferenceValue != null)
+                {
+                    bakedClipView.value = bakedClipProp.objectReferenceValue;
+                    Add(bakedClipView);
+                }
+                else
+                {
+                    Add(assetPathView);
+                }
                 Add(audioClipTextureView);
 
                 if (SerializedPropertyHelper.GetAssetPathField(clipProp) != null)
@@ -133,6 +148,10 @@ namespace Point.Audio.Editor
                 audioClipTextureView.RegisterCallback<MouseDownEvent>(OnTextureMouseDown);
                 audioClipTextureView.generateVisualContent += GenerateVisualContent;
                 assetPathView.RegisterValueChangedCallback(OnAssetChanged);
+
+                Button bakeBtt = new Button(BakeButton);
+                bakeBtt.text = "Bake";
+                Add(bakeBtt);
 
                 Setup(false);
             }
@@ -200,7 +219,26 @@ namespace Point.Audio.Editor
 
                 audioClipTextureView.MarkDirtyRepaint();
             }
-            
+            private void BakeButton()
+            {
+                AudioClip clip = UnityEngine.Object.Instantiate(audioClipTextureView.audioClip);
+                float[] samples = new float[clip.samples * clip.channels];
+                clip.GetData(samples, 0);
+
+                using (SerializedObject obj = new SerializedObject(target))
+                {
+                    var bakeClipProp = obj.FindProperty(m_BakeClipPath);
+                    if (bakeClipProp.objectReferenceValue != null)
+                    {
+                        UnityEngine.Object.DestroyImmediate(bakeClipProp.objectReferenceValue);
+                    }
+
+                    bakeClipProp.objectReferenceValue = clip;
+                    bakedClipView.value = clip;
+
+                    obj.ApplyModifiedProperties();
+                }
+            }
 
             private void Save()
             {

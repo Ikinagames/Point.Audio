@@ -45,6 +45,7 @@ namespace Point.Audio
         }
 
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
+        [SerializeField] private AudioClip m_BakedClip;
 
         [SerializeField] private Sample[] m_Volumes = Array.Empty<Sample>();
     }
