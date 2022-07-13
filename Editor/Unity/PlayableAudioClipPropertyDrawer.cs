@@ -61,55 +61,96 @@ namespace Point.Audio.Editor
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
 
+            string m_ClipPath, m_VolumesPath;
+
             public PlayableAudioClipView(SerializedProperty property)
             {
+                target = property.serializedObject.targetObject;
                 styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
                 AddToClassList("content-container");
 
-                target = property.serializedObject.targetObject;
+                SerializedProperty
+                    clipProp = property.FindPropertyRelative("m_Clip"),
+                    volumesProp = property.FindPropertyRelative("m_Volumes");
+                m_ClipPath = clipProp.propertyPath;
+                m_VolumesPath = volumesProp.propertyPath;
 
-                assetPathView = new AssetPathFieldView(property.FindPropertyRelative("m_Clip"))
+                assetPathView = new AssetPathFieldView()
                 {
+                    objectType = TypeHelper.TypeOf<UnityEngine.AudioClip>.Type,
                     label = property.displayName
                 };
-                assetPathView.RegisterValueChangedCallback(OnAssetChanged);
-
                 audioClipTextureView = new AudioClipTextureView();
 
                 Add(assetPathView);
                 Add(audioClipTextureView);
 
+                if (SerializedPropertyHelper.GetAssetPathField(clipProp) != null)
+                {
+                    assetPathView.objectValue = SerializedPropertyHelper.GetAssetPathField(clipProp);
+                }
+
                 audioClipTextureView.RegisterCallback<MouseDownEvent>(OnTextureMouseDown);
                 audioClipTextureView.generateVisualContent += GenerateVisualContent;
+                assetPathView.RegisterValueChangedCallback(OnAssetChanged);
             }
 
             private void OnAssetChanged(ChangeEvent<string> e)
             {
+                m_VolumeSamplePositions.Clear();
+                audioClipTextureView.Clear();
+
                 AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(e.newValue);
-
                 audioClipTextureView.audioClip = clip;
-            }
 
-            
-            //private int FindClosestVolumePosition(Vector2 localPoint)
-            //{
-            //    for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
-            //    {
-            //        if (m_VolumeSamplePositions[i].)
-            //    }
-            //}
+                using (SerializedObject obj = new SerializedObject(target))
+                {
+                    SerializedProperty volumesProp = obj.FindProperty(m_VolumesPath);
+                    if (!e.previousValue.IsNullOrEmpty() && clip != null)
+                    {
+                        volumesProp.ClearArray();
+
+                        volumesProp.InsertArrayElementAtIndex(0);
+                        volumesProp.InsertArrayElementAtIndex(1);
+                        SerializedProperty
+                            firstElement = volumesProp.GetArrayElementAtIndex(0),
+                            lastElement = volumesProp.GetArrayElementAtIndex(1);
+
+                        firstElement.FindPropertyRelative("position").intValue = 1;
+                        firstElement.FindPropertyRelative("value").floatValue = 1;
+                        lastElement.FindPropertyRelative("position").intValue = clip.samples-1;
+                        lastElement.FindPropertyRelative("value").floatValue = 1;
+                    }
+
+                    obj.ApplyModifiedProperties();
+
+                    for (int i = 0; i < volumesProp.arraySize; i++)
+                    {
+                        var element = volumesProp.GetArrayElementAtIndex(i);
+                        VolumeSample volume = new VolumeSample(audioClipTextureView,
+                            element.FindPropertyRelative("position").intValue,
+                            element.FindPropertyRelative("value").floatValue);
+                        audioClipTextureView.Add(volume);
+                        m_VolumeSamplePositions.Add(volume);
+
+                        $"{volume.value.value} , {volume.value.position}".ToLog();
+                    }
+                }
+
+                audioClipTextureView.MarkDirtyRepaint();
+            }
 
             private void OnTextureMouseDown(MouseDownEvent e)
             {
-                if (e.button == 0)
-                {
-                    var query = audioClipTextureView.Query<VolumeSample>().Where(t => t.localBound.Contains(e.localMousePosition));
-                    var found = audioClipTextureView.FindClosestElement(e.localMousePosition, query);
+                //if (e.button == 0)
+                //{
+                //    var query = audioClipTextureView.Query<VolumeSample>().Where(t => t.localBound.Contains(e.localMousePosition));
+                //    var found = audioClipTextureView.FindClosestElement(e.localMousePosition, query);
 
-                    $"{e.localMousePosition} : {found?.transform.position}".ToLog();
-                }
+                //    $"{e.localMousePosition} : {found?.transform.position}".ToLog();
+                //}
                 // right button
-                else if (e.button == 1)
+                if (e.button == 1)
                 {
                     int sampleCount = audioClipTextureView.audioClip.samples;
                     float 
@@ -176,8 +217,8 @@ namespace Point.Audio.Editor
                 }
                 positions.Sort(new xLineComparer());
 
-                positions.Insert(0, new Vector3(0, 0));
-                positions.Add(new Vector3(width, 0));
+                positions.Insert(0, new Vector3(0, height));
+                positions.Add(new Vector3(width, height));
 
                 CoreGUI.VisualElement.DrawCable(positions.ToArray(), 1, Color.green, ctx);
             }

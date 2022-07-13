@@ -29,19 +29,23 @@ namespace Point.Audio
         [Serializable]
         public struct Sample
         {
-            public float position;
+            public int position;
             public float value;
 
-            public Sample(float x, float y)
+            public Sample(int x, float y)
             {
                 position = x;
+                value = y;
+            }
+            public Sample(float x, float y)
+            {
+                position = Mathf.RoundToInt(x);
                 value = y;
             }
         }
 
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
 
-        [SerializeField] private int[] m_VolumeIndices = Array.Empty<int>();
-        [SerializeField] private float[] m_Volumes = Array.Empty<float>();
+        [SerializeField] private Sample[] m_Volumes = Array.Empty<Sample>();
     }
 }
