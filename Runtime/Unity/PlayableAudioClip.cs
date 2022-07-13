@@ -31,6 +31,12 @@ namespace Point.Audio
         {
             public float position;
             public float value;
+
+            public Sample(float x, float y)
+            {
+                position = x;
+                value = y;
+            }
         }
 
         [SerializeField] private AssetPathField<AudioClip> m_Clip;

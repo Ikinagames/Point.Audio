@@ -40,53 +40,19 @@ namespace Point.Audio.Editor
                 else return 0;
             }
         }
-        private sealed class VolumeSample
+        private sealed class VolumeSample : PinPoint<PlayableAudioClip.Sample>
         {
-            private PinPoint m_Pin;
-            public float samplePosition;
-            public float volume;
-
-            public PinPoint Pin => m_Pin;
-
-            public VolumeSample(VisualElement parent, float x, float y)
+            public VolumeSample(VisualElement parent, float x, float y) : base(parent)
             {
-                m_Pin = new PinPoint();
-                parent.Add(m_Pin);
-
-                samplePosition = x;
-                volume = y;
+                value = new PlayableAudioClip.Sample(x, y);
             }
 
             public float CalculateHeight(float maxHeight)
             {
-                return volume * maxHeight;
+                return value.value * maxHeight;
             }
         }
-        private sealed class PinPoint : VisualElement
-        {
-            public Vector3 position
-            {
-                get => new Vector3(style.translate.value.x.value + (size.x * .5f), style.translate.value.y.value + (size.y * .5f));
-                set
-                {
-                    style.translate = new StyleTranslate(new Translate(
-                        value.x - 7.5f, value.y - 7.5f, 0));
-                }
-            }
-            private Vector2 size
-            {
-                get => resolvedStyle.scale.value;
-            }
-
-            public PinPoint()
-            {
-                styleSheets.Add(CoreGUI.VisualElement.IconStyleSheet);
-                this.AddToClassList("dot-image");
-                this.AddToClassList("dot-fill");
-
-                style.position = Position.Absolute;
-            }
-        } 
+        
         private sealed class PlayableAudioClipView : BindableElement
         {
             private UnityEngine.Object target;
@@ -135,11 +101,12 @@ namespace Point.Audio.Editor
 
             private void OnTextureMouseDown(MouseDownEvent e)
             {
-                $"{e.localMousePosition}".ToLog();
-
                 if (e.button == 0)
                 {
+                    var query = audioClipTextureView.Query<VolumeSample>().Where(t => t.localBound.Contains(e.localMousePosition));
+                    var found = audioClipTextureView.FindClosestElement(e.localMousePosition, query);
 
+                    $"{e.localMousePosition} : {found?.transform.position}".ToLog();
                 }
                 // right button
                 else if (e.button == 1)
@@ -157,25 +124,54 @@ namespace Point.Audio.Editor
                     $"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
 
                     VolumeSample volume = new VolumeSample(audioClipTextureView, targetSamplePosition, targetVolume);
-                    volume.Pin.position = e.localMousePosition;
+                    volume.OnDragEnded += OnVolumeSamplePositionMoved;
+                    audioClipTextureView.Add(volume);
+                    volume.position = e.localMousePosition;
 
                     m_VolumeSamplePositions.Add(volume);
                     audioClipTextureView.MarkDirtyRepaint();
                 }
             }
-            private void GenerateVisualContent(MeshGenerationContext ctx)
+            private void OnVolumeSamplePositionMoved(PinPoint<PlayableAudioClip.Sample> pin, Vector3 pos)
             {
-                //float halfHeight = audioClipTextureView.resolvedStyle.height * .25f;
                 int sampleCount = audioClipTextureView.audioClip.samples;
                 float
                     height = audioClipTextureView.resolvedStyle.height,
                     width = audioClipTextureView.resolvedStyle.width,
                     samplePerPixel = sampleCount / width;
 
+                float
+                    targetSamplePosition = pos.x * samplePerPixel,
+                    targetVolume = pos.y / height;
+
+                $"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
+
+                pin.value = new PlayableAudioClip.Sample(targetSamplePosition, targetVolume);
+                audioClipTextureView.MarkDirtyRepaint();
+            }
+            private void GenerateVisualContent(MeshGenerationContext ctx)
+            {
+                float
+                    height = audioClipTextureView.resolvedStyle.height,
+                    width = audioClipTextureView.resolvedStyle.width;
                 List<Vector3> positions = new List<Vector3>();
+
+                if (audioClipTextureView.audioClip == null)
+                {
+                    positions.Insert(0, new Vector3(0, 0));
+                    positions.Add(new Vector3(width, 0));
+                    CoreGUI.VisualElement.DrawCable(positions.ToArray(), 1, Color.green, ctx);
+
+                    return;
+                }
+
+                //float halfHeight = audioClipTextureView.resolvedStyle.height * .25f;
+                int sampleCount = audioClipTextureView.audioClip.samples;
+                float samplePerPixel = sampleCount / width;
+
                 for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
                 {
-                    float x = m_VolumeSamplePositions[i].samplePosition / samplePerPixel;
+                    float x = m_VolumeSamplePositions[i].value.position / samplePerPixel;
                     positions.Add(new Vector3(x, m_VolumeSamplePositions[i].CalculateHeight(height)));
                 }
                 positions.Sort(new xLineComparer());
