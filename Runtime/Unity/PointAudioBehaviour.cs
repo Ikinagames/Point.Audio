@@ -63,13 +63,4 @@ namespace Point.Audio
             m_Audio.Reserve();
         }
     }
-
-    [Serializable]
-    public class PlayableAudioClip
-    {
-        [SerializeField] private AssetPathField<AudioClip> m_Clip;
-
-        [SerializeField] private int[] m_VolumeIndices = Array.Empty<int>();
-        [SerializeField] private float[] m_Volumes = Array.Empty<float>();
-    }
 }
