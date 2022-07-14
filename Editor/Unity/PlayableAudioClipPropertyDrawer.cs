@@ -42,11 +42,11 @@ namespace Point.Audio.Editor
                 else return 0;
             }
         }
-        private sealed class VolumeSample : PinPoint<PlayableAudioClip.Sample>, IComparable<VolumeSample>
+        private sealed class VolumeSample : PinPoint<AudioSample>, IComparable<VolumeSample>
         {
             public VolumeSample(VisualElement parent, float x, float y) : base(parent)
             {
-                value = new PlayableAudioClip.Sample(x, y);
+                value = new AudioSample(x, y);
             }
 
             public float CalculateHeight(float maxHeight)
@@ -274,13 +274,13 @@ namespace Point.Audio.Editor
                     Save();
                 }
             }
-            private void OnVolumeSamplePositionMoved(PinPoint<PlayableAudioClip.Sample> pin, Vector3 pos)
+            private void OnVolumeSamplePositionMoved(PinPoint<AudioSample> pin, Vector3 pos)
             {
                 OnVolumeSamplePositionMoving(pin, pos);
 
                 Save();
             }
-            private void OnVolumeSamplePositionMoving(PinPoint<PlayableAudioClip.Sample> pin, Vector3 pos)
+            private void OnVolumeSamplePositionMoving(PinPoint<AudioSample> pin, Vector3 pos)
             {
                 int sampleCount = audioClipTextureView.audioClip.samples;
                 float
@@ -292,7 +292,7 @@ namespace Point.Audio.Editor
                     targetSamplePosition = Mathf.Clamp(pos.x * samplePerPixel, 0, sampleCount),
                     targetVolume = Mathf.Clamp01(1 - (pos.y / height));
 
-                pin.value = new PlayableAudioClip.Sample(targetSamplePosition, targetVolume);
+                pin.value = new AudioSample(targetSamplePosition, targetVolume);
                 audioClipTextureView.MarkDirtyRepaint();
             }
             private VolumeSample VolumeSampleFactory(float samplePerPixel, float height,

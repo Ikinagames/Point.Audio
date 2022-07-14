@@ -175,12 +175,6 @@ namespace Point.Audio
         }
 #pragma warning restore IDE1006 // Naming Styles
 
-        public Audio(AudioKey audioKey)
-        {
-            this = default(Audio);
-
-            m_AudioClip = new AssetInfo(audioKey);
-        }
         internal Audio(AssetInfo audioKey, AudioKey parent,
             int index, int audioSource, UnsafeAllocator<Transformation> allocator)
         {
@@ -191,7 +185,6 @@ namespace Point.Audio
             m_Allocator = allocator;
         }
 
-        internal bool RequireSetup() => m_InstanceID == 0;
         public bool IsValid()
         {
             AudioSource audioSource;

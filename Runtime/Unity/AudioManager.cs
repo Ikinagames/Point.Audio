@@ -427,10 +427,15 @@ namespace Point.Audio
             return true;
         }
 
+        private static RESULT IssueDefaultAudioSource(out AudioSource audioSource)
+        {
+            audioSource = Instance.m_DefaultAudioPool.Get();
+            audioSource.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+
+            return RESULT.OK;
+        }
         private static RESULT IssueAudioSource(
-            in AudioKey concreteKey,
-            out AssetInfo clipInfo, out AudioSource audioSource,
-            out CompressedAudioData data, out ManagedAudioData managedData)
+            in AudioKey concreteKey, out AssetInfo clipInfo, out AudioSource audioSource)
         {
             RESULT result = GetAudioClip(concreteKey, out clipInfo, out AudioClip clip);
             if ((result & RESULT.OK) != RESULT.OK)
@@ -438,27 +443,21 @@ namespace Point.Audio
                 //$"Could\'nt find audio clip {audioKey}.".ToLogError();
 
                 audioSource = null;
-                data = default(CompressedAudioData);
-                managedData = null;
                 return result;
             }
 
             /// if the data does not exist at <see cref="AudioList"/>
-            if (!TryGetCompressedAudioData(concreteKey, out data))
+            if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
-                audioSource = Instance.m_DefaultAudioPool.Get();
-                audioSource.outputAudioMixerGroup = AudioSettings.Instance.DefaultMixerGroup;
+                result |= IssueDefaultAudioSource(out audioSource);
                 audioSource.clip = clip;
-
-                data = default(CompressedAudioData);
-                managedData = null;
 
                 clipInfo.AddDebugger();
                 "return default audio pool".ToLog();
                 return RESULT.OK | result;
             }
 
-            managedData = Instance.m_CachedManagedDataMap[data.AudioKey];
+            ManagedAudioData managedData = Instance.m_CachedManagedDataMap[data.AudioKey];
             audioSource = GetPool(data.PrefabKey).Get();
             $"getaudio source {data.PrefabKey} : {audioSource.name}".ToLog();
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -474,7 +473,11 @@ namespace Point.Audio
             clipInfo.AddDebugger();
             return RESULT.OK | result;
         }
-        
+
+        private static RESULT InternalPlay(in AudioClip clip)
+        {
+            RESULT result = IssueDefaultAudioSource(out AudioSource audioSource);
+        }
         private static RESULT InternalPlay(
             in AudioKey audioKey, in AdditionalAudioOptions additionalOptions,
             out AssetInfo clipInfo, out Audio audio, out AudioSource audioSource)
@@ -495,8 +498,7 @@ namespace Point.Audio
                 return RESULT.IGNORED;
             }
 
-            RESULT result = IssueAudioSource(in concreteKey, out clipInfo, out audioSource,
-                out CompressedAudioData data, out ManagedAudioData managedData);
+            RESULT result = IssueAudioSource(in concreteKey, out clipInfo, out audioSource);
             if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
                 (result & RESULT.OK) != RESULT.OK)
             {
@@ -534,45 +536,45 @@ namespace Point.Audio
         internal static RESULT PlayAudio(ref Audio audio, out bool initialized)
         {
             AudioSource audioSource;
-            if (audio.RequireSetup())
-            {
-                initialized = true;
-                if (audio.m_AudioClip.IsValid())
-                {
-                    audio.m_AudioClip.Reserve();
-                }
+            //if (audio.RequireSetup())
+            //{
+            //    initialized = true;
+            //    if (audio.m_AudioClip.IsValid())
+            //    {
+            //        audio.m_AudioClip.Reserve();
+            //    }
 
-                if (!audio.audioKey.IsValid())
-                {
-                    return RESULT.AUDIOKEY | RESULT.NOTVALID;
-                }
+            //    if (!audio.audioKey.IsValid())
+            //    {
+            //        return RESULT.AUDIOKEY | RESULT.NOTVALID;
+            //    }
 
-                AudioKey audioKey = audio.audioKey;
-                if (!ProcessPlugin(in audioKey,
-                    audio.hasAudioSource ? audio.is3D : false,
-                    audio.hasAudioSource ? audio.position : Vector3.zero))
-                {
-                    return RESULT.IGNORED;
-                }
+            //    AudioKey audioKey = audio.audioKey;
+            //    if (!ProcessPlugin(in audioKey,
+            //        audio.hasAudioSource ? audio.is3D : false,
+            //        audio.hasAudioSource ? audio.position : Vector3.zero))
+            //    {
+            //        return RESULT.IGNORED;
+            //    }
 
-                RESULT result = InternalPlay(audioKey, default(AdditionalAudioOptions), 
-                    out AssetInfo clipInfo, out audio, out AudioSource insAudio);
-                if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
-                    (result & RESULT.OK) != RESULT.OK)
-                {
-                    return result;
-                }
-                else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
-                {
-                    $"unhandled. delayed play".ToLogError();
-                    return result;
-                }
+            //    RESULT result = InternalPlay(audioKey, default(AdditionalAudioOptions), 
+            //        out AssetInfo clipInfo, out audio, out AudioSource insAudio);
+            //    if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
+            //        (result & RESULT.OK) != RESULT.OK)
+            //    {
+            //        return result;
+            //    }
+            //    else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            //    {
+            //        $"unhandled. delayed play".ToLogError();
+            //        return result;
+            //    }
 
-                audio.m_AudioClip.AddDebugger();
-                insAudio.Play();
-                return RESULT.OK | result;
-            }
-            else
+            //    audio.m_AudioClip.AddDebugger();
+            //    insAudio.Play();
+            //    return RESULT.OK | result;
+            //}
+            //else
             {
                 initialized = false;
                 audioSource = GetAudioSource(in audio);
@@ -955,6 +957,8 @@ namespace Point.Audio
 
             private int m_Count;
             private Stack<int> m_ReservedIndices;
+            // key = AudioSource.GetInstanceID()
+            private Dictionary<int, int> m_IndexMap = new Dictionary<int, int>();
 
             private JobHandle m_JobHandle;
 
@@ -999,17 +1003,31 @@ namespace Point.Audio
             {
                 if (instanceID <= 0) return null;
 
-                var result = m_Audio.Where(t => t.GetInstanceID().Equals(instanceID));
-                if (!result.Any()) return null;
+                if (!m_IndexMap.TryGetValue(instanceID, out int index))
+                {
+                    "??".ToLogError();
+                    return null;
+                }
 
-                return result.First();
+                return m_Audio[index];
             }
 
+            public Audio GetAudio(AudioSource audioSource)
+            {
+                if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
+                {
+                    "??".ToLogError();
+                    throw new Exception();
+                }
+
+                return new Audio(audioKey, parent, index,
+                    audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
+            }
             public Audio GetAudio(AudioSource audioSource, in AssetInfo audioKey, in AudioKey parent)
             {
-                int index = Array.IndexOf(m_Audio, audioSource);
-                if (index < 0)
+                if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
                 {
+                    "??".ToLogError();
                     throw new Exception();
                 }
 
@@ -1040,14 +1058,14 @@ namespace Point.Audio
                 m_AudioPool[index] = pool;
                 m_AudioTransforms[index] = audioSource.transform;
                 transformations[index] = new Transformation();
+                m_IndexMap[audioSource.GetInstanceID()] = index;
 
                 m_AudioTransformAccess.SetTransforms(m_AudioTransforms);
                 m_Count++;
             }
             public void Unregister(AudioSource audioSource)
             {
-                int index = Array.IndexOf(m_Audio, audioSource);
-                if (index < 0)
+                if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
                 {
                     "??".ToLogError();
                     return;
@@ -1055,6 +1073,7 @@ namespace Point.Audio
 
                 m_Audio[index] = null;
                 m_AudioPool[index] = null;
+                m_IndexMap.Remove(audioSource.GetInstanceID());
 
                 //m_Audio.RemoveAtSwapBack(index);
                 //m_AudioPool.RemoveAtSwapBack(index);
@@ -1283,9 +1302,7 @@ namespace Point.Audio
         public static Audio GetAudio(in AudioKey audioKey)
         {
             AudioKey concreteKey = GetConcreteKey(in audioKey);
-            RESULT result = IssueAudioSource(in concreteKey, 
-                out AssetInfo clipInfo, out AudioSource audioSource, 
-                out CompressedAudioData data, out ManagedAudioData managedData);
+            RESULT result = IssueAudioSource(in concreteKey, out AssetInfo clipInfo, out AudioSource audioSource);
 
             if ((result & RESULT.OK) != RESULT.OK)
             {
@@ -1333,6 +1350,10 @@ namespace Point.Audio
             GetPool(audioKey);
         }
 
+        public static void Play(AudioClip clip)
+        {
+
+        }
         public static Audio Play(AudioKey audioKey, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
 #if DEBUG_MODE
