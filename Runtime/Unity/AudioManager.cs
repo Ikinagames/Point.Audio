@@ -474,10 +474,10 @@ namespace Point.Audio
             return RESULT.OK | result;
         }
 
-        private static RESULT InternalPlay(in AudioClip clip)
-        {
-            RESULT result = IssueDefaultAudioSource(out AudioSource audioSource);
-        }
+        //private static RESULT InternalPlay(in AudioClip clip)
+        //{
+        //    RESULT result = IssueDefaultAudioSource(out AudioSource audioSource);
+        //}
         private static RESULT InternalPlay(
             in AudioKey audioKey, in AdditionalAudioOptions additionalOptions,
             out AssetInfo clipInfo, out Audio audio, out AudioSource audioSource)
@@ -1012,17 +1012,17 @@ namespace Point.Audio
                 return m_Audio[index];
             }
 
-            public Audio GetAudio(AudioSource audioSource)
-            {
-                if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
-                {
-                    "??".ToLogError();
-                    throw new Exception();
-                }
+            //public Audio GetAudio(AudioSource audioSource)
+            //{
+            //    if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
+            //    {
+            //        "??".ToLogError();
+            //        throw new Exception();
+            //    }
 
-                return new Audio(audioKey, parent, index,
-                    audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
-            }
+            //    return new Audio(audioKey, parent, index,
+            //        audioSource != null ? audioSource.GetInstanceID() : 0, transformations);
+            //}
             public Audio GetAudio(AudioSource audioSource, in AssetInfo audioKey, in AudioKey parent)
             {
                 if (!m_IndexMap.TryGetValue(audioSource.GetInstanceID(), out int index))
