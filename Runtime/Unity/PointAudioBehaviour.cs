@@ -54,7 +54,7 @@ namespace Point.Audio
         {
             if (m_PlayOption != PlayOption.OnEnable) return;
 
-            //m_Audio = AudioManager.Play(m_Clip);
+            m_Audio = AudioManager.Play(m_Clip);
         }
         protected virtual void OnDisable()
         {

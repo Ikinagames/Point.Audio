@@ -26,8 +26,6 @@ namespace Point.Audio
     [Serializable]
     public class PlayableAudioClip
     {
-        
-
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
         [SerializeField] private AudioClip m_BakedClip;
 

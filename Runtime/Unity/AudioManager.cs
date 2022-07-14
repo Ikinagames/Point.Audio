@@ -1350,9 +1350,10 @@ namespace Point.Audio
             GetPool(audioKey);
         }
 
-        public static void Play(AudioClip clip)
+        public static Audio Play(PlayableAudioClip clip)
         {
-
+            throw new NotImplementedException();
+            //clip.
         }
         public static Audio Play(AudioKey audioKey, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
