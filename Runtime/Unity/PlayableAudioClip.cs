@@ -19,7 +19,10 @@
 
 using Point.Collections;
 using System;
+using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Point.Audio
 {
@@ -31,6 +34,8 @@ namespace Point.Audio
 
         [SerializeField] private AudioSample[] m_Volumes = Array.Empty<AudioSample>();
 
+        private AudioSample[] m_EvaluatedVolumes;
+
         public bool IsValid() => !m_Clip.IsEmpty() || m_BakedClip != null;
         public Promise<AudioClip> GetAudioClip()
         {
@@ -38,7 +43,68 @@ namespace Point.Audio
 
             return m_Clip.Asset.LoadAsset();
         }
-        public AudioSample[] GetVolumes() => m_Volumes;
+        public Promise<AudioSample[]> GetVolumes()
+        {
+            if (m_EvaluatedVolumes == null)
+            {
+                Promise<AudioClip> clip = GetAudioClip();
+                Promise<AudioSample[]> result = new Promise<AudioSample[]>();
+                clip.OnCompleted += delegate (AudioClip clip)
+                {
+                    int 
+                        packSize = clip.channels,
+                        totalSamples = clip.samples * packSize;
+                    List<AudioSample> resultSamples = new List<AudioSample>();
+
+                    float[] currentVolume = new float[packSize];
+                    int currentSamplePosition = 0;
+                    for (int i = 0; i < m_Volumes.Length; i += packSize)
+                    {
+                        for (int c = 0; c < packSize; c++)
+                        {
+                            AudioSample sample = m_Volumes[i + c];
+
+                            for (int j = currentSamplePosition; j < sample.position; j++)
+                            {
+                                float ratio = 
+                                (j - currentSamplePosition) / (float)(sample.position - currentSamplePosition);
+                                currentVolume[c] =
+                                    math.lerp(currentVolume[c], sample.value, ratio);
+
+                                AudioSample newSample = new AudioSample(
+                                    j, currentVolume[c]
+                                    );
+                                resultSamples.Add(newSample);
+                            }
+                        }
+                        
+                        currentSamplePosition += m_Volumes[i].position - currentSamplePosition;
+                    }
+                    $"{currentSamplePosition} :: {totalSamples}".ToLog();
+                    for (int i = currentSamplePosition; i < totalSamples; i += packSize)
+                    {
+                        for (int c = 0; c < packSize; c++)
+                        {
+                            float ratio = (i - currentSamplePosition) / (float)(totalSamples - currentSamplePosition);
+                            currentVolume[c] = math.lerp(currentVolume[c], 0, ratio);
+
+                            AudioSample newSample = new AudioSample(
+                                        i, currentVolume[c]
+                                        );
+                            resultSamples.Add(newSample);
+                        }
+                    }
+
+                    Assert.AreEqual(totalSamples, resultSamples.Count);
+
+                    m_EvaluatedVolumes = resultSamples.ToArray();
+                    result.SetValue(m_EvaluatedVolumes);
+                };
+
+                return result;
+            }
+            return m_EvaluatedVolumes;
+        }
     }
 
     [Serializable]

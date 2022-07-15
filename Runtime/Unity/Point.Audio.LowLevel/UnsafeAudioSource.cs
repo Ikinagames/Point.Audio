@@ -20,7 +20,10 @@
 using Point.Collections;
 using System;
 using System.Buffers;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions;
+using static Unity.Mathematics.math;
 
 namespace Point.Audio.LowLevel
 {
@@ -57,7 +60,7 @@ namespace Point.Audio.LowLevel
 
         private AudioSource m_AudioSource;
         private Promise<AudioClip> m_TargetAudioClip;
-        private AudioSample[] m_VolumeSamples = Array.Empty<AudioSample>();
+        private Promise<AudioSample[]> m_VolumeSamples;
 
         private int m_VolumeIndex = 0;
         private int m_TargetSamples, m_CurrentSamplePosition = 0;
@@ -98,22 +101,45 @@ namespace Point.Audio.LowLevel
             m_VolumeIndex = 0;
 
             isPlaying = true;
+            AudioSource.Play();
         }
         private void OnAudioFilterRead(float[] data, int channels)
         {
             if (!isPlaying) return;
 
+            int next = clamp(m_CurrentSamplePosition + data.Length, 0, m_TargetSamples);
+            //$"{data.Length} :: {m_VolumeSamples.Value.Length} :: {m_CurrentSamplePosition} :: next ({next})".ToLog();
+
+            AudioSample[] tempVolumeArray = s_AudioSampleArrayPool.Rent(data.Length);
+            Array.Copy(m_VolumeSamples.Value, m_CurrentSamplePosition, tempVolumeArray, 0, next - m_CurrentSamplePosition);
+            Volume(data, channels, tempVolumeArray);
+            s_AudioSampleArrayPool.Return(tempVolumeArray);
+
+            //for (int i = 0; i < data.Length; i += channels)
+            //{
+            //    for (int j = 0; j < channels; j++)
+            //    {
+            //    }
+            //}
+            m_CurrentSamplePosition = next;
+
+            if (m_CurrentSamplePosition >= m_TargetSamples)
+            {
+                "end".ToLog();
+                isPlaying = false;
+            }
+        }
+        private static void Volume(float[] data, int channels, AudioSample[] samples)
+        {
+            Assert.AreEqual(data.Length, samples.Length);
+
             for (int i = 0; i < data.Length; i += channels)
             {
                 for (int j = 0; j < channels; j++)
                 {
+                    data[i + j] = lerp(0, data[i + j], samples[i + j].value);
+                    //$"{data[i + j]} :: {samples[i + j].value}".ToLog();
                 }
-            }
-            m_CurrentSamplePosition += data.Length;
-
-            if (m_CurrentSamplePosition >= m_TargetSamples)
-            {
-                isPlaying = false;
             }
         }
     }
