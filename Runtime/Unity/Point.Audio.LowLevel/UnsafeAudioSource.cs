@@ -31,6 +31,7 @@ namespace Point.Audio.LowLevel
             {
                 isPlaying = false;
                 m_TargetAudioClip = value.GetAudioClip();
+                m_VolumeSamples = value.GetVolumes();
             }
         }
         public AudioClip audioClip

@@ -38,6 +38,7 @@ namespace Point.Audio
 
             return m_Clip.Asset.LoadAsset();
         }
+        public AudioSample[] GetVolumes() => m_Volumes;
     }
 
     [Serializable]
