@@ -18,23 +18,62 @@
 #endif
 
 using Point.Collections;
+using System;
+using UnityEngine;
 
 namespace Point.Audio.LowLevel
 {
     internal unsafe sealed class UnsafeAudioSource : PointMonobehaviour
     {
-        public PlayableAudioClip audioClip { get; set; }
+        public PlayableAudioClip playableAudioClip
+        {
+            set
+            {
+                isPlaying = false;
+                m_TargetAudioClip = value.GetAudioClip();
+            }
+        }
+        public AudioClip audioClip
+        {
+            get => m_TargetAudioClip?.Value;
+            set
+            {
+                isPlaying = false;
+                m_TargetAudioClip = value;
+            }
+        }
         public bool isPlaying { get; set; }
+
+        [SerializeField] private PlayableAudioClip m_AudioClip;
+
+        private Promise<AudioClip> m_TargetAudioClip;
+        private AudioClip m_CurrentAudioClip;
+        private AudioSample[] m_VolumeSamples = Array.Empty<AudioSample>();
+        
+        private int m_TargetSamplePosition, m_CurrentSamplePosition = 0;
 
         private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
 
+        private void Start()
+        {
+            if (m_AudioClip != null)
+            {
+                Play();
+            }
+        }
+
+        public void Play()
+        {
+            m_TargetSamplePosition = m_CurrentAudioClip.samples;
+            m_CurrentSamplePosition = 0;
+        }
         private void OnAudioFilterRead(float[] data, int channels)
         {
             if (!isPlaying) return;
 
             for (int i = 0; i < data.Length; i++)
             {
-
+                
             }
         }
     }

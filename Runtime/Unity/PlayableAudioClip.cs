@@ -24,13 +24,14 @@ using UnityEngine;
 namespace Point.Audio
 {
     [Serializable]
-    public class PlayableAudioClip
+    public class PlayableAudioClip : IValidation
     {
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
         [SerializeField] private AudioClip m_BakedClip;
 
         [SerializeField] private AudioSample[] m_Volumes = Array.Empty<AudioSample>();
-        
+
+        public bool IsValid() => !m_Clip.IsEmpty() || m_BakedClip != null;
         public Promise<AudioClip> GetAudioClip()
         {
             if (m_BakedClip != null) return new Promise<AudioClip>(m_BakedClip);
