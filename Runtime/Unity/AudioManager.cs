@@ -44,25 +44,6 @@ namespace Point.Audio
         protected override bool EnableLog => false;
         protected override bool HideInInspector => false;
 
-        [NonSerialized] private AudioSettings m_Settings;
-        [NonSerialized] private int EntryCount;
-        [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
-#if UNITY_COLLECTIONS_NEW
-        [NonSerialized] private NativeParallelHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
-#else
-        [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
-#endif
-        [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_CachedManagedDataMap;
-
-        //
-        [NonSerialized] AssetBundleInfo m_AudioBundle;
-        [NonSerialized] DefaultPrefabInfo m_DefaultAudioPool;
-
-        [NonSerialized] readonly Dictionary<AssetRuntimeKey, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<AssetRuntimeKey, IPrefabInfo>();
-
-        [NonSerialized] private InternalAudioContainer m_AudioContainer;
-        [NonSerialized] private AudioListener m_MainListener = null;
-
 #if UNITY_EDITOR
         private static bool s_AudioBundleIsNotLoadedErrorSended = false;
 
@@ -85,6 +66,25 @@ namespace Point.Audio
         //////////////////////////////////////////////////////////////////////////////////////////
 
         #region Critical Section
+
+        [NonSerialized] private AudioSettings m_Settings;
+        [NonSerialized] private int EntryCount;
+        [NonSerialized] private Dictionary<Hash, Hash> m_FriendlyNameMap;
+#if UNITY_COLLECTIONS_NEW
+        [NonSerialized] private NativeParallelHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+#else
+        [NonSerialized] private NativeHashMap<AudioKey, CompressedAudioData> m_DataHashMap;
+#endif
+        [NonSerialized] private Dictionary<AudioKey, ManagedAudioData> m_CachedManagedDataMap;
+
+        //
+        [NonSerialized] AssetBundleInfo m_AudioBundle;
+        [NonSerialized] DefaultPrefabInfo m_DefaultAudioPool;
+
+        [NonSerialized] readonly Dictionary<AssetRuntimeKey, IPrefabInfo> m_CachedPrefabInfo = new Dictionary<AssetRuntimeKey, IPrefabInfo>();
+
+        [NonSerialized] private InternalAudioContainer m_AudioContainer;
+        [NonSerialized] private AudioListener m_MainListener = null;
 
         #region Initialize
 

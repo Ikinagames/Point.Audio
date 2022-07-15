@@ -30,6 +30,13 @@ namespace Point.Audio
         [SerializeField] private AudioClip m_BakedClip;
 
         [SerializeField] private AudioSample[] m_Volumes = Array.Empty<AudioSample>();
+        
+        public Promise<AudioClip> GetAudioClip()
+        {
+            if (m_BakedClip != null) return new Promise<AudioClip>(m_BakedClip);
+
+            return m_Clip.Asset.LoadAsset();
+        }
     }
 
     [Serializable]
