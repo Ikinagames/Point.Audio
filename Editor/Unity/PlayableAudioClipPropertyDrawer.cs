@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Point.Audio.Editor
@@ -210,6 +211,9 @@ namespace Point.Audio.Editor
 
             private void Save()
             {
+                AudioClip clip = assetPathView.objectValue as AudioClip;
+                int packSize = clip.channels;
+
                 using (SerializedObject obj = new SerializedObject(target))
                 {
                     SerializedProperty
@@ -218,16 +222,24 @@ namespace Point.Audio.Editor
 
                     volumesProp.ClearArray();
                     m_VolumeSamplePositions.Sort();
-                    for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+                    for (int i = 0, p = 0; i < m_VolumeSamplePositions.Count; i++, p = i * packSize)
                     {
-                        volumesProp.InsertArrayElementAtIndex(i);
-                        SerializedProperty element = volumesProp.GetArrayElementAtIndex(i);
+                        AudioSample sample = m_VolumeSamplePositions[i].value;
+                        for (int j = 0; j < packSize; j++)
+                        {
+                            volumesProp.InsertArrayElementAtIndex(p + j);
+                            SerializedProperty element = volumesProp.GetArrayElementAtIndex(p + j);
 
-                        element.FindPropertyRelative("position").intValue = m_VolumeSamplePositions[i].value.position;
-                        element.FindPropertyRelative("value").floatValue = m_VolumeSamplePositions[i].value.value;
+                            element.FindPropertyRelative(nameof(AudioSample.position))
+                                .intValue = sample.position;
+                            element.FindPropertyRelative(nameof(AudioSample.value))
+                                .floatValue = sample.value;
+                        }
                     }
 
                     obj.ApplyModifiedProperties();
+
+                    Assert.AreEqual(m_VolumeSamplePositions.Count * packSize, volumesProp.arraySize);
                 }
             }
 
@@ -345,14 +357,6 @@ namespace Point.Audio.Editor
                 {
                     VolumeSample target = m_VolumeSamplePositions[i];
                     float x = target.value.position / samplePerPixel;
-                    float
-                        targetX = target.value.position / samplePerPixel,
-                        targetY = height - target.value.value * height;
-
-                    audioClipTextureView.schedule.Execute(delegate()
-                    {
-                        target.position = new Vector3(targetX, targetY);
-                    });
 
                     positions.Add(new Vector3(x, height - target.CalculateHeight(height)));
                 }
@@ -362,6 +366,18 @@ namespace Point.Audio.Editor
                 positions.Add(new Vector3(width, height));
 
                 CoreGUI.VisualElement.DrawCable(positions.ToArray(), 1, Color.green, ctx);
+                audioClipTextureView.schedule.Execute(delegate ()
+                {
+                    for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+                    {
+                        VolumeSample target = m_VolumeSamplePositions[i];
+                        float
+                            targetX = target.value.position / samplePerPixel,
+                            targetY = height - target.value.value * height;
+
+                        target.position = new Vector3(targetX, targetY);
+                    }
+                });
             }
         }
 

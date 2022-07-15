@@ -19,12 +19,20 @@
 
 using Point.Collections;
 using System;
+using System.Buffers;
 using UnityEngine;
 
 namespace Point.Audio.LowLevel
 {
+    [RequireComponent(typeof(AudioSource))]
     internal unsafe sealed class UnsafeAudioSource : PointMonobehaviour
     {
+        private static ArrayPool<AudioSample> s_AudioSampleArrayPool;
+        static UnsafeAudioSource()
+        {
+            s_AudioSampleArrayPool = ArrayPool<AudioSample>.Create();
+        }
+
         public PlayableAudioClip playableAudioClip
         {
             set
@@ -34,7 +42,7 @@ namespace Point.Audio.LowLevel
                 m_VolumeSamples = value.GetVolumes();
             }
         }
-        public AudioClip audioClip
+        public AudioClip clip
         {
             get => m_TargetAudioClip?.Value;
             set
@@ -47,34 +55,65 @@ namespace Point.Audio.LowLevel
 
         [SerializeField] private PlayableAudioClip m_AudioClip;
 
+        private AudioSource m_AudioSource;
         private Promise<AudioClip> m_TargetAudioClip;
-        private AudioClip m_CurrentAudioClip;
         private AudioSample[] m_VolumeSamples = Array.Empty<AudioSample>();
-        
-        private int m_TargetSamplePosition, m_CurrentSamplePosition = 0;
 
+        private int m_VolumeIndex = 0;
+        private int m_TargetSamples, m_CurrentSamplePosition = 0;
+
+        private AudioSource AudioSource
+        {
+            get
+            {
+                if (m_AudioSource == null)
+                {
+                    m_AudioSource = GetComponent<AudioSource>();
+                }
+                return m_AudioSource;
+            }
+        }
+        private AudioClip CurrentClip
+        {
+            get => AudioSource.clip;
+            set => AudioSource.clip = value;
+        }
         private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
+        private int PackSize => CurrentClip.channels;
 
         private void Start()
         {
             if (m_AudioClip != null)
             {
+                CurrentClip = m_AudioClip.GetAudioClip().Value;
                 Play();
             }
         }
 
         public void Play()
         {
-            m_TargetSamplePosition = m_CurrentAudioClip.samples;
+            m_VolumeSamples = m_AudioClip.GetVolumes();
+            m_TargetSamples = CurrentClip.samples;
             m_CurrentSamplePosition = 0;
+            m_VolumeIndex = 0;
+
+            isPlaying = true;
         }
         private void OnAudioFilterRead(float[] data, int channels)
         {
             if (!isPlaying) return;
 
-            for (int i = 0; i < data.Length; i++)
+            for (int i = 0; i < data.Length; i += channels)
             {
-                
+                for (int j = 0; j < channels; j++)
+                {
+                }
+            }
+            m_CurrentSamplePosition += data.Length;
+
+            if (m_CurrentSamplePosition >= m_TargetSamples)
+            {
+                isPlaying = false;
             }
         }
     }
