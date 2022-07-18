@@ -156,34 +156,35 @@ namespace Point.Audio.Editor
                     obj.ApplyModifiedProperties();
                 }
 
-                audioClipTextureView.audioClip = clip;
+                //audioClipTextureView.audioClip = clip;
 
-                if (clip != null)
+                //if (clip != null)
                 {
-                    schedule.Execute(delegate ()
-                    {
-                        using (SerializedObject obj = new SerializedObject(target))
-                        {
-                            SerializedProperty volumesProp = obj.FindProperty(m_VolumesPath);
+                    schedule.Execute(RepaintAudioClipView);
+                    //schedule.Execute(delegate ()
+                    //{
+                    //    using (SerializedObject obj = new SerializedObject(target))
+                    //    {
+                    //        SerializedProperty volumesProp = obj.FindProperty(m_VolumesPath);
 
-                            int sampleCount = clip.samples;
-                            float
-                                height = audioClipTextureView.resolvedStyle.height,
-                                width = audioClipTextureView.resolvedStyle.width,
-                                samplePerPixel = sampleCount / width;
+                    //        int sampleCount = clip.samples;
+                    //        float
+                    //            height = audioClipTextureView.resolvedStyle.height,
+                    //            width = audioClipTextureView.resolvedStyle.width,
+                    //            samplePerPixel = sampleCount / width;
 
-                            for (int i = 0; i < volumesProp.arraySize; i+= clip.channels)
-                            {
-                                var element = volumesProp.GetArrayElementAtIndex(i);
-                                VolumeSampleFactory(
-                                    element.FindPropertyRelative("position").intValue,
-                                    element.FindPropertyRelative("value").floatValue);
-                            }
+                    //        for (int i = 0; i < volumesProp.arraySize; i+= clip.channels)
+                    //        {
+                    //            var element = volumesProp.GetArrayElementAtIndex(i);
+                    //            VolumeSampleFactory(
+                    //                element.FindPropertyRelative("position").intValue,
+                    //                element.FindPropertyRelative("value").floatValue);
+                    //        }
 
-                            //audioClipTextureView.MarkDirtyRepaint();
-                            BakeButton();
-                        }
-                    });
+                    //        //audioClipTextureView.MarkDirtyRepaint();
+                    //        BakeButton();
+                    //    }
+                    //});
                 }
 
                 //audioClipTextureView.MarkDirtyRepaint();
@@ -358,6 +359,41 @@ namespace Point.Audio.Editor
                 });
 
                 return volume;
+            }
+
+            private void RepaintAudioClipView()
+            {
+                audioClipTextureView.Clear();
+                m_VolumeSamplePositions.Clear();
+
+                AudioClip clip = assetPathView.objectValue as AudioClip;
+                if (clip == null)
+                {
+                    audioClipTextureView.audioClip = null;
+                    return;
+                }
+
+                using (SerializedObject obj = new SerializedObject(target))
+                {
+                    SerializedProperty volumesProp = obj.FindProperty(m_VolumesPath);
+                    
+                    int sampleCount = clip.samples;
+                    float
+                        height = audioClipTextureView.resolvedStyle.height,
+                        width = audioClipTextureView.resolvedStyle.width,
+                        samplePerPixel = sampleCount / width;
+
+                    for (int i = 0; i < volumesProp.arraySize; i += clip.channels)
+                    {
+                        var element = volumesProp.GetArrayElementAtIndex(i);
+                        VolumeSampleFactory(
+                            element.FindPropertyRelative("position").intValue,
+                            element.FindPropertyRelative("value").floatValue);
+                    }
+
+                    //audioClipTextureView.MarkDirtyRepaint();
+                    BakeButton();
+                }
             }
             private void GenerateVisualContent(MeshGenerationContext ctx)
             {

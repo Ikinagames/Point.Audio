@@ -65,7 +65,7 @@ namespace Point.Audio.LowLevel
                 currentSamplePosition -= currentSamplePosition % packSize;
             }
 
-            $"{currentSamplePosition}, {resultSamples.Count} => {totalSamples}".ToLog();
+            //$"{currentSamplePosition}, {resultSamples.Count} => {totalSamples}".ToLog();
             Assert.AreEqual(currentSamplePosition, resultSamples.Count,
                 $"{packSize}, {currentSamplePosition} :: {totalSamples}\n" +
                 $"${currentSamplePosition} != {resultSamples.Count}");
