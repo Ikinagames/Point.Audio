@@ -35,45 +35,48 @@ namespace Point.Audio.LowLevel
                 totalSamples = clip.samples * packSize;
             List<AudioSample> resultSamples = new List<AudioSample>();
 
-            float[] currentVolume = new float[packSize];
+            AudioSample[] prevSamples = new AudioSample[packSize];
             int currentSamplePosition = 0;
             for (int i = 0; i < samples.Length; i += packSize)
             {
                 for (int c = 0; c < packSize; c++)
                 {
                     AudioSample sample = samples[i + c];
+                    float bounds = sample.position - currentSamplePosition;
+                    float startValue = prevSamples[c].value;
 
-                    for (int j = currentSamplePosition; j < sample.position; j++)
+                    for (int j = currentSamplePosition, x = 0; j < sample.position; j++, x++)
                     {
-                        float ratio =
-                        (j - currentSamplePosition) / (float)(sample.position - currentSamplePosition);
-                        currentVolume[c] = (lerp(currentVolume[c], sample.value, ratio));
-
+                        float ratio = x / bounds;
+                        float target = (lerp(startValue, sample.value, ratio));
+                
                         AudioSample newSample = new AudioSample(
-                            j, currentVolume[c]
+                            j, target
                             );
                         resultSamples.Add(newSample);
                     }
+
+                    prevSamples[c] = sample;
                 }
 
                 currentSamplePosition += samples[i].position - currentSamplePosition;
             }
-            $"{currentSamplePosition} :: {totalSamples}".ToLog();
+            //$"{currentSamplePosition} :: {totalSamples}".ToLog();
             for (int i = currentSamplePosition; i < totalSamples; i += packSize)
             {
                 for (int c = 0; c < packSize; c++)
                 {
                     float ratio = (i - currentSamplePosition) / (float)(totalSamples - currentSamplePosition);
-                    currentVolume[c] = (lerp(currentVolume[c], 0, ratio));
+                    float target = (lerp(prevSamples[c].value, 0, ratio));
 
                     AudioSample newSample = new AudioSample(
-                                i, currentVolume[c]
+                                i, target
                                 );
                     resultSamples.Add(newSample);
                 }
             }
 
-            Assert.AreEqual(totalSamples, resultSamples.Count);
+            Assert.AreEqual(totalSamples, resultSamples.Count, $"totalSample: {totalSamples}, result: {resultSamples.Count}");
 
             return resultSamples.ToArray();
         }
@@ -84,7 +87,10 @@ namespace Point.Audio.LowLevel
             {
                 for (int j = 0, y = 0; j < channels; j++, y = clamp(y + 1, 0, sampleChannels - 1))
                 {
-                    data[i + j] = lerp(0, data[i + j], samples[x + y].value);
+                    float target = data[i + j] * samples[x + y].value;
+                    //data[i + j] = lerp(0, data[i + j], samples[x + y].value);
+
+                    data[i + j] = target;
                 }
             }
         }

@@ -99,6 +99,7 @@ namespace Point.Audio.Editor
                     maxHeight = 1
                 };
 
+                Add(assetPathView);
                 Add(audioClipTextureView);
 
                 if (SerializedPropertyHelper.GetAssetPathField(clipProp) != null)
@@ -110,12 +111,8 @@ namespace Point.Audio.Editor
                 audioClipTextureView.generateVisualContent += GenerateVisualContent;
                 assetPathView.RegisterValueChangedCallback(OnAssetChanged);
 
-                Button bakeBtt = new Button(BakeButton);
-                bakeBtt.text = "Bake";
-                Add(bakeBtt);
-
                 Button deleteBtt = new Button(ResetButton);
-                deleteBtt.text = "Delete";
+                deleteBtt.text = "Reset";
                 Add(deleteBtt);
 
                 Setup(false);
@@ -178,7 +175,7 @@ namespace Point.Audio.Editor
                             }
 
                             //audioClipTextureView.MarkDirtyRepaint();
-                            BakeButton();
+                            //BakeButton();
                         }
                     });
                 }
@@ -272,7 +269,7 @@ namespace Point.Audio.Editor
                     obj.ApplyModifiedProperties();
                 }
 
-                Setup(true);
+                ResetButton();
             }
 
             private void OnTextureMouseDown(MouseDownEvent e)
