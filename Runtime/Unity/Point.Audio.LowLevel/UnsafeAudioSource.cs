@@ -104,24 +104,7 @@ namespace Point.Audio.LowLevel
         }
 
         public void Play()
-        {
-            //var volumeSampleArray = m_AudioClip.GetVolumes();
-            //if (OutputChannels == m_AudioClip.Channels)
-            //{
-            //    m_VolumeSamples = volumeSampleArray;
-            //}
-            //else if (m_AudioClip.Channels == 1 && OutputChannels > m_AudioClip.Channels)
-            //{
-            //    var array = m_VolumeSamples.Value;
-            //    int targetChannels = OutputChannels;
-
-            //    for (int i = 0; i < targetChannels; i++)
-            //    {
-
-            //    }
-            //}
-            //else throw new NotImplementedException();
-            
+        {            
             m_VolumeSamples = m_AudioClip.GetVolumes();
             m_TargetSamples = m_AudioClip.TotalSamples;
             m_CurrentSamplePosition = 0;
@@ -138,16 +121,16 @@ namespace Point.Audio.LowLevel
                 dataPerChannel = data.Length / channels,
                 nextSamplePosition = clamp(m_CurrentSamplePosition + (dataPerChannel * m_AudioClip.Channels), 0, m_TargetSamples),
                 movedSampleOffset = nextSamplePosition - m_CurrentSamplePosition;
-            //$"{data.Length} :: {m_VolumeSamples.Value.Length} :: {m_CurrentSamplePosition} :: next ({nextSamplePosition})".ToLog();
-            //$"{channels}".ToLog();
 
-            AudioSample[] volumeArray = s_AudioSampleArrayPool.Rent(dataPerChannel * m_AudioClip.Channels);
+            // Processors
             {
-                $"{volumeArray.Length} :: {data.Length}".ToLog();
-                Array.Copy(m_VolumeSamples.Value, m_CurrentSamplePosition, volumeArray, 0, movedSampleOffset);
-                Volume(data, channels, volumeArray, m_AudioClip.Channels);
+                // Process Volume
+                Process(
+                    in m_CurrentSamplePosition, in dataPerChannel, in movedSampleOffset,
+                    data, in channels,
+                    m_VolumeSamples.Value, m_AudioClip.Channels, DSP.Volume
+                    );
             }
-            s_AudioSampleArrayPool.Return(volumeArray);
 
             m_CurrentSamplePosition = nextSamplePosition;
 
@@ -157,16 +140,22 @@ namespace Point.Audio.LowLevel
                 isPlaying = false;
             }
         }
-        private static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
+        
+        public static void Process(
+            in int currentSamplePosition, in int dataPerChannel, in int processSampleOffset,
+            float[] data, in int channels, 
+            in AudioSample[] audioSamples, in int audioSampleChannels,
+            Action<float[], int, AudioSample[], int> dsp)
         {
-            for (int i = 0, x = 0; i < data.Length; i += channels, x += sampleChannels)
+            AudioSample[] array = s_AudioSampleArrayPool.Rent(dataPerChannel * audioSampleChannels);
+            Array.Copy(audioSamples, currentSamplePosition, array, 0, processSampleOffset);
+
+            // process
             {
-                for (int j = 0, y = 0; j < channels; j++, y = clamp(y + 1, 0, sampleChannels - 1))
-                {
-                    //$"{i} : {j} : {a} :: {i + j} , {i + a}".ToLog();
-                    data[i + j] = lerp(0, data[i + j], samples[x + y].value);
-                }
+                dsp.Invoke(data, channels, array, audioSampleChannels);
             }
+
+            s_AudioSampleArrayPool.Return(array);
         }
     }
 }
