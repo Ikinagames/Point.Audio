@@ -42,30 +42,31 @@ namespace Point.Audio.LowLevel
                 for (int c = 0; c < packSize; c++)
                 {
                     AudioSample sample = samples[i + c];
-                    int offset = sample.position - prevSamples[c].position;
+                    int offset = (sample.position * packSize) - (prevSamples[c].position * packSize);
                     float startValue = prevSamples[c].value;
 
-                    //$"{c} {offset}".ToLog();
-                    for (int x = 0, y = 0; x < offset; x++, y += packSize)
+                    //$"{c} {offset} :: {sample.position * packSize}, {totalSamples}".ToLog();
+                    int x = 0;
+                    for (int y = 0; y < offset; x++, y += packSize)
                     {
-                        float ratio = x / (float)offset;
+                        float ratio = y / (float)offset;
                         float target = (lerp(startValue, sample.value, ratio));
                 
                         AudioSample newSample = new AudioSample(
-                            sample.position + y, target
+                            (sample.position * packSize) + y, target
                             );
                         resultSamples.Add(newSample);
                     }
 
                     //$"{currentSamplePosition} + {sample.position} - {prevSamples[c].position}".ToLog();
-                    currentSamplePosition += offset;
+                    currentSamplePosition += x;
                     prevSamples[c] = sample;
                 }
                 
                 currentSamplePosition -= currentSamplePosition % packSize;
             }
 
-            //$"{currentSamplePosition}, {resultSamples.Count} => {totalSamples}".ToLog();
+            $"{currentSamplePosition}, {resultSamples.Count} => {totalSamples}".ToLog();
             Assert.AreEqual(currentSamplePosition, resultSamples.Count,
                 $"{packSize}, {currentSamplePosition} :: {totalSamples}\n" +
                 $"${currentSamplePosition} != {resultSamples.Count}");
@@ -94,6 +95,7 @@ namespace Point.Audio.LowLevel
             return resultSamples.ToArray();
         }
 
+        // TODO : ERROR !!
         public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
         {
             //$"{data.Length} :: {samples.Length} , {channels} :: {sampleChannels}".ToLog();
