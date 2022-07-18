@@ -42,7 +42,6 @@ namespace Point.Audio.LowLevel
             {
                 isPlaying = false;
                 m_TargetAudioClip = value.GetAudioClip();
-                m_VolumeSamples = value.GetVolumes();
             }
         }
         public AudioClip clip
@@ -82,6 +81,17 @@ namespace Point.Audio.LowLevel
             set => AudioSource.clip = value;
         }
         private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
+        private int OutputChannels
+        {
+            get
+            {
+                var mode = UnityEngine.AudioSettings.speakerMode;
+                if (mode == AudioSpeakerMode.Mono) return 1;
+                else if (mode == AudioSpeakerMode.Stereo) return 2;
+
+                throw new NotImplementedException();
+            }
+        }
         private int PackSize => CurrentClip.channels;
 
         private void Start()
@@ -95,8 +105,25 @@ namespace Point.Audio.LowLevel
 
         public void Play()
         {
+            //var volumeSampleArray = m_AudioClip.GetVolumes();
+            //if (OutputChannels == m_AudioClip.Channels)
+            //{
+            //    m_VolumeSamples = volumeSampleArray;
+            //}
+            //else if (m_AudioClip.Channels == 1 && OutputChannels > m_AudioClip.Channels)
+            //{
+            //    var array = m_VolumeSamples.Value;
+            //    int targetChannels = OutputChannels;
+
+            //    for (int i = 0; i < targetChannels; i++)
+            //    {
+
+            //    }
+            //}
+            //else throw new NotImplementedException();
+            
             m_VolumeSamples = m_AudioClip.GetVolumes();
-            m_TargetSamples = CurrentClip.samples;
+            m_TargetSamples = m_AudioClip.TotalSamples;
             m_CurrentSamplePosition = 0;
             m_VolumeIndex = 0;
 
@@ -107,38 +134,37 @@ namespace Point.Audio.LowLevel
         {
             if (!isPlaying) return;
 
-            int next = clamp(m_CurrentSamplePosition + data.Length, 0, m_TargetSamples);
-            //$"{data.Length} :: {m_VolumeSamples.Value.Length} :: {m_CurrentSamplePosition} :: next ({next})".ToLog();
+            int 
+                dataPerChannel = data.Length / channels,
+                nextSamplePosition = clamp(m_CurrentSamplePosition + (dataPerChannel * m_AudioClip.Channels), 0, m_TargetSamples),
+                movedSampleOffset = nextSamplePosition - m_CurrentSamplePosition;
+            //$"{data.Length} :: {m_VolumeSamples.Value.Length} :: {m_CurrentSamplePosition} :: next ({nextSamplePosition})".ToLog();
+            //$"{channels}".ToLog();
 
-            AudioSample[] tempVolumeArray = s_AudioSampleArrayPool.Rent(data.Length);
-            Array.Copy(m_VolumeSamples.Value, m_CurrentSamplePosition, tempVolumeArray, 0, next - m_CurrentSamplePosition);
-            Volume(data, channels, tempVolumeArray);
-            s_AudioSampleArrayPool.Return(tempVolumeArray);
+            AudioSample[] volumeArray = s_AudioSampleArrayPool.Rent(dataPerChannel * m_AudioClip.Channels);
+            {
+                $"{volumeArray.Length} :: {data.Length}".ToLog();
+                Array.Copy(m_VolumeSamples.Value, m_CurrentSamplePosition, volumeArray, 0, movedSampleOffset);
+                Volume(data, channels, volumeArray, m_AudioClip.Channels);
+            }
+            s_AudioSampleArrayPool.Return(volumeArray);
 
-            //for (int i = 0; i < data.Length; i += channels)
-            //{
-            //    for (int j = 0; j < channels; j++)
-            //    {
-            //    }
-            //}
-            m_CurrentSamplePosition = next;
+            m_CurrentSamplePosition = nextSamplePosition;
 
             if (m_CurrentSamplePosition >= m_TargetSamples)
             {
-                "end".ToLog();
+                $"end {m_TargetSamples} >= {m_CurrentSamplePosition}".ToLog();
                 isPlaying = false;
             }
         }
-        private static void Volume(float[] data, int channels, AudioSample[] samples)
+        private static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
         {
-            Assert.AreEqual(data.Length, samples.Length);
-
-            for (int i = 0; i < data.Length; i += channels)
+            for (int i = 0, x = 0; i < data.Length; i += channels, x += sampleChannels)
             {
-                for (int j = 0; j < channels; j++)
+                for (int j = 0, y = 0; j < channels; j++, y = clamp(y + 1, 0, sampleChannels - 1))
                 {
-                    data[i + j] = lerp(0, data[i + j], samples[i + j].value);
-                    //$"{data[i + j]} :: {samples[i + j].value}".ToLog();
+                    //$"{i} : {j} : {a} :: {i + j} , {i + a}".ToLog();
+                    data[i + j] = lerp(0, data[i + j], samples[x + y].value);
                 }
             }
         }

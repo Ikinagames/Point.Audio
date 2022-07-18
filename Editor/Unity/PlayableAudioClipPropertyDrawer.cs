@@ -73,7 +73,7 @@ namespace Point.Audio.Editor
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
 
-            string m_ClipPath, m_BakeClipPath, m_VolumesPath;
+            string m_ClipPath, m_BakeClipPath, m_TargetChannelsPath, m_VolumesPath;
 
             public PlayableAudioClipView(SerializedProperty property)
             {
@@ -87,6 +87,7 @@ namespace Point.Audio.Editor
                     volumesProp = property.FindPropertyRelative("m_Volumes");
                 m_ClipPath = clipProp.propertyPath;
                 m_BakeClipPath = bakedClipProp.propertyPath;
+                m_TargetChannelsPath = property.FindPropertyRelative("m_TargetChannels").propertyPath;
                 m_VolumesPath = volumesProp.propertyPath;
 
                 assetPathView = new AssetPathFieldView()
@@ -218,9 +219,12 @@ namespace Point.Audio.Editor
                 {
                     SerializedProperty
                         clipProp = obj.FindProperty(m_ClipPath),
+                        channelsProp = obj.FindProperty(m_TargetChannelsPath),
                         volumesProp = obj.FindProperty(m_VolumesPath);
 
                     volumesProp.ClearArray();
+                    channelsProp.intValue = packSize;
+
                     m_VolumeSamplePositions.Sort();
                     for (int i = 0, p = 0; i < m_VolumeSamplePositions.Count; i++, p = i * packSize)
                     {

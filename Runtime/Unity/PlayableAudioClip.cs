@@ -32,9 +32,23 @@ namespace Point.Audio
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
         [SerializeField] private AudioClip m_BakedClip;
 
+        [SerializeField] private int m_TargetChannels;
         [SerializeField] private AudioSample[] m_Volumes = Array.Empty<AudioSample>();
 
         private AudioSample[] m_EvaluatedVolumes;
+
+        public int TotalSamples
+        {
+            get
+            {
+                int sample;
+                if (m_BakedClip != null) sample = m_BakedClip.samples;
+                else sample = m_Clip.Asset.Asset.samples;
+
+                return sample * m_TargetChannels;
+            }
+        }
+        public int Channels => m_TargetChannels;
 
         public bool IsValid() => !m_Clip.IsEmpty() || m_BakedClip != null;
         public Promise<AudioClip> GetAudioClip()
