@@ -303,7 +303,7 @@ namespace Point.Audio.Editor
                         targetSamplePosition = e.localMousePosition.x * samplePerPixel,
                         targetVolume = 1 - (e.localMousePosition.y / height);
 
-                    $"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
+                    //$"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
 
                     VolumeSampleFactory(Mathf.RoundToInt(targetSamplePosition), targetVolume);
                     audioClipTextureView.MarkDirtyRepaint();
