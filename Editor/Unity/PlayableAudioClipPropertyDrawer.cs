@@ -70,6 +70,7 @@ namespace Point.Audio.Editor
 
             AssetPathFieldView assetPathView;
 
+            RulerView rulerView;
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
 
@@ -93,13 +94,18 @@ namespace Point.Audio.Editor
                     objectType = TypeHelper.TypeOf<UnityEngine.AudioClip>.Type,
                     label = property.displayName
                 };
+                //rulerView = new RulerView();
                 audioClipTextureView = new AudioClipTextureView()
                 {
                     maxHeight = 1
                 };
 
                 Add(assetPathView);
+                //Add(rulerView);
                 Add(audioClipTextureView);
+                //rulerView.Add(new Button());
+
+                //audioClipTextureView.StretchToParentWidth();
 
                 if (SerializedPropertyHelper.GetAssetPathField(clipProp) != null)
                 {
@@ -107,7 +113,7 @@ namespace Point.Audio.Editor
                 }
 
                 audioClipTextureView.RegisterCallback<MouseDownEvent>(OnTextureMouseDown);
-                audioClipTextureView.generateVisualContent += GenerateVisualContent;
+                audioClipTextureView.contentContainer.generateVisualContent += GenerateVisualContent;
                 assetPathView.RegisterValueChangedCallback(OnAssetChanged);
 
                 Button deleteBtt = new Button(ResetButton);
@@ -191,7 +197,7 @@ namespace Point.Audio.Editor
                 }
 
                 audioClipTextureView.audioClip = clip;
-                audioClipTextureView.MarkDirtyRepaint();
+                //audioClipTextureView.MarkDirtyRepaint();
                 MarkDirtyRepaint();
             }
 
@@ -263,8 +269,8 @@ namespace Point.Audio.Editor
                 {
                     int sampleCount = clip.samples;
                     float 
-                        height = audioClipTextureView.resolvedStyle.height,
-                        width = audioClipTextureView.resolvedStyle.width,
+                        height = audioClipTextureView.height,
+                        width = audioClipTextureView.width,
                         samplePerPixel = sampleCount / width;
 
                     float 
@@ -274,7 +280,7 @@ namespace Point.Audio.Editor
                     //$"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
 
                     VolumeSampleFactory(Mathf.RoundToInt(targetSamplePosition), targetVolume);
-                    audioClipTextureView.MarkDirtyRepaint();
+                    //audioClipTextureView.MarkDirtyRepaint();
 
                     Save();
                 }
@@ -291,8 +297,8 @@ namespace Point.Audio.Editor
 
                 int sampleCount = clip.samples;
                 float
-                    height = audioClipTextureView.resolvedStyle.height,
-                    width = audioClipTextureView.resolvedStyle.width,
+                    height = audioClipTextureView.height,
+                    width = audioClipTextureView.width,
                     samplePerPixel = sampleCount / width;
 
                 float
@@ -300,7 +306,7 @@ namespace Point.Audio.Editor
                     targetVolume = Mathf.Clamp01(1 - (pos.y / height));
 
                 pin.value = new AudioSample(targetSamplePosition, targetVolume);
-                audioClipTextureView.MarkDirtyRepaint();
+                //audioClipTextureView.MarkDirtyRepaint();
             }
             private VolumeSample VolumeSampleFactory(int position, float value)
             {
@@ -320,7 +326,7 @@ namespace Point.Audio.Editor
                     audioClipTextureView.Remove(volume);
                     m_VolumeSamplePositions.Remove(volume);
 
-                    audioClipTextureView.MarkDirtyRepaint();
+                    //audioClipTextureView.MarkDirtyRepaint();
                     Save();
 
                     e.StopImmediatePropagation();
@@ -347,8 +353,8 @@ namespace Point.Audio.Editor
                     
                     int sampleCount = clip.samples;
                     float
-                        height = audioClipTextureView.resolvedStyle.height,
-                        width = audioClipTextureView.resolvedStyle.width,
+                        height = audioClipTextureView.height,
+                        width = audioClipTextureView.width,
                         samplePerPixel = sampleCount / width;
 
                     for (int i = 0; i < volumesProp.arraySize; i += clip.channels)
@@ -366,8 +372,8 @@ namespace Point.Audio.Editor
             private void GenerateVisualContent(MeshGenerationContext ctx)
             {
                 float
-                    height = audioClipTextureView.resolvedStyle.height,
-                    width = audioClipTextureView.resolvedStyle.width;
+                    height = audioClipTextureView.height,
+                    width = audioClipTextureView.width;
                 List<Vector3> positions = new List<Vector3>();
 
                 if (audioClipTextureView.audioClip == null)
@@ -415,6 +421,56 @@ namespace Point.Audio.Editor
         {
             return new PlayableAudioClipView(property);
             //return base.CreateVisualElement(property);
+        }
+    }
+
+    public class AudioClipGraphView : AudioClipTextureView
+    {
+        private sealed class SamplePin : PinPoint<AudioSample>, IComparable<SamplePin>
+        {
+            public SamplePin(VisualElement parent, float x, float y) : base(parent)
+            {
+                value = new AudioSample(x, y);
+            }
+
+            public float CalculateHeight(float maxHeight)
+            {
+                return value.value * maxHeight;
+            }
+
+            public int CompareTo(SamplePin other)
+            {
+                if (value.position < other.value.position) return -1;
+                else if (value.position > other.value.position) return 1;
+                return 0;
+            }
+        }
+
+        public AudioClipGraphView() : base()
+        {
+            contentContainer.RegisterCallback<MouseDownEvent>(OnTextureMouseDown);
+        }
+
+        private void OnTextureMouseDown(MouseDownEvent e)
+        {
+            // right button
+            if (e.button == 1)
+            {
+                int sampleCount = audioClip.samples;
+                float
+                    height = this.height,
+                    width = this.width,
+                    samplePerPixel = sampleCount / width;
+
+                float
+                    targetSamplePosition = e.localMousePosition.x * samplePerPixel,
+                    targetVolume = 1 - (e.localMousePosition.y / height);
+
+                //$"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
+
+                //VolumeSampleFactory(Mathf.RoundToInt(targetSamplePosition), targetVolume);
+                //Save();
+            }
         }
     }
 }
