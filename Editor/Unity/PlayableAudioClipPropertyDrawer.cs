@@ -69,7 +69,6 @@ namespace Point.Audio.Editor
             private UnityEngine.Object target;
 
             AssetPathFieldView assetPathView;
-            //ObjectField bakedClipView;
 
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
@@ -156,38 +155,7 @@ namespace Point.Audio.Editor
                     obj.ApplyModifiedProperties();
                 }
 
-                //audioClipTextureView.audioClip = clip;
-
-                //if (clip != null)
-                {
-                    schedule.Execute(RepaintAudioClipView);
-                    //schedule.Execute(delegate ()
-                    //{
-                    //    using (SerializedObject obj = new SerializedObject(target))
-                    //    {
-                    //        SerializedProperty volumesProp = obj.FindProperty(m_VolumesPath);
-
-                    //        int sampleCount = clip.samples;
-                    //        float
-                    //            height = audioClipTextureView.resolvedStyle.height,
-                    //            width = audioClipTextureView.resolvedStyle.width,
-                    //            samplePerPixel = sampleCount / width;
-
-                    //        for (int i = 0; i < volumesProp.arraySize; i+= clip.channels)
-                    //        {
-                    //            var element = volumesProp.GetArrayElementAtIndex(i);
-                    //            VolumeSampleFactory(
-                    //                element.FindPropertyRelative("position").intValue,
-                    //                element.FindPropertyRelative("value").floatValue);
-                    //        }
-
-                    //        //audioClipTextureView.MarkDirtyRepaint();
-                    //        BakeButton();
-                    //    }
-                    //});
-                }
-
-                //audioClipTextureView.MarkDirtyRepaint();
+                schedule.Execute(RepaintAudioClipView);
             }
             private void ResetButton()
             {
