@@ -70,22 +70,4 @@ namespace Point.Audio
             return m_EvaluatedVolumes;
         }
     }
-
-    [Serializable]
-    public struct AudioSample
-    {
-        public int position;
-        public float value;
-
-        public AudioSample(int x, float y)
-        {
-            position = x;
-            value = y;
-        }
-        public AudioSample(float x, float y)
-        {
-            position = Mathf.RoundToInt(x);
-            value = y;
-        }
-    }
 }

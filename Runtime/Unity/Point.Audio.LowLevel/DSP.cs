@@ -29,6 +29,13 @@ namespace Point.Audio.LowLevel
 {
     public struct DSP
     {
+        public delegate float AudioSampleProcessDelegate(float value, AudioSample sample);
+
+        public static class Function
+        {
+            public static float Multiply(float value, AudioSample sample) => value * sample.value;
+        }
+
         public static AudioSample[] Evaluate(AudioClip clip, AudioSample[] samples)
         {
             int
@@ -96,7 +103,11 @@ namespace Point.Audio.LowLevel
             return resultSamples;
         }
 
-        private static void ProcessData(float[] data, int channels, AudioSample[] samples, int sampleChannels, Func<float, AudioSample, float> func)
+        
+
+        private static void ProcessData(float[] data, int channels, 
+            AudioSample[] samples, int sampleChannels, 
+            params AudioSampleProcessDelegate[] func)
         {
             //$"{data.Length} :: {samples.Length} , {channels} :: {sampleChannels}".ToLog();
 
@@ -110,24 +121,21 @@ namespace Point.Audio.LowLevel
                     {
                         AudioSample sample = samples[samplePosition + j];
 
-                        float value = func.Invoke(data[i + j], sample);
+                        float result = data[i + j];
+                        for (int xx = 0; xx < func.Length; xx++)
+                        {
+                            result = func[xx].Invoke(result, sample);
+                        }
 
-                        data[i + j] = value;
+                        data[i + j] = result;
                     }
                 }
             }
         }
 
-        // TODO : ERROR !!
         public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
         {
-            ProcessData(data, channels, samples, sampleChannels, 
-                delegate (float value, AudioSample sample)
-                {
-                    float result = value * sample.value;
-
-                    return result;
-                });
+            ProcessData(data, channels, samples, sampleChannels, Function.Multiply);
         }
     }
 }
