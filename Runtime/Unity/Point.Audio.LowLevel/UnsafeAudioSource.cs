@@ -17,9 +17,12 @@
 #define DEBUG_MODE
 #endif
 
+#if SYSTEM_BUFFER
+using System.Buffers;
+#endif
+
 using Point.Collections;
 using System;
-using System.Buffers;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -30,11 +33,13 @@ namespace Point.Audio.LowLevel
     [RequireComponent(typeof(AudioSource))]
     internal unsafe sealed class UnsafeAudioSource : PointMonobehaviour
     {
+#if SYSTEM_BUFFER
         private static ArrayPool<AudioSample> s_AudioSampleArrayPool;
         static UnsafeAudioSource()
         {
             s_AudioSampleArrayPool = ArrayPool<AudioSample>.Create();
         }
+#endif
 
         public PlayableAudioClip playableAudioClip
         {
@@ -147,15 +152,21 @@ namespace Point.Audio.LowLevel
             in AudioSample[] audioSamples, in int audioSampleChannels,
             Action<float[], int, AudioSample[], int> dsp)
         {
-            AudioSample[] array = s_AudioSampleArrayPool.Rent(dataPerChannel * audioSampleChannels);
+            AudioSample[] array
+#if SYSTEM_BUFFER
+                = s_AudioSampleArrayPool.Rent(dataPerChannel * audioSampleChannels);
+#else
+                = new AudioSample[dataPerChannel * audioSampleChannels];
+#endif
             Array.Copy(audioSamples, currentSamplePosition, array, 0, processSampleOffset);
 
             // process
             {
                 dsp.Invoke(data, channels, array, audioSampleChannels);
             }
-
+#if SYSTEM_BUFFER
             s_AudioSampleArrayPool.Return(array);
+#endif
         }
     }
 }
