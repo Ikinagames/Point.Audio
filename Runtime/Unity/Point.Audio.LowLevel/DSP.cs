@@ -61,7 +61,7 @@ namespace Point.Audio.LowLevel
                         float target = (lerp(startValue, sample.value, ratio));
                 
                         AudioSample newSample = new AudioSample(
-                            (prevSamples[c].position * packSize) + y, target
+                            (prevSamples[c].position * packSize) + y + c, target
                             );
                         resultSamples[newSample.position] = newSample;
                     }
