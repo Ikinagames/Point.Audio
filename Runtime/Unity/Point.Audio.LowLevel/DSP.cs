@@ -103,8 +103,6 @@ namespace Point.Audio.LowLevel
             return resultSamples;
         }
 
-        
-
         private static void ProcessData(float[] data, int channels, 
             AudioSample[] samples, int sampleChannels, 
             params AudioSampleProcessDelegate[] func)

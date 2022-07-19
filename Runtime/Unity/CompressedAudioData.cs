@@ -30,18 +30,25 @@ namespace Point.Audio
     [StructLayout(LayoutKind.Sequential)]
     public struct CompressedAudioData
     {
-        private readonly float
-            m_IgnoreTime, m_MasterVolume,
-            m_MinVolume, m_MaxVolume,
-            m_MinPitch, m_MaxPitch;
-        private readonly AudioKey m_AudioClipPath;
-        private readonly AssetRuntimeKey m_PrefabPath;
+        private AudioKey m_AudioClipPath;
+        private AssetRuntimeKey m_PrefabPath;
+
+        public float
+            ignoreTime, masterVolume,
+            minVolume, maxVolume,
+            minPitch, maxPitch;
 
         public AudioKey AudioKey => m_AudioClipPath;
         public AssetRuntimeKey PrefabKey => m_PrefabPath;
 
-        public float IgnoreTime => m_IgnoreTime;
+        //public float ignoreTime => m_IgnoreTime;
 
+        internal CompressedAudioData(AudioKey key)
+        {
+            this = default(CompressedAudioData);
+
+            m_AudioClipPath = key;
+        }
         [NotBurstCompatible]
         internal CompressedAudioData(
             AssetPathField<AudioClip> audioClip,
@@ -53,18 +60,25 @@ namespace Point.Audio
             float minVolume, float maxVolume,
             float minPitch, float maxPitch)
         {
-            m_IgnoreTime = ignoreTime;
-            m_MasterVolume = masterVolume;
-            m_MinVolume = minVolume;
-            m_MaxVolume = maxVolume;
-            m_MinPitch = minPitch;
-            m_MaxPitch = maxPitch;
+            this.ignoreTime = ignoreTime;
+            this.masterVolume = masterVolume;
+            this.minVolume = minVolume;
+            this.maxVolume = maxVolume;
+            this.minPitch = minPitch;
+            this.maxPitch = maxPitch;
             
             m_AudioClipPath = new Hash(audioClip.AssetPath.ToLowerInvariant());
             m_PrefabPath = new AssetRuntimeKey(prefab.AssetPath.ToLowerInvariant());
         }
 
-        public float GetVolume() => UnityEngine.Random.Range(m_MinVolume, m_MaxVolume);
-        public float GetPitch() => UnityEngine.Random.Range(m_MinPitch, m_MaxPitch);
+        public float GetVolume() => UnityEngine.Random.Range(minVolume, maxVolume);
+        public float GetPitch() => UnityEngine.Random.Range(minPitch, maxPitch);
+    }
+
+    public struct RuntimeAudioData
+    {
+        private readonly AudioKey m_AudioKey;
+
+
     }
 }

@@ -94,14 +94,14 @@ namespace Point.Audio.LowLevel
         }
         private int PackSize => CurrentClip.channels;
 
-        private void Start()
-        {
-            if (m_AudioClip != null)
-            {
-                CurrentClip = m_AudioClip.GetAudioClip().Value;
-                Play();
-            }
-        }
+        //private void Start()
+        //{
+        //    if (m_AudioClip != null)
+        //    {
+        //        CurrentClip = m_AudioClip.GetAudioClip().Value;
+        //        Play();
+        //    }
+        //}
 
         public void Play()
         {            

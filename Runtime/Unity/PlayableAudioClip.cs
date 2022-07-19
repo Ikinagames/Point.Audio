@@ -37,6 +37,7 @@ namespace Point.Audio
 
         private AudioSample[] m_EvaluatedVolumes;
 
+        public AudioKey Key => m_Clip;
         public int TotalSamples
         {
             get

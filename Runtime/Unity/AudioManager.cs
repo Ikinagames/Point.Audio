@@ -426,6 +426,19 @@ namespace Point.Audio
             }
             return true;
         }
+        internal static CompressedAudioData GetOrAddCompressedAudioData(AudioKey audioKey)
+        {
+            audioKey = GetConcreteKey(audioKey);
+            CompressedAudioData data;
+            if (Instance.m_DataHashMap.TryGetValue(audioKey, out data))
+            {
+                return data;
+            }
+
+            data = new CompressedAudioData(audioKey);
+
+            return data;
+        }
 
         private static RESULT IssueDefaultAudioSource(out AudioSource audioSource)
         {
@@ -646,7 +659,7 @@ namespace Point.Audio
                 return true;
             }
 
-            if (!managedData.lastPlayedTime.IsExceeded(data.IgnoreTime)) return false;
+            if (!managedData.lastPlayedTime.IsExceeded(data.ignoreTime)) return false;
 
             return true;
         }
@@ -1352,6 +1365,13 @@ namespace Point.Audio
 
         public static Audio Play(PlayableAudioClip clip)
         {
+            if (!ProcessPlugin(clip.Key, false, Vector3.zero))
+            {
+                return Audio.Invalid;
+            }
+
+
+
             throw new NotImplementedException();
             //clip.
         }
