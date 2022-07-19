@@ -18,6 +18,7 @@
 #endif
 
 using Point.Collections;
+using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace Point.Audio.LowLevel
             int
                 packSize = clip.channels,
                 totalSamples = clip.samples * packSize;
-            List<AudioSample> resultSamples = new List<AudioSample>();
+            AudioSample[] resultSamples = new AudioSample[totalSamples];
 
             AudioSample[] prevSamples = new AudioSample[packSize];
             int currentSamplePosition = 0;
@@ -53,9 +54,9 @@ namespace Point.Audio.LowLevel
                         float target = (lerp(startValue, sample.value, ratio));
                 
                         AudioSample newSample = new AudioSample(
-                            (sample.position * packSize) + y, target
+                            (prevSamples[c].position * packSize) + y, target
                             );
-                        resultSamples.Add(newSample);
+                        resultSamples[newSample.position] = newSample;
                     }
 
                     //$"{currentSamplePosition} + {sample.position} - {prevSamples[c].position}".ToLog();
@@ -66,10 +67,10 @@ namespace Point.Audio.LowLevel
                 currentSamplePosition -= currentSamplePosition % packSize;
             }
 
-            $"{currentSamplePosition}, {resultSamples.Count} => {totalSamples}".ToLog();
-            Assert.AreEqual(currentSamplePosition, resultSamples.Count,
-                $"{packSize}, {currentSamplePosition} :: {totalSamples}\n" +
-                $"${currentSamplePosition} != {resultSamples.Count}");
+            //$"{currentSamplePosition}, {resultSamples.Length} => {totalSamples}".ToLog();
+            //Assert.AreEqual(currentSamplePosition, resultSamples.Length,
+            //    $"{packSize}, {currentSamplePosition} :: {totalSamples}\n" +
+            //    $"${currentSamplePosition} != {resultSamples.Length}");
 
             for (int i = currentSamplePosition; i < totalSamples; i += packSize)
             {
@@ -83,32 +84,50 @@ namespace Point.Audio.LowLevel
                     AudioSample newSample = new AudioSample(
                                 targetSamplePosition, target
                                 );
-                    resultSamples.Add(newSample);
+                    resultSamples[newSample.position] = newSample;
                 }
             }
 
-            Assert.AreEqual(totalSamples, resultSamples.Count, 
+            Assert.AreEqual(totalSamples, resultSamples.Length, 
                 $"{clip.samples} :: {packSize} : {samples.Length}" +
                 $"\n" +
-                $"totalSample: {totalSamples}, result: {resultSamples.Count}");
+                $"totalSample: {totalSamples}, result: {resultSamples.Length}");
 
-            return resultSamples.ToArray();
+            return resultSamples;
+        }
+
+        private static void ProcessData(float[] data, int channels, AudioSample[] samples, int sampleChannels, Func<float, AudioSample, float> func)
+        {
+            //$"{data.Length} :: {samples.Length} , {channels} :: {sampleChannels}".ToLog();
+
+            for (int i = 0, count = 0; i < data.Length; i += channels, count++)
+            {
+                int samplePosition = sampleChannels * count;
+                int left = channels;
+                while (0 < left)
+                {
+                    for (int j = 0; j < sampleChannels; j++, left--)
+                    {
+                        AudioSample sample = samples[samplePosition + j];
+
+                        float value = func.Invoke(data[i + j], sample);
+
+                        data[i + j] = value;
+                    }
+                }
+            }
         }
 
         // TODO : ERROR !!
         public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
         {
-            //$"{data.Length} :: {samples.Length} , {channels} :: {sampleChannels}".ToLog();
-            for (int i = 0, x = 0; i < data.Length; i += channels, x += sampleChannels)
-            {
-                for (int j = 0, y = 0; j < channels; j++, y = clamp(y + 1, 0, sampleChannels - 1))
+            ProcessData(data, channels, samples, sampleChannels, 
+                delegate (float value, AudioSample sample)
                 {
-                    float target = data[i + j] * samples[x + y].value;
-                    //data[i + j] = lerp(0, data[i + j], samples[x + y].value);
+                    float result = value * sample.value;
 
-                    data[i + j] = target;
-                }
-            }
+                    return result;
+                });
         }
     }
 }
