@@ -101,7 +101,7 @@ namespace Point.Audio
                 return;
             }
 
-            const string c_ErrorFormat = "Play AudioClip({0}) request has been falid with {1}";
+            const string c_ErrorFormat = "Play AudioClip({0}) request has been falied with {1}";
             PointHelper.LogError(Channel.Audio,
                    string.Format(c_ErrorFormat, audioKey, GetResultString(t)));
         }
@@ -112,7 +112,7 @@ namespace Point.Audio
                 return;
             }
 
-            const string c_ErrorFormat = "Play AudioClip({0}) at {1} request has been falid with {2}";
+            const string c_ErrorFormat = "Play AudioClip({0}) at {1} request has been falied with {2}";
             PointHelper.LogError(Channel.Audio,
                    string.Format(c_ErrorFormat, audioKey, position, GetResultString(t)));
         }

@@ -299,12 +299,12 @@ namespace Point.Audio
             }
             return audioKey;
         }
-        private static RESULT GetAudioClip(in AudioKey audioKey, out AssetInfo clipAsset, out AudioClip audioClip)
+        private static RESULT GetAudioClip(in AudioKey audioKey, out AssetInfo clipAsset)
         {
             if (!audioKey.IsValid())
             {
                 clipAsset = default(AssetInfo);
-                audioClip = null;
+                //audioClip = null;
 
                 return RESULT.AUDIOKEY | RESULT.NOTVALID;
             }
@@ -331,30 +331,34 @@ namespace Point.Audio
                 if (!ins.m_CachedManagedDataMap.TryGetValue(targetKey, out managedData) ||
                     managedData.childs.Length == 0)
                 {
-                    clipAsset = AssetInfo.Invalid;
-                    audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
+                    AudioClip audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
 
                     if (audioClip == null)
                     {
+                        clipAsset = AssetInfo.Invalid;
                         return RESULT.INVALID;
                     }
+
+                    clipAsset = ResourceManager.RegisterAsset(audioClip);
                     return RESULT.OK | RESULT.ASSETBUNDLE | RESULT.NOTLOADED;
                 }
 
                 index = managedData.GetIndex();
                 if (index == 0)
                 {
-                    clipAsset = AssetInfo.Invalid;
-                    audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
+                    AudioClip audioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(((Hash)targetKey).Key);
 
                     if (audioClip == null)
                     {
+                        clipAsset = AssetInfo.Invalid;
                         return RESULT.INVALID;
                     }
+
+                    clipAsset = ResourceManager.RegisterAsset(audioClip);
                     return RESULT.OK | RESULT.ASSETBUNDLE | RESULT.NOTLOADED;
                 }
 
-                return GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()),   out clipAsset, out audioClip);
+                return GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset);
 #else
                 throw new Exception("Audio AssetBundle is not loaded. This is not allowed.");
 #endif
@@ -366,6 +370,7 @@ namespace Point.Audio
             if (!ins.m_CachedManagedDataMap.TryGetValue(targetKey, out managedData) ||
                 managedData.childs.Length == 0)
             {
+                AudioClip audioClip;
                 if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
                 {
                     clipAsset = AssetInfo.Invalid;
@@ -388,6 +393,7 @@ namespace Point.Audio
             index = managedData.GetIndex();
             if (index == 0)
             {
+                AudioClip audioClip;
                 if (!ins.m_AudioBundle.TryLoadAssetAsync(targetKey, out clipAsset))
                 {
 #if UNITY_EDITOR
@@ -406,7 +412,7 @@ namespace Point.Audio
                 return audioClip != null ? RESULT.OK : RESULT.AudioClip_IsLoading;
             }
 
-            RESULT result = GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset, out audioClip);
+            RESULT result = GetAudioClip(new Hash(managedData.childs[index - 1].AssetPath.ToLowerInvariant()), out clipAsset);
 
             if ((result & RESULT.OK) == RESULT.OK) clipAsset.AddDebugger();
 
@@ -450,7 +456,7 @@ namespace Point.Audio
         private static RESULT IssueAudioSource(
             in AudioKey concreteKey, out AssetInfo clipInfo, out AudioSource audioSource)
         {
-            RESULT result = GetAudioClip(concreteKey, out clipInfo, out AudioClip clip);
+            RESULT result = GetAudioClip(concreteKey, out clipInfo);
             if ((result & RESULT.OK) != RESULT.OK)
             {
                 //$"Could\'nt find audio clip {audioKey}.".ToLogError();
@@ -463,7 +469,7 @@ namespace Point.Audio
             if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
                 result |= IssueDefaultAudioSource(out audioSource);
-                audioSource.clip = clip;
+                //audioSource.clip = clip;
 
                 clipInfo.AddDebugger();
                 "return default audio pool".ToLog();
@@ -476,7 +482,7 @@ namespace Point.Audio
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                                                                      */
             audioSource.outputAudioMixerGroup = managedData.audioMixerGroup;
-            audioSource.clip = clip;
+            //audioSource.clip = clip;
 
             audioSource.volume = data.GetVolume();
             audioSource.pitch = data.GetPitch();
@@ -534,6 +540,8 @@ namespace Point.Audio
             {
                 clipInfo.AddDebugger();
                 audio = Instance.m_AudioContainer.GetAudio(audioSource, in clipInfo, in concreteKey);
+
+                audioSource.clip = clipInfo.Asset as AudioClip;
                 ProcessOnPlay(in audio, audioSource);
             }
             
@@ -1413,7 +1421,7 @@ namespace Point.Audio
                 PointHelper.LogError(Channel.Audio,
                     $"You\'re trying to play empty an {nameof(AudioSource)} from {audioKey.ToString()}. This is not allowed.");
 
-                Debug.Break();
+                //Debug.Break();
                 return Audio.Invalid;
             }
 #endif

@@ -188,16 +188,27 @@ namespace Point.Audio
         public bool IsValid()
         {
             AudioSource audioSource;
-            if (m_InstanceID == 0) return false;
+            if (m_InstanceID == 0)
+            {
+                "1".ToLog();
+                return false;
+            }
             else
             {
-                if (!m_AudioClip.IsValid() || m_Index < 0) return false;
+                if (!m_AudioClip.IsValid() || m_Index < 0)
+                {
+                    $"2 {m_AudioClip.IsValid()} : {m_Index}".ToLog();
+                    return false;
+                }
 
                 audioSource = AudioManager.GetAudioSource(in this);
             }
 
-            if (audioSource == null || audioSource.GetInstanceID() != m_InstanceID) return false;
-
+            if (audioSource == null || audioSource.GetInstanceID() != m_InstanceID)
+            {
+                "3".ToLog();
+                return false;
+            }
             return true;
         }
 

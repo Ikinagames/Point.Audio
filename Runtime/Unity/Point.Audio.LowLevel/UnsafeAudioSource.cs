@@ -68,7 +68,6 @@ namespace Point.Audio.LowLevel
         private Promise<AudioClip> m_TargetAudioClip;
         private Promise<AudioSample[]> m_VolumeSamples;
 
-        private int m_VolumeIndex = 0;
         private int m_TargetChannelSamples, m_CurrentChannelSamplePosition = 0;
 
         private AudioSource AudioSource
@@ -84,23 +83,12 @@ namespace Point.Audio.LowLevel
         }
         private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
 
-        //private void Start()
-        //{
-        //    if (m_AudioClip != null)
-        //    {
-        //        CurrentClip = m_AudioClip.GetAudioClip().Value;
-        //        Play();
-        //    }
-        //}
-
         public void Play()
         {            
             m_VolumeSamples = m_AudioClip.GetVolumes();
-            //m_TargetSamples = m_AudioClip.TotalSamples;
-            m_CurrentChannelSamplePosition = 0;
-            m_VolumeIndex = 0;
-
             
+            m_CurrentChannelSamplePosition = 0;
+
             StartCoroutine(PlayCoroutine());
         }
         private IEnumerator PlayCoroutine()
@@ -137,29 +125,6 @@ namespace Point.Audio.LowLevel
                 $"end {m_TargetChannelSamples} >= {m_CurrentChannelSamplePosition}".ToLog();
                 isPlaying = false;
             }
-        }
-        
-        public static void Process(
-            in int currentSamplePosition, in int dataPerChannel, in int processSampleOffset,
-            float[] data, in int channels, 
-            in AudioSample[] audioSamples, in int audioSampleChannels,
-            Action<float[], int, AudioSample[], int> dsp)
-        {
-            AudioSample[] array
-#if SYSTEM_BUFFER
-                = s_AudioSampleArrayPool.Rent(dataPerChannel * audioSampleChannels);
-#else
-                = new AudioSample[dataPerChannel * audioSampleChannels];
-#endif
-            Array.Copy(audioSamples, currentSamplePosition, array, 0, processSampleOffset);
-
-            // process
-            {
-                dsp.Invoke(data, channels, array, audioSampleChannels);
-            }
-#if SYSTEM_BUFFER
-            s_AudioSampleArrayPool.Return(array);
-#endif
         }
     }
 }
