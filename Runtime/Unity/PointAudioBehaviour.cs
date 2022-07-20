@@ -89,7 +89,7 @@ namespace Point.Audio
                 Stop();
             }
 
-            m_Audio = AudioManager.Play(m_Clip);
+            m_Audio = AudioManager.Play(m_Clip, m_PlayParameter);
         }
         public void Stop()
         {
