@@ -34,9 +34,19 @@ namespace Point.Audio
             AudioAutomaticDisposer.Instance.Register(t);
         }
 
+        public static void Callback(in this Audio t, float delay, AudioCallback callback)
+        {
+            AudioDelayedPlayer.Instance.Register(t, delay, callback);
+        }
         public static void Play(in this Audio t, in float delay)
         {
-            AudioDelayedPlayer.Instance.Register(in t, in delay);
+            AudioDelayedPlayer.Instance.DelayedPlay(t, delay);
+        }
+
+        public static void Fade<TFadeable>(this TFadeable t, in float value, in float time)
+            where TFadeable : IFadeable
+        {
+            AudioFadeController.Instance.Volume(t, value, time);
         }
 
         #region Debug

@@ -26,20 +26,27 @@ namespace Point.Audio
     [AddComponentMenu("")]
     internal sealed class AudioDelayedPlayer : StaticMonobehaviour<AudioDelayedPlayer>
     {
+        private static void Play(Audio audio) => audio.Play();
+
         protected override bool EnableLog => false;
         protected override bool HideInInspector => true;
 
         private readonly List<Payload> m_Payloads = new List<Payload>();
 
-        public void Register(in Audio audio, in float delay)
+        public void Register(Audio audio, float delay, AudioCallback callback)
         {
             Payload payload = new Payload
             {
                 audio = audio,
                 delay = delay,
-                startTime = Timer.Start()
+                startTime = Timer.Start(),
+                callback = callback
             };
             m_Payloads.Add(payload);
+        }
+        public void DelayedPlay(Audio audio, float delay)
+        {
+            Register(audio, delay, Play);
         }
 
         private void LateUpdate()
@@ -50,6 +57,7 @@ namespace Point.Audio
                 if (!payload.startTime.IsExceeded(payload.delay)) continue;
 
                 payload.audio.Play();
+                payload.callback?.Invoke(payload.audio);
 
                 m_Payloads.RemoveAt(i);
             }
@@ -68,6 +76,7 @@ namespace Point.Audio
             public Audio audio;
             public float delay;
             public Timer startTime;
+            public AudioCallback callback;
         }
     }
 }

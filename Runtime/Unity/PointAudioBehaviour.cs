@@ -39,11 +39,12 @@ namespace Point.Audio
             FadeOut
         }
 
-        [HelpBox("Working in progress. Will not work.", Type = UnityEngine.UIElements.HelpBoxMessageType.Error)]
         [SerializeField]
         protected PlayOption m_PlayOption = PlayOption.OnEnable;
         [SerializeField]
         protected StopOption m_StopOption = StopOption.FadeOut;
+        [SerializeField]
+        protected float m_FadeTime = .1f;
         [SerializeField]
         protected PlayableAudioClip m_Clip;
 
@@ -60,7 +61,25 @@ namespace Point.Audio
         {
             if (!m_Audio.IsValid()) return;
 
-            m_Audio.Reserve();
+            switch (m_StopOption)
+            {
+                default:
+                case StopOption.None:
+                case StopOption.StopImmediate:
+                    m_Audio.Reserve();
+
+                    break;
+                case StopOption.FadeOut:
+                    m_Audio.volume.Fade(0, m_FadeTime);
+                    m_Audio.Callback(m_FadeTime + Mathf.Epsilon, ReserveAudio);
+
+                    break;
+            }
+        }
+
+        private static void ReserveAudio(Audio audio)
+        {
+            audio.Reserve();
         }
     }
 }

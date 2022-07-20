@@ -56,10 +56,12 @@ namespace Point.Audio
             }
             set
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 AudioSource audioSource = AudioManager.GetAudioSource(in this);
@@ -87,40 +89,47 @@ namespace Point.Audio
                 return audioSource.spatialize;
             }
         }
-        public bool hasAudioSource => m_Allocator.IsCreated && m_InstanceID != 0;
+        //public bool hasAudioSource => m_Allocator.IsCreated && m_InstanceID != 0;
 
         public ref Transformation transform
         {
             get
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 return ref m_Allocator[m_Index];
             }
         }
-        public float volume
+        public Volume volume
         {
             get
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
-                var audioSource = AudioManager.GetAudioSource(this);
-                return audioSource.volume;
+                //var audioSource = AudioManager.GetAudioSource(this);
+                //return audioSource.volume;
+                return new Volume(m_InstanceID);
             }
             set
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 var audioSource = AudioManager.GetAudioSource(this);
@@ -131,20 +140,24 @@ namespace Point.Audio
         {
             get
             {
-                if (!hasAudioSource)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 return m_Allocator[m_Index].localPosition;
             }
             set
             {
-                if (!m_Allocator.IsCreated)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 m_Allocator[m_Index].localPosition = value;
@@ -154,20 +167,24 @@ namespace Point.Audio
         {
             get
             {
-                if (!m_Allocator.IsCreated)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 return m_Allocator[m_Index].localRotation;
             }
             set
             {
-                if (!m_Allocator.IsCreated)
+                if (!IsValid())
                 {
-                    this = AudioManager.GetAudio(audioKey);
-                    m_AudioClip.AddDebugger();
+                    "fatal err".ToLogError();
+                    Debug.Break();
+
+                    throw new InvalidOperationException();
                 }
 
                 m_Allocator[m_Index].localRotation = value;

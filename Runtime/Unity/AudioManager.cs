@@ -37,6 +37,8 @@ using System.Runtime.InteropServices;
 
 namespace Point.Audio
 {
+    public delegate void AudioCallback(Audio audio);
+
     [AddComponentMenu("")]
     [XmlSettings(PropertyName = "Audio", SaveToDisk = false)]
     public sealed class AudioManager : StaticMonobehaviour<AudioManager>, IStaticInitializer
@@ -48,7 +50,7 @@ namespace Point.Audio
         private static bool s_AudioBundleIsNotLoadedErrorSended = false;
 
         private static int s_AudioSourceCounter = 0;
-        private static readonly Dictionary<int, string> m_DebugNames = new Dictionary<int, string>();
+        private static readonly Dictionary<int, string> s_DebugNames = new Dictionary<int, string>();
 #endif
 
         // Runtime Settings
@@ -782,8 +784,9 @@ namespace Point.Audio
             {
                 GameObject obj = new GameObject();
 #if DEBUG_MODE
-                obj.name = $"Default AudioSource {s_AudioSourceCounter++}";
-                m_DebugNames[obj.GetInstanceID()] = obj.name;
+                s_DebugNames[obj.GetInstanceID()] = $"Default AudioSource {s_AudioSourceCounter++}";
+                obj.name = s_DebugNames[obj.GetInstanceID()] + " [Inactive]";
+                obj.hideFlags = HideFlags.HideInHierarchy;
 #endif
                 obj.transform.SetParent(Instance.transform);
                 AudioSource source = obj.AddComponent<AudioSource>();
@@ -799,9 +802,9 @@ namespace Point.Audio
 
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.hideFlags = HideFlags.None;
 #endif
-
                 Instance.m_AudioContainer.Register(t, this);
             }
             private void DefaultAudioOnReserve(AudioSource t)
@@ -816,7 +819,8 @@ namespace Point.Audio
                 Instance.m_AudioContainer.Unregister(t);
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.hideFlags = HideFlags.HideInHierarchy;
 #endif
             }
 
@@ -868,8 +872,9 @@ namespace Point.Audio
 
                 GameObject ins = Instantiate(prefabAudio.gameObject);
 #if DEBUG_MODE
-                ins.name = $"Default AudioSource {s_AudioSourceCounter++}";
-                m_DebugNames[ins.GetInstanceID()] = ins.name;
+                s_DebugNames[ins.GetInstanceID()] = $"Default AudioSource {s_AudioSourceCounter++}";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.hideFlags = HideFlags.HideInHierarchy;
 #endif
                 ins.transform.SetParent(Instance.transform);
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
@@ -881,7 +886,8 @@ namespace Point.Audio
             {
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.hideFlags = HideFlags.None;
 #endif
                 Instance.m_AudioContainer.Register(t, this);
             }
@@ -896,7 +902,8 @@ namespace Point.Audio
                 Instance.m_AudioContainer.Unregister(t);
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.hideFlags = HideFlags.HideInHierarchy;
 #endif
             }
 
@@ -952,8 +959,9 @@ namespace Point.Audio
 
                 GameObject ins = Instantiate(prefabAudio.gameObject);
 #if DEBUG_MODE
-                ins.name = $"{prefabAudio.gameObject.name} {s_AudioSourceCounter++}";
-                m_DebugNames[ins.GetInstanceID()] = ins.name;
+                s_DebugNames[ins.GetInstanceID()] = $"{prefabAudio.gameObject.name} {s_AudioSourceCounter++}";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.hideFlags = HideFlags.HideInHierarchy;
 #endif
                 ins.transform.SetParent(Instance.transform);
                 AudioSource insAudio = ins.GetComponent<AudioSource>();
@@ -965,7 +973,8 @@ namespace Point.Audio
             {
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Active]";
+                ins.hideFlags = HideFlags.None;
 #endif
                 Instance.m_AudioContainer.Register(t, this);
             }
@@ -979,7 +988,8 @@ namespace Point.Audio
                 t.transform.SetParent(Instance.transform);
 #if DEBUG_MODE
                 GameObject ins = t.gameObject;
-                ins.name = m_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.name = s_DebugNames[ins.GetInstanceID()] + " [Inactive]";
+                ins.hideFlags = HideFlags.HideInHierarchy;
 #endif
                 Instance.m_AudioContainer.Unregister(t);
             }
@@ -1059,7 +1069,7 @@ namespace Point.Audio
             }
             public AudioSource GetAudioSource(int instanceID)
             {
-                if (instanceID <= 0) return null;
+                if (instanceID == 0) return null;
 
                 if (!m_IndexMap.TryGetValue(instanceID, out int index))
                 {
