@@ -31,10 +31,16 @@ namespace Point.Audio
 
             OnEnable,
         }
+        [Flags]
         public enum StopOption
         {
             None = 0,
-            
+
+            OnDisable = 0b0001,
+            OnDestroy = 0b0010,
+        }
+        public enum StopParameter
+        {
             StopImmediate,
             FadeOut
         }
@@ -42,9 +48,13 @@ namespace Point.Audio
         [SerializeField]
         protected PlayOption m_PlayOption = PlayOption.OnEnable;
         [SerializeField]
-        protected StopOption m_StopOption = StopOption.FadeOut;
+        protected StopOption m_StopOption = StopOption.OnDisable | StopOption.OnDestroy;
+        [SerializeField]
+        protected StopParameter m_StopParameter = StopParameter.StopImmediate;
         [SerializeField]
         protected float m_FadeTime = .1f;
+
+        [Space]
         [SerializeField]
         protected PlayableAudioClip m_Clip;
 
@@ -55,21 +65,42 @@ namespace Point.Audio
         {
             if (m_PlayOption != PlayOption.OnEnable) return;
 
-            m_Audio = AudioManager.Play(m_Clip);
+            Play();
         }
         protected virtual void OnDisable()
         {
+            if ((m_StopOption & StopOption.OnDisable) != StopOption.OnDisable) return;
+
+            Stop();
+        }
+        protected virtual void OnDestroy()
+        {
+            if ((m_StopOption & StopOption.OnDestroy) != StopOption.OnDestroy) return;
+
+            Stop();
+        }
+
+        public void Play()
+        {
+            if (m_Audio.IsValid())
+            {
+                Stop();
+            }
+
+            m_Audio = AudioManager.Play(m_Clip);
+        }
+        public void Stop()
+        {
             if (!m_Audio.IsValid()) return;
 
-            switch (m_StopOption)
+            switch (m_StopParameter)
             {
                 default:
-                case StopOption.None:
-                case StopOption.StopImmediate:
+                case StopParameter.StopImmediate:
                     m_Audio.Reserve();
 
                     break;
-                case StopOption.FadeOut:
+                case StopParameter.FadeOut:
                     m_Audio.volume.Fade(0, m_FadeTime);
                     m_Audio.Callback(m_FadeTime + Mathf.Epsilon, ReserveAudio);
 
