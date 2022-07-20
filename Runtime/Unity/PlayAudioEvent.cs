@@ -27,7 +27,7 @@ namespace Point.Audio
     {
         private Vector3 INIT_POSITION = new Vector3(-9999999, 0, -99999999);
 
-        protected override bool EnableLog => false;
+        protected override bool EnableLog => true;
 
         public const string Unhandled = "UNHANDLED";
 

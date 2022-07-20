@@ -1400,7 +1400,11 @@ namespace Point.Audio
 
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions,
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
+            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            {
+                return Audio.Invalid;
+            }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
             else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
                 clipInfo.OnLoaded += t =>
@@ -1454,7 +1458,11 @@ namespace Point.Audio
 #endif
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
+            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            {
+                return Audio.Invalid;
+            }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
             else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
                 clipInfo.OnLoaded += t =>
@@ -1504,7 +1512,11 @@ namespace Point.Audio
 #endif
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            {
+                return Audio.Invalid;
+            }
+            else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
                 insAudio.transform.position = position;
                 audio.position = position;
