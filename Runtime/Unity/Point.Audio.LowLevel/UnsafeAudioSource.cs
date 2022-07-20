@@ -122,7 +122,7 @@ namespace Point.Audio.LowLevel
 
             if (m_CurrentChannelSamplePosition >= m_TargetChannelSamples)
             {
-                $"end {m_TargetChannelSamples} >= {m_CurrentChannelSamplePosition}".ToLog();
+                //$"end {m_TargetChannelSamples} >= {m_CurrentChannelSamplePosition}".ToLog();
                 isPlaying = false;
             }
         }

@@ -312,7 +312,7 @@ namespace Point.Audio.Editor
 
             private void RepaintAudioClipView()
             {
-                "repaint 01".ToLog();
+                //"repaint 01".ToLog();
                 audioClipTextureView.Clear();
                 m_VolumeSamplePositions.Clear();
 
