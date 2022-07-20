@@ -17,9 +17,12 @@
 #define DEBUG_MODE
 #endif
 
+using System;
+using UnityEngine;
 
 namespace Point.Audio
 {
+    [Serializable]
     public struct AdditionalAudioOptions
     {
         public static AdditionalAudioOptions PlayAfterLoading
@@ -31,9 +34,7 @@ namespace Point.Audio
         }
 
         // if audio clip is loading, play after when loading is finished.
+        [Tooltip("if audio clip is loading, play after when loading is finished")]
         public bool playAfterIfAudioClipIsLoading;
-
-        public int[] volumeIndices;
-        public float[] volumes;
     }
 }

@@ -50,6 +50,8 @@ namespace Point.Audio
         [SerializeField]
         protected StopOption m_StopOption = StopOption.OnDisable | StopOption.OnDestroy;
         [SerializeField]
+        protected AdditionalAudioOptions m_PlayParameter = default(AdditionalAudioOptions);
+        [SerializeField]
         protected StopParameter m_StopParameter = StopParameter.StopImmediate;
         [SerializeField]
         protected float m_FadeTime = .1f;
