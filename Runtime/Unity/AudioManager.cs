@@ -487,11 +487,7 @@ namespace Point.Audio
             return RESULT.OK | result;
         }
 
-        //private static RESULT InternalPlay(in AudioClip clip)
-        //{
-        //    RESULT result = IssueDefaultAudioSource(out AudioSource audioSource);
-        //}
-        private static RESULT InternalPlay(
+        private static RESULT INTERNAL_BeforePlay00(
             in AudioKey audioKey, in AdditionalAudioOptions additionalOptions,
             out AssetInfo clipInfo, out Audio audio, out AudioSource audioSource)
         {
@@ -543,67 +539,74 @@ namespace Point.Audio
             
             return RESULT.OK | result;
         }
+        private static RESULT INTERNAL_BeforePlay01(
+            in AudioKey audioKey, in AdditionalAudioOptions additionalOptions,
+            out AssetInfo clipInfo, out Audio audio, out AudioSource audioSource)
+        {
+            if (!ProcessPlugin(in audioKey, false, Vector3.zero))
+            {
+                clipInfo = AssetInfo.Invalid;
+                audio = Audio.Invalid;
+                audioSource = null;
+                return RESULT.IGNORED;
+            }
+
+            RESULT result = INTERNAL_BeforePlay00(in audioKey, in additionalOptions,
+                out clipInfo, out audio, out audioSource);
+            if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            {
+                Audio boxedAudio = audio;
+                AudioSource boxedAudioSource = audioSource;
+                clipInfo.OnLoaded += t =>
+                {
+                    boxedAudioSource.clip = t as AudioClip;
+                    ProcessOnPlay(boxedAudio, boxedAudioSource);
+                };
+                return result;
+            }
+            else if (result.IsConsiderAsError())
+            {
+                result.SendLog(in audioKey);
+
+                clipInfo = AssetInfo.Invalid;
+                audio = Audio.Invalid;
+                audioSource = null;
+                return RESULT.INVALID;
+            }
+            else if ((result & RESULT.IGNORED) == RESULT.IGNORED)
+            {
+                clipInfo = AssetInfo.Invalid;
+                audio = Audio.Invalid;
+                audioSource = null;
+                return RESULT.IGNORED;
+            }
+
+            if (result.IsRequireLog())
+            {
+                result.SendLog(in audioKey);
+            }
+            return result;
+        }
 
         //////////////////////////////////////////////////////////////////////////////////////////
         /*                                 Audio Internal Methods                               */
         internal static RESULT PlayAudio(ref Audio audio, out bool initialized)
         {
             AudioSource audioSource;
-            //if (audio.RequireSetup())
-            //{
-            //    initialized = true;
-            //    if (audio.m_AudioClip.IsValid())
-            //    {
-            //        audio.m_AudioClip.Reserve();
-            //    }
-
-            //    if (!audio.audioKey.IsValid())
-            //    {
-            //        return RESULT.AUDIOKEY | RESULT.NOTVALID;
-            //    }
-
-            //    AudioKey audioKey = audio.audioKey;
-            //    if (!ProcessPlugin(in audioKey,
-            //        audio.hasAudioSource ? audio.is3D : false,
-            //        audio.hasAudioSource ? audio.position : Vector3.zero))
-            //    {
-            //        return RESULT.IGNORED;
-            //    }
-
-            //    RESULT result = InternalPlay(audioKey, default(AdditionalAudioOptions), 
-            //        out AssetInfo clipInfo, out audio, out AudioSource insAudio);
-            //    if ((result & RESULT.IGNORED) == RESULT.IGNORED ||
-            //        (result & RESULT.OK) != RESULT.OK)
-            //    {
-            //        return result;
-            //    }
-            //    else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
-            //    {
-            //        $"unhandled. delayed play".ToLogError();
-            //        return result;
-            //    }
-
-            //    audio.m_AudioClip.AddDebugger();
-            //    insAudio.Play();
-            //    return RESULT.OK | result;
-            //}
-            //else
+            initialized = false;
+            audioSource = GetAudioSource(in audio);
+            if (!ProcessPlugin(audio.audioKey, audioSource.spatialize, audio.position))
             {
-                initialized = false;
-                audioSource = GetAudioSource(in audio);
-                if (!ProcessPlugin(audio.audioKey, audioSource.spatialize, audio.position))
-                {
-                    return RESULT.IGNORED;
-                }
-
-                if (!ProcessIsPlayable(audio.audioKey))
-                {
-                    //"ignored".ToLog();
-                    return RESULT.IGNORED;
-                }
-
-                ProcessOnPlay(in audio, audioSource);
+                return RESULT.IGNORED;
             }
+
+            if (!ProcessIsPlayable(audio.audioKey))
+            {
+                //"ignored".ToLog();
+                return RESULT.IGNORED;
+            }
+
+            ProcessOnPlay(in audio, audioSource);
 
             audioSource.Play();
             return RESULT.OK;
@@ -649,6 +652,8 @@ namespace Point.Audio
 
         #region Process
 
+        private readonly List<IAudioPlugin> m_Plugins = new List<IAudioPlugin>();
+
         private static bool ProcessIsPlayable(in AudioKey audio)
         {
             AudioKey audioKey = GetConcreteKey(in audio);
@@ -676,6 +681,38 @@ namespace Point.Audio
 
                 managedData.lastPlayedTime = Timer.Start();
             }
+        }
+
+        private static bool ProcessPlugin(in AudioKey audioKey, in bool is3D, in Vector3 position)
+        {
+            IReadOnlyList<IAudioPlugin> plugins = Instance.m_Plugins;
+            for (int i = 0; i < plugins.Count; i++)
+            {
+                IAudioPlugin plugin = plugins[i];
+
+                if (plugin is IAudioOnRequested requested)
+                {
+#line hidden
+                    try
+                    {
+                        requested.Process(in audioKey, in is3D, in position);
+                    }
+                    catch (Exception ex)
+                    {
+                        PointHelper.LogError(Channel.Audio,
+                            $"Unhandled error has been raised.");
+                        UnityEngine.Debug.LogException(ex);
+                    }
+#line default
+                }
+
+                if (!plugin.CanPlayable())
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion
@@ -1130,40 +1167,6 @@ namespace Point.Audio
 
         #endregion
 
-        private readonly List<IAudioPlugin> m_Plugins = new List<IAudioPlugin>();
-
-        private static bool ProcessPlugin(in AudioKey audioKey, in bool is3D, in Vector3 position)
-        {
-            IReadOnlyList<IAudioPlugin> plugins = Instance.m_Plugins;
-            for (int i = 0; i < plugins.Count; i++)
-            {
-                IAudioPlugin plugin = plugins[i];
-
-                if (plugin is IAudioOnRequested requested)
-                {
-#line hidden
-                    try
-                    {
-                        requested.Process(in audioKey, in is3D, in position);
-                    }
-                    catch (Exception ex)
-                    {
-                        PointHelper.LogError(Channel.Audio,
-                            $"Unhandled error has been raised.");
-                        UnityEngine.Debug.LogException(ex);
-                    }
-#line default
-                }
-
-                if (!plugin.CanPlayable())
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         #endregion
 
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -1363,42 +1366,83 @@ namespace Point.Audio
             GetPool(audioKey);
         }
 
-        public static Audio Play(PlayableAudioClip clip)
+        public static Audio Play(PlayableAudioClip clip, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
+#if DEBUG_MODE
+            const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
+#endif
+            AudioKey audioKey = clip.Key;
             if (!ProcessPlugin(clip.Key, false, Vector3.zero))
             {
                 return Audio.Invalid;
             }
 
+            RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions,
+                out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
+            if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
+            else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            {
+                clipInfo.OnLoaded += t =>
+                {
+                    if (insAudio.clip == null)
+                    {
+                        "?? reserved".ToLogError();
+                        return;
+                    }
 
+                    LowLevel.UnsafeAudioSource unsafeAudioSource = insAudio.GetOrAddComponent<LowLevel.UnsafeAudioSource>();
+                    unsafeAudioSource.playableAudioClip = clip;
+                    unsafeAudioSource.Play();
+#if DEBUG_MODE
+                    PointHelper.Log(Channel.Audio,
+                        string.Format(c_LogFormat, "Delayed Play Execute", audioKey.ToString()));
+#endif
+                };
+#if DEBUG_MODE
+                PointHelper.Log(Channel.Audio,
+                    string.Format(c_LogFormat, "Delayed Play Queued", audioKey.ToString()));
+#endif
+                return audio;
+            }
 
-            throw new NotImplementedException();
-            //clip.
+#if DEBUG_MODE
+            if (insAudio.clip == null)
+            {
+                audio.Reserve();
+
+                PointHelper.LogError(Channel.Audio,
+                    $"You\'re trying to play empty an {nameof(AudioSource)} from {audioKey.ToString()}. This is not allowed.");
+
+                Debug.Break();
+                return Audio.Invalid;
+            }
+#endif
+            LowLevel.UnsafeAudioSource unsafeAudioSource = insAudio.GetOrAddComponent<LowLevel.UnsafeAudioSource>();
+            unsafeAudioSource.playableAudioClip = clip;
+            unsafeAudioSource.Play();
+#if DEBUG_MODE
+            PointHelper.Log(Channel.Audio,
+                string.Format(c_LogFormat, insAudio.clip == null ? "UNKNOWN" : insAudio.clip.name, audioKey.ToString()));
+#endif
+            return audio;
         }
         public static Audio Play(AudioKey audioKey, AdditionalAudioOptions additionalOptions = default(AdditionalAudioOptions))
         {
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
 #endif
-            if (!ProcessPlugin(in audioKey, false, Vector3.zero))
-            {
-                return Audio.Invalid;
-            }
-
-            RESULT result = InternalPlay(in audioKey, in additionalOptions, 
+            RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
+            if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
+            else if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
                 clipInfo.OnLoaded += t =>
                 {
-                    if (insAudio.clip != null)
+                    if (insAudio.clip == null)
                     {
                         "?? reserved".ToLogError();
                         return;
                     }
-
-                    insAudio.clip = t as AudioClip;
-                    ProcessOnPlay(audio, insAudio);
 
                     insAudio.Play();
 #if DEBUG_MODE
@@ -1412,18 +1456,19 @@ namespace Point.Audio
 #endif
                 return audio;
             }
-            else if (result.IsConsiderAsError())
+
+#if DEBUG_MODE
+            if (insAudio.clip == null)
             {
-                result.SendLog(in audioKey);
+                audio.Reserve();
+
+                PointHelper.LogError(Channel.Audio,
+                    $"You\'re trying to play empty an {nameof(AudioSource)} from {audioKey.ToString()}. This is not allowed.");
+
+                Debug.Break();
                 return Audio.Invalid;
             }
-            else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
-
-            if (result.IsRequireLog())
-            {
-                result.SendLog(in audioKey);
-            }
-
+#endif
             insAudio.Play();
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
@@ -1436,12 +1481,7 @@ namespace Point.Audio
 #if DEBUG_MODE
             const string c_LogFormat = "Playing AudioClip({0}) at {1} with AudioKey({2})";
 #endif
-            if (!ProcessPlugin(in audioKey, true, in position))
-            {
-                return Audio.Invalid;
-            }
-
-            RESULT result = InternalPlay(in audioKey, in additionalOptions, 
+            RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
             if ((result & RESULT.DELAYEDPLAY) == RESULT.DELAYEDPLAY)
             {
@@ -1450,34 +1490,38 @@ namespace Point.Audio
 
                 clipInfo.OnLoaded += t =>
                 {
-                    if (insAudio.clip != null)
+                    if (insAudio.clip == null)
                     {
                         "?? reserved".ToLogError();
                         return;
                     }
 
-                    insAudio.clip = t as AudioClip;
                     insAudio.Play();
+#if DEBUG_MODE
+                    PointHelper.Log(Channel.Audio,
+                        string.Format(c_LogFormat, "Delayed Play Execute", position.ToString(), audioKey.ToString()));
+#endif
                 };
 #if DEBUG_MODE
                 PointHelper.Log(Channel.Audio,
-                    string.Format(c_LogFormat, insAudio.clip == null ? "UNKNOWN" : insAudio.clip.name, position.ToString(), audioKey.ToString()));
+                    string.Format(c_LogFormat, "Delayed Play Queued", position.ToString(), audioKey.ToString()));
 #endif
                 return audio;
             }
             else if ((result & RESULT.IGNORED) == RESULT.IGNORED) return Audio.Invalid;
-            
-            if (result.IsConsiderAsError())
+
+#if DEBUG_MODE
+            if (insAudio.clip == null)
             {
-                result.SendLog(in audioKey, in position);
+                audio.Reserve();
+
+                PointHelper.LogError(Channel.Audio,
+                    $"You\'re trying to play empty an {nameof(AudioSource)} from {audioKey.ToString()}. This is not allowed.");
+
+                Debug.Break();
                 return Audio.Invalid;
             }
-
-            if (result.IsRequireLog())
-            {
-                result.SendLog(in audioKey);
-            }
-
+#endif
             insAudio.transform.position = position;
             audio.position = position;
 

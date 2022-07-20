@@ -23,6 +23,7 @@ using System.Buffers;
 
 using Point.Collections;
 using System;
+using System.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -46,6 +47,7 @@ namespace Point.Audio.LowLevel
             set
             {
                 isPlaying = false;
+                m_AudioClip = value;
                 m_TargetAudioClip = value.GetAudioClip();
             }
         }
@@ -67,7 +69,7 @@ namespace Point.Audio.LowLevel
         private Promise<AudioSample[]> m_VolumeSamples;
 
         private int m_VolumeIndex = 0;
-        private int m_TargetSamples, m_CurrentSamplePosition = 0;
+        private int m_TargetChannelSamples, m_CurrentChannelSamplePosition = 0;
 
         private AudioSource AudioSource
         {
@@ -80,24 +82,7 @@ namespace Point.Audio.LowLevel
                 return m_AudioSource;
             }
         }
-        private AudioClip CurrentClip
-        {
-            get => AudioSource.clip;
-            set => AudioSource.clip = value;
-        }
         private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
-        private int OutputChannels
-        {
-            get
-            {
-                var mode = UnityEngine.AudioSettings.speakerMode;
-                if (mode == AudioSpeakerMode.Mono) return 1;
-                else if (mode == AudioSpeakerMode.Stereo) return 2;
-
-                throw new NotImplementedException();
-            }
-        }
-        private int PackSize => CurrentClip.channels;
 
         //private void Start()
         //{
@@ -111,37 +96,45 @@ namespace Point.Audio.LowLevel
         public void Play()
         {            
             m_VolumeSamples = m_AudioClip.GetVolumes();
-            m_TargetSamples = m_AudioClip.TotalSamples;
-            m_CurrentSamplePosition = 0;
+            //m_TargetSamples = m_AudioClip.TotalSamples;
+            m_CurrentChannelSamplePosition = 0;
             m_VolumeIndex = 0;
 
-            isPlaying = true;
-            AudioSource.Play();
+            
+            StartCoroutine(PlayCoroutine());
         }
+        private IEnumerator PlayCoroutine()
+        {
+            yield return m_TargetAudioClip;
+            yield return m_VolumeSamples;
+
+            m_TargetChannelSamples = m_VolumeSamples.Value.Length / m_AudioClip.TargetChannels;
+
+            AudioSource.clip = m_TargetAudioClip.Value;
+            AudioSource.Play();
+            isPlaying = true;
+        }
+
         private void OnAudioFilterRead(float[] data, int channels)
         {
             if (!isPlaying) return;
 
             int 
                 dataPerChannel = data.Length / channels,
-                nextSamplePosition = clamp(m_CurrentSamplePosition + (dataPerChannel * m_AudioClip.Channels), 0, m_TargetSamples),
-                movedSampleOffset = nextSamplePosition - m_CurrentSamplePosition;
+                nextSamplePosition = clamp(m_CurrentChannelSamplePosition + dataPerChannel, 0, m_TargetChannelSamples),
+                movedSampleOffset = nextSamplePosition - m_CurrentChannelSamplePosition;
 
             // Processors
             {
                 // Process Volume
-                Process(
-                    in m_CurrentSamplePosition, in dataPerChannel, in movedSampleOffset,
-                    data, in channels,
-                    m_VolumeSamples.Value, m_AudioClip.Channels, DSP.Volume
-                    );
+                DSP.Volume(data, channels, m_VolumeSamples.Value, m_AudioClip.TargetChannels, m_CurrentChannelSamplePosition, movedSampleOffset);
             }
 
-            m_CurrentSamplePosition = nextSamplePosition;
+            m_CurrentChannelSamplePosition = nextSamplePosition;
 
-            if (m_CurrentSamplePosition >= m_TargetSamples)
+            if (m_CurrentChannelSamplePosition >= m_TargetChannelSamples)
             {
-                $"end {m_TargetSamples} >= {m_CurrentSamplePosition}".ToLog();
+                $"end {m_TargetChannelSamples} >= {m_CurrentChannelSamplePosition}".ToLog();
                 isPlaying = false;
             }
         }

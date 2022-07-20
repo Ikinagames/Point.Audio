@@ -104,36 +104,44 @@ namespace Point.Audio.LowLevel
         }
 
         private static void ProcessData(float[] data, int channels, 
-            AudioSample[] samples, int sampleChannels, 
+            AudioSample[] samples, int sampleChannels, int sampleStart, int channelLength,
             params AudioSampleProcessDelegate[] func)
         {
-            //$"{data.Length} :: {samples.Length} , {channels} :: {sampleChannels}".ToLog();
-
-            for (int i = 0, count = 0; i < data.Length; i += channels, count++)
+            channelLength *= channels;
+            for (int i = 0, count = 0; i < channelLength; i += channels, count++)
             {
-                int samplePosition = sampleChannels * count;
-                int left = channels;
-                while (0 < left)
+                int samplePosition = (sampleChannels * count) + sampleStart;
+                int left = channels - 1;
+                while (0 <= left)
                 {
-                    for (int j = 0; j < sampleChannels; j++, left--)
+                    for (int j = sampleChannels - 1; j >= 0; j--, left--)
                     {
                         AudioSample sample = samples[samplePosition + j];
 
-                        float result = data[i + j];
+                        float result = data[i + left];
+
                         for (int xx = 0; xx < func.Length; xx++)
                         {
                             result = func[xx].Invoke(result, sample);
                         }
 
-                        data[i + j] = result;
+                        data[i + left] = result;
                     }
                 }
             }
         }
 
-        public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels)
+        public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels, int sampleStart = 0)
         {
-            ProcessData(data, channels, samples, sampleChannels, Function.Multiply);
+            ProcessData(data, channels, 
+                samples, sampleChannels, sampleStart, data.Length,
+                Function.Multiply);
+        }
+        public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels, int sampleStart, int length)
+        {
+            ProcessData(data, channels, 
+                samples, sampleChannels, sampleStart, length,
+                Function.Multiply);
         }
     }
 }

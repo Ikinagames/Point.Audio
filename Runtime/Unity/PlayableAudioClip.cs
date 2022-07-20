@@ -47,7 +47,7 @@ namespace Point.Audio
                 return sample * m_TargetChannels;
             }
         }
-        public int Channels => m_TargetChannels;
+        public int TargetChannels => m_TargetChannels;
 
         public bool IsValid() => !m_Clip.IsEmpty();
         public Promise<AudioClip> GetAudioClip()

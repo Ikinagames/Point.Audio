@@ -58,9 +58,9 @@ namespace Point.Audio
         }
         protected virtual void OnDisable()
         {
-            if (!m_Audio.IsValid()) return;
+            //if (!m_Audio.IsValid()) return;
 
-            m_Audio.Reserve();
+            //m_Audio.Reserve();
         }
     }
 }
