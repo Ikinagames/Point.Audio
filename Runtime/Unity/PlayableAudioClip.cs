@@ -38,23 +38,13 @@ namespace Point.Audio
         private AudioSample[] m_EvaluatedVolumes;
 
         public AudioKey Key => m_Clip;
-        public int TotalSamples
-        {
-            get
-            {
-                int sample = m_Clip.Asset.Asset.samples;
-
-                return sample * m_TargetChannels;
-            }
-        }
         public int TargetChannels => m_TargetChannels;
 
-        public bool IsValid() => !m_Clip.IsEmpty();
-        public Promise<AudioClip> GetAudioClip()
+        internal Promise<AudioClip> GetAudioClip()
         {
             return m_Clip.Asset.LoadAsset();
         }
-        public Promise<AudioSample[]> GetVolumes()
+        internal Promise<AudioSample[]> GetVolumes()
         {
             if (m_EvaluatedVolumes == null)
             {
@@ -70,5 +60,7 @@ namespace Point.Audio
             }
             return m_EvaluatedVolumes;
         }
+
+        public bool IsValid() => !m_Clip.IsEmpty();
     }
 }

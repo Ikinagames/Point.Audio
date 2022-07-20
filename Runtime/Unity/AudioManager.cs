@@ -278,7 +278,7 @@ namespace Point.Audio
             /// <see cref="AudioList"/> �� ���� ������ ��ϵ��� ���� ����� Ŭ��
             if (!TryGetCompressedAudioData(concreteKey, out CompressedAudioData data))
             {
-                $"key({concreteKey}) is not in list".ToLog();
+                //$"key({concreteKey}) is not in list".ToLog();
                 return Instance.m_DefaultAudioPool;
             }
 
@@ -639,7 +639,7 @@ namespace Point.Audio
             }
 
             IPrefabInfo pool = GetPool(audio.audioKey);
-            $"reserve audio {audio.audioKey}".ToLog();
+
             if (pool == null)
             {
                 PointHelper.LogError(Channel.Audio,
@@ -653,7 +653,9 @@ namespace Point.Audio
                 PointHelper.LogError(Channel.Audio,
                     $"Fatal error. Cannot found audio source GameObject.");
             }
+
             pool.Reserve(audioSource);
+            $"Audio({audio.audioKey}) reserved.".ToLog(Channel.Audio);
         }
         /*                                                                                      */
         //////////////////////////////////////////////////////////////////////////////////////////
