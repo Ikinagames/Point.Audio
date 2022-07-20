@@ -475,13 +475,13 @@ namespace Point.Audio
                 //audioSource.clip = clip;
 
                 clipInfo.AddDebugger();
-                "return default audio pool".ToLog();
+                //"return default audio pool".ToLog();
                 return RESULT.OK | result;
             }
 
             ManagedAudioData managedData = Instance.m_CachedManagedDataMap[data.AudioKey];
             audioSource = GetPool(data.PrefabKey).Get();
-            $"getaudio source {data.PrefabKey} : {audioSource.name}".ToLog();
+            //$"getaudio source {data.PrefabKey} : {audioSource.name}".ToLog();
             //////////////////////////////////////////////////////////////////////////////////////////
             /*                                                                                      */
             audioSource.outputAudioMixerGroup = managedData.audioMixerGroup;
