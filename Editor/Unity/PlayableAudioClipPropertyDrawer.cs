@@ -70,7 +70,6 @@ namespace Point.Audio.Editor
 
             AssetPathFieldView assetPathView;
 
-            RulerView rulerView;
             AudioClipTextureView audioClipTextureView;
             List<VolumeSample> m_VolumeSamplePositions = new List<VolumeSample>();
 
