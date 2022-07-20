@@ -17,9 +17,11 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
+
 namespace Point.Audio
 {
-    public interface IFadeable
+    public interface IFadeable : IValidation
     {
         object value { get; }
         void SetValue(object value, object targetValue, float t);

@@ -207,14 +207,14 @@ namespace Point.Audio
             AudioSource audioSource;
             if (m_InstanceID == 0)
             {
-                //"1".ToLog();
+                "1".ToLog();
                 return false;
             }
             else
             {
                 if (!m_AudioClip.IsValid() || m_Index < 0)
                 {
-                    //$"2 {m_AudioClip.IsValid()} : {m_Index}".ToLog();
+                    $"2 {m_AudioClip.IsValid()} : {m_Index}".ToLog();
                     return false;
                 }
 
@@ -223,7 +223,7 @@ namespace Point.Audio
 
             if (audioSource == null || audioSource.GetInstanceID() != m_InstanceID)
             {
-                //"3".ToLog();
+                "3".ToLog();
                 return false;
             }
             return true;

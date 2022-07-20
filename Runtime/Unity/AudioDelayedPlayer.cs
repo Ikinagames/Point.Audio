@@ -56,7 +56,6 @@ namespace Point.Audio
                 Payload payload = m_Payloads[i];
                 if (!payload.startTime.IsExceeded(payload.delay)) continue;
 
-                payload.audio.Play();
                 payload.callback?.Invoke(payload.audio);
 
                 m_Payloads.RemoveAt(i);

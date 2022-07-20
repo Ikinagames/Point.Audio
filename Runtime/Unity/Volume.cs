@@ -17,12 +17,13 @@
 #define DEBUG_MODE
 #endif
 
+using Point.Collections;
 using System;
 using Unity.Mathematics;
 
 namespace Point.Audio
 {
-    public struct Volume : IFadeable<float>, IEquatable<Volume>, IEquatable<float>
+    public struct Volume : IFadeable<float>, IValidation, IEquatable<Volume>, IEquatable<float>
     {
         private int m_InstanceID;
         private float m_Value;
@@ -35,6 +36,12 @@ namespace Point.Audio
             }
             set
             {
+                if (!IsValid())
+                {
+                    "fatal error. cannot set volume".ToLog();
+                    return;
+                }
+
                 AudioManager.GetAudioSource(in m_InstanceID).volume = value;
                 m_Value = value;
             }
@@ -47,6 +54,8 @@ namespace Point.Audio
             m_InstanceID = instanceID;
             m_Value = AudioManager.GetAudioSource(in m_InstanceID).volume;
         }
+
+        public bool IsValid() => m_InstanceID != 0 && AudioManager.GetAudioSource(in m_InstanceID) != null;
 
         void IFadeable.SetValue(object value, object targetValue, float t)
         {

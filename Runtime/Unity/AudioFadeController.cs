@@ -60,7 +60,12 @@ namespace Point.Audio
             for (int i = m_VolumePayloads.Count - 1; i >= 0; i--)
             {
                 Payload payload = m_VolumePayloads[i];
-                if (payload.startTime.ElapsedTime >= payload.time)
+                if (!payload.audio.IsValid())
+                {
+                    m_VolumePayloads.RemoveAt(i);
+                    continue;
+                }
+                else if (payload.startTime.ElapsedTime >= payload.time)
                 {
                     payload.audio.SetValue(payload.current, payload.target, 1);
 
@@ -69,9 +74,6 @@ namespace Point.Audio
                 }
 
                 float t = payload.startTime.ElapsedTime / payload.time;
-                //float value = lerp(payload.current, payload.target, payload.startTime.ElapsedTime / payload.time);
-
-                //payload.audio.volume = value;
                 payload.audio.SetValue(payload.current, payload.target, t);
             }
         }
