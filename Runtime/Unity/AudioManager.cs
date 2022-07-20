@@ -1393,14 +1393,10 @@ namespace Point.Audio
             const string c_LogFormat = "Playing AudioClip({0}) with AudioKey({1})";
 #endif
             AudioKey audioKey = clip.Key;
-            if (!ProcessPlugin(clip.Key, false, Vector3.zero))
-            {
-                return Audio.Invalid;
-            }
 
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions,
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            if (result == RESULT.INVALID)
             {
                 return Audio.Invalid;
             }
@@ -1458,7 +1454,7 @@ namespace Point.Audio
 #endif
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            if (result == RESULT.INVALID)
             {
                 return Audio.Invalid;
             }
@@ -1512,7 +1508,7 @@ namespace Point.Audio
 #endif
             RESULT result = INTERNAL_BeforePlay01(in audioKey, in additionalOptions, 
                 out AssetInfo clipInfo, out Audio audio, out AudioSource insAudio);
-            if ((result & RESULT.INVALID) == RESULT.INVALID)
+            if (result == RESULT.INVALID)
             {
                 return Audio.Invalid;
             }
