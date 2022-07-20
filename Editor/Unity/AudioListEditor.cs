@@ -468,10 +468,11 @@ namespace Point.Audio.Editor
             {
                 nameField = new TextField();
                 nameField.style.flexGrow = 1;
-                nameField.style.maxWidth = new StyleLength(new Length(40, LengthUnit.Percent));
+                //nameField.style.maxWidth = new StyleLength(new Length(40, LengthUnit.Percent));
                 root.Add(nameField);
 
                 assetPathField = new AssetPathFieldView();
+                //assetPathField.style.flexGrow = 1;
                 assetPathField.objectType = TypeHelper.TypeOf<AudioClip>.Type;
                 root.Add(assetPathField);
             }
