@@ -23,6 +23,9 @@ using Unity.Mathematics;
 
 namespace Point.Audio
 {
+    /// <summary>
+    /// <see cref="Audio"/> 의 볼륨입니다.
+    /// </summary>
     public struct Volume : IFadeable<float>, IValidation, IEquatable<Volume>, IEquatable<float>
     {
         private int m_InstanceID;

@@ -28,15 +28,27 @@ using UnityEngine;
 
 namespace Point.Audio
 {
+    /// <summary>
+    /// <see cref="AudioManager"/> 에서 관리되는 모든 오디오의 기본 접근 구조체입니다.
+    /// </summary>
     [BurstCompatible, Serializable]
     public struct Audio : IValidation, ICloneable
     {
         public static Audio Invalid => new Audio(AssetInfo.Invalid, default(AudioKey), -1, -1, default(UnsafeAllocator<Transformation>));
 
+        //////////////////////////////////////////////////////////////////////////////////////////
+        /*                                   Critical Section                                   */
+        /*                                       수정금지                                        */
+        //////////////////////////////////////////////////////////////////////////////////////////
+
         internal AssetInfo m_AudioClip;
         internal AudioKey m_Parent;
         internal int m_Index, m_InstanceID;
         private UnsafeAllocator<Transformation> m_Allocator;
+
+        //////////////////////////////////////////////////////////////////////////////////////////
+        /*                                End of Critical Section                               */
+        //////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma warning disable IDE1006 // Naming Styles
         public AudioKey audioKey => m_Parent.IsValid() ? m_Parent : new AudioKey(m_AudioClip.Key);
@@ -68,16 +80,25 @@ namespace Point.Audio
                 audioSource.clip = value;
             }
         }
+        /// <summary>
+        /// 현재 이 오디오가 재생 중인지 반환합니다.
+        /// </summary>
+        /// <exception cref="InvalidAudioException"></exception>
         [NotBurstCompatible]
         public bool isPlaying => AudioManager.IsPlaying(in this);
+        /// <summary>
+        /// 이 오디오가 3D 인지 반환합니다.
+        /// </summary>
+        /// <exception cref="InvalidAudioException"></exception>
         public bool is3D
         {
             get
             {
                 if (!IsValid())
                 {
-                    $"?? error".ToLogError();
-                    return false;
+                    //$"?? error".ToLogError();
+                    //return false;
+                    throw new InvalidAudioException(this);
                 }
                 //if (!hasAudioSource)
                 //{

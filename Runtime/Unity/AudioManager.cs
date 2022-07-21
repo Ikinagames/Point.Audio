@@ -1372,7 +1372,8 @@ namespace Point.Audio
                 //PointHelper.LogError(Channel.Audio,
                 //    $"This audio is invalid.");
 
-                return false;
+                //return false;
+                throw new InvalidAudioException(audio);
             }
 
             return audioSource.isPlaying;
