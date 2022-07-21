@@ -81,7 +81,9 @@ namespace Point.Audio.LowLevel
                 return m_AudioSource;
             }
         }
-        private double SampleRate => UnityEngine.AudioSettings.outputSampleRate;
+        private double m_SampleRate;
+
+        // https://forum.unity.com/threads/dsp-buffer-size-differences-why-isnt-it-a-setting-per-platform.447925/
 
         public void Play()
         {            
@@ -97,6 +99,7 @@ namespace Point.Audio.LowLevel
             yield return m_VolumeSamples;
 
             m_TargetChannelSamples = m_VolumeSamples.Value.Length / m_AudioClip.TargetChannels;
+            m_SampleRate = UnityEngine.AudioSettings.outputSampleRate;
 
             AudioSource.clip = m_TargetAudioClip.Value;
             AudioSource.Play();
