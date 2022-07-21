@@ -60,6 +60,19 @@ namespace Point.Audio
             }
             return count;
         }
+        public AudioList.Data FindData(AudioKey key)
+        {
+            for (int i = 0; i < m_AudioLists.Length; i++)
+            {
+                AudioList list = m_AudioLists[i];
+                var result = list.Find(key);
+                if (result == null) continue;
+
+                return result;
+            }
+
+            return null;
+        }
 
         public void RegisterFriendlyNames(Dictionary<Hash, Hash> map)
         {

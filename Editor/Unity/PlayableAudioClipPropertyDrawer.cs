@@ -57,6 +57,7 @@ namespace Point.Audio.Editor
             AudioSample[] volumeSamples 
                 = SerializedPropertyHelper.ReadArray<AudioSample>(volumeSamplesProp);
 
+            FoldoutView foldout = new FoldoutView("Settings");
             AudioClipGraphView clipGraphView = new AudioClipGraphView(volumeSamples);
             clipGraphView.VolumeSampleSetter = (t) =>
             {
@@ -74,7 +75,8 @@ namespace Point.Audio.Editor
                     serialized.ApplyModifiedProperties();
                 }
             };
-            root.Add(clipGraphView);
+            foldout.Add(clipGraphView);
+            root.Add(foldout);
 
             pathFieldView.RegisterValueChangedCallback(t =>
             {

@@ -29,6 +29,9 @@ namespace Point.Audio
     /// <see cref="AudioManager"/> 에서 관리되는 오디오를 재생하기 위한 런타임 키 입니다.
     /// </summary>
     /// <remarks>
+    /// <seealso cref="string"/> 에서 키를 생성할 수 있습니다. <seealso cref="AudioList"/> 의 <seealso cref="AudioList.FriendlyName"/> 에 등록된 오디오는 등록된 이름으로 생성할 수 있으며, 등록되지 않더라도 Assets/.. 으로 시작하는 상대 경로로 키를 생성할 수 있습니다.
+    /// <br/>
+    /// <br/>
     /// 이 구조체는 <see cref="AssetRuntimeKey"/> 를 wrapping 하는 구조체입니다. 
     /// 자세한 설명은 <seealso cref="ResourceManager"/>, 혹은 <seealso cref="AssetRuntimeKey"/> 를 참조하세요.
     /// </remarks>
@@ -54,7 +57,7 @@ namespace Point.Audio
         [NotBurstCompatible]
         public static implicit operator AudioKey(AssetPathField<AudioClip> t)
         {
-            return new AudioKey(new Hash(t.AssetPath.ToLowerInvariant()));
+            return new AudioKey(new AssetRuntimeKey(t));
         }
         [NotBurstCompatible]
         public static implicit operator AudioKey(string t)

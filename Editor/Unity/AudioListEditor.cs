@@ -137,22 +137,9 @@ namespace Point.Audio.Editor
                 m_VolumeProperty = property.FindPropertyRelative("m_Volume");
                 m_PitchProperty = property.FindPropertyRelative("m_Pitch");
 
-                VisualElement root = new VisualElement();
-                root.style.flexGrow = 1;
-                root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
-                root.AddToClassList("content-container");
-                root.AddToClassList("inner-container");
-
-                Label label = new Label(displayName);
-                root.Add(label);
-
-                foreach (var item in m_Property.ForEachChild())
-                {
-                    PropertyField field = new PropertyField(item);
-                    root.Add(field);
-
-                    field.BindProperty(item);
-                }
+                //var asset = AssetHelper.LoadAsset<VisualTreeAsset>("Uxml AudioList_Data", "PointEditor");
+                var root = AudioList_DataPropertyDrawer.Factory(property);
+                root.top.isExpanded = true;
 
                 m_VisualElement = root;
             }

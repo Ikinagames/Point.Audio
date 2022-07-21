@@ -107,8 +107,36 @@ namespace Point.Audio
         [SerializeField]
         private Data[] m_Data = Array.Empty<Data>();
 
+#if UNITY_EDITOR
+        private Dictionary<AudioKey, Data> m_CachedData;
+#endif
+
         public int Count => m_Data.Length;
         public Data this[int index] => m_Data[index];
+
+        /// <summary>
+        /// Editor only
+        /// </summary>
+        /// <param name="audioKey"></param>
+        /// <returns></returns>
+        public Data Find(AudioKey audioKey)
+        {
+#if UNITY_EDITOR
+            if (m_CachedData == null)
+            {
+                m_CachedData = new Dictionary<AudioKey, Data>();
+                for (int i = 0; i < m_Data.Length; i++)
+                {
+                    var data = m_Data[i].GetAudioData();
+                    m_CachedData.Add(data.AudioKey, m_Data[i]);
+                }
+            }
+
+            return m_CachedData.ContainsKey(audioKey) ? m_CachedData[audioKey] : null;
+#else
+            throw new NotImplementedException();
+#endif
+        }
 
         public IEnumerable<Data> GetAudioData() => m_Data;
         public void RegisterFriendlyNames(Dictionary<Hash, Hash> map)

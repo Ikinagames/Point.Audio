@@ -67,8 +67,8 @@ namespace Point.Audio
             this.minPitch = minPitch;
             this.maxPitch = maxPitch;
             
-            m_AudioClipPath = new Hash(audioClip.AssetPath.ToLowerInvariant());
-            m_PrefabPath = new AssetRuntimeKey(prefab.AssetPath.ToLowerInvariant());
+            m_AudioClipPath = new AssetRuntimeKey(audioClip);
+            m_PrefabPath = new AssetRuntimeKey(prefab);
         }
 
         public float GetVolume() => UnityEngine.Random.Range(minVolume, maxVolume);

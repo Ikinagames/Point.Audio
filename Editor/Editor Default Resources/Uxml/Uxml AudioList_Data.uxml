@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Point/Point.Collections/Editor/Editor%20Default%20Resources/Uxml/default-uss.uss?fileID=7433441132597879392&amp;guid=c2e1af765731c5e4d830f487d77eacbf&amp;type=3#default-uss" />
+    <Point.Collections.Editor.FoldoutView>
+        <Point.Collections.Editor.AssetPathFieldView label="Audio Clip" objectType="UnityEngine.AudioClip, UnityEngine.AudioModule" name="AudioClipField" binding-path="m_AudioClip" />
+        <Point.Collections.Editor.AssetPathFieldView objectType="UnityEngine.AudioSource, UnityEngine.AudioModule" label="Prefab" name="PrefabField" binding-path="m_Prefab" />
+        <uie:ObjectField label="Group" type="UnityEngine.Audio.AudioMixerGroup, UnityEngine.AudioModule" name="GroupField" binding-path="m_Group" allow-scene-objects="false" />
+        <uie:FloatField label="Ignore Time" value="0.2" binding-path="m_IgnoreTime" name="IgnoreTimeField" />
+        <ui:VisualElement style="height: 10px;" />
+        <Point.Collections.Editor.FoldoutView label="Play Parameters">
+            <uie:PropertyField binding-path="m_OnPlayConstAction" label="OnPlayConstAction" name="OnPlayConstActionField" />
+            <uie:EnumField label="PlayOption" value="Sequential" binding-path="m_PlayOption" type="Point.Audio.AudioPlayOption, Point.Audio.Unity" name="PlayOptionField" />
+            <uie:PropertyField binding-path="m_Childs" label="Childs" name="ChildsField" />
+        </Point.Collections.Editor.FoldoutView>
+        <uie:PropertyField binding-path="m_MasterVolume" label="MasterVolume" name="MasterVolumeField" />
+        <uie:PropertyField binding-path="m_Volume" label="Volume" name="VolumeField" />
+        <uie:PropertyField binding-path="m_Pitch" label="Pitch" name="PitchField" />
+    </Point.Collections.Editor.FoldoutView>
+</ui:UXML>
