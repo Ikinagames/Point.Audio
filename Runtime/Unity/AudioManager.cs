@@ -1583,13 +1583,4 @@ namespace Point.Audio
             EventBroadcaster.PostEvent<PlayAudioEvent>(PlayAudioEvent.GetEvent("Soundtrack01"));
         }
     }
-
-    public interface IAudioPlugin
-    {
-        bool CanPlayable();
-    }
-    public interface IAudioOnRequested : IAudioPlugin
-    {
-        void Process(in AudioKey audioKey, in bool is3D, in Vector3 position);
-    }
 }
