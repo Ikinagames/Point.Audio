@@ -74,11 +74,4 @@ namespace Point.Audio
         public float GetVolume() => UnityEngine.Random.Range(minVolume, maxVolume);
         public float GetPitch() => UnityEngine.Random.Range(minPitch, maxPitch);
     }
-
-    public struct RuntimeAudioData
-    {
-        private readonly AudioKey m_AudioKey;
-
-
-    }
 }
