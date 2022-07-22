@@ -72,6 +72,7 @@ namespace Point.Audio.Editor
                 root.m_VolumeSamplePositions.Remove(this);
 
                 root.Save();
+                root.UpdateAudioClip();
 
                 e.StopImmediatePropagation();
             }
@@ -107,6 +108,7 @@ namespace Point.Audio.Editor
                     volumeSamples = temp;
                 }
 
+                Save();
                 UpdateAudioClip();
             }
         }
