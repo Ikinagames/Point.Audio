@@ -20,6 +20,7 @@
 using Point.Collections;
 using System;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -31,71 +32,88 @@ namespace Point.Audio.LowLevel
     {
         public delegate float AudioSampleProcessDelegate(float value, AudioSample sample);
 
+        [BurstCompile(CompileSynchronously = true)]
         public static class Function
         {
+            [BurstCompile]
+            internal static unsafe void impl_evaluate(
+                int* samples, int* channels,
+                AudioSample* audioSamples, int* audioSampleLength,
+                AudioSample* result)
+            {
+                int
+                    totalSamples = *samples * *channels,
+                    currentTotalSamplePosition = 0;
+
+                AudioSample prevSample = default;
+                for (int i = 0; i < *audioSampleLength; i++)
+                {
+                    for (int c = 0; c < *channels; c++)
+                    {
+                        AudioSample sample = audioSamples[i];
+                        int offset = (sample.position * *channels) - (prevSample.position * *channels);
+                        float startValue = prevSample.value;
+
+                        int x = 0;
+                        for (int y = 0; y < offset; x++, y += *channels)
+                        {
+                            float ratio = y / (float)offset;
+                            float target = (lerp(startValue, sample.value, ratio));
+                            int position = (prevSample.position * *channels) + y + c;
+
+                            AudioSample newSample = new AudioSample(prevSample.position + y, target);
+                            *(result + position) = newSample;
+                        }
+                        currentTotalSamplePosition += offset;
+                        prevSample = sample;
+                    }
+
+                    currentTotalSamplePosition -= currentTotalSamplePosition % *channels;
+                }
+
+                for (int i = currentTotalSamplePosition; i < totalSamples; i += *channels)
+                {
+                    for (int c = 0; c < *channels; c++)
+                    {
+                        int targetSamplePosition = i + c;
+
+                        float ratio = (targetSamplePosition - currentTotalSamplePosition) / (float)(totalSamples - currentTotalSamplePosition);
+                        float target = (lerp(prevSample.value, 0, ratio));
+
+                        AudioSample newSample = new AudioSample(
+                                    targetSamplePosition, target
+                                    );
+                        *(result + newSample.position) = newSample;
+                    }
+                }
+            }
+
             public static float Multiply(float value, AudioSample sample) => value * sample.value;
         }
 
         public static unsafe AudioSample[] Evaluate(AudioClip clip, AudioSample[] samples)
         {
             int
-                packSize = clip.channels,
-                totalSamples = clip.samples * packSize;
-            AudioSample[] resultSamples = new AudioSample[totalSamples];
-            AudioSample prevSample = default;
+                clipSamples = clip.samples,
+                channels = clip.channels;
+            AudioSample[] resultSamples = new AudioSample[clipSamples * channels];
 
-            int currentTotalSamplePosition = 0;
-            for (int i = 0; i < samples.Length; i++)
+            fixed (AudioSample* samplesPtr = samples)
+            fixed (AudioSample* result = resultSamples)
             {
-                for (int c = 0; c < packSize; c++)
-                {
-                    AudioSample sample = samples[i];
-                    int offset = (sample.position * packSize) - (prevSample.position * packSize);
-                    float startValue = prevSample.value;
-
-                    int x = 0;
-                    for (int y = 0; y < offset; x++, y += packSize)
-                    {
-                        float ratio = y / (float)offset;
-                        float target = (lerp(startValue, sample.value, ratio));
-                        int position = (prevSample.position * packSize) + y + c;
-
-                        AudioSample newSample = new AudioSample(prevSample.position + y, target);
-                        resultSamples[position] = newSample;
-                    }
-                    currentTotalSamplePosition += offset;
-                    prevSample = sample;
-                }
+                int sampleLength = samples.Length;
                 
-                currentTotalSamplePosition -= currentTotalSamplePosition % packSize;
+                Function.impl_evaluate(&clipSamples, &channels, samplesPtr, &sampleLength, result);
             }
-
-            for (int i = currentTotalSamplePosition; i < totalSamples; i += packSize)
-            {
-                for (int c = 0; c < packSize; c++)
-                {
-                    int targetSamplePosition = i + c;
-
-                    float ratio = (targetSamplePosition - currentTotalSamplePosition) / (float)(totalSamples - currentTotalSamplePosition);
-                    float target = (lerp(prevSample.value, 0, ratio));
-
-                    AudioSample newSample = new AudioSample(
-                                targetSamplePosition, target
-                                );
-                    resultSamples[newSample.position] = newSample;
-                }
-            }
-
-            Assert.AreEqual(totalSamples, resultSamples.Length, 
-                $"{clip.samples} :: {packSize} : {samples.Length}" +
-                $"\n" +
-                $"totalSample: {totalSamples}, result: {resultSamples.Length}");
-
             return resultSamples;
         }
 
         private static void ProcessData(float[] data, int channels, 
-            AudioSample[] samples, int sampleChannels, int sampleStart, int channelLength,
+            AudioSample[] samples, int sampleChannels,
+            // AudioSample array index for start.
+            int sampleStart, 
+            // each channel's length. same as AudioClip.samples.
+            int channelLength,
             params AudioSampleProcessDelegate[] func)
         {
             channelLength *= channels;
@@ -122,12 +140,6 @@ namespace Point.Audio.LowLevel
             }
         }
 
-        public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels, int sampleStart = 0)
-        {
-            ProcessData(data, channels, 
-                samples, sampleChannels, sampleStart, data.Length,
-                Function.Multiply);
-        }
         public static void Volume(float[] data, int channels, AudioSample[] samples, int sampleChannels, int sampleStart, int length)
         {
             ProcessData(data, channels, 
