@@ -36,14 +36,14 @@ namespace Point.Audio.LowLevel
             public static float Multiply(float value, AudioSample sample) => value * sample.value;
         }
 
-        public static AudioSample[] Evaluate(AudioClip clip, AudioSample[] samples)
+        public static unsafe AudioSample[] Evaluate(AudioClip clip, AudioSample[] samples)
         {
             int
                 packSize = clip.channels,
                 totalSamples = clip.samples * packSize;
             AudioSample[] resultSamples = new AudioSample[totalSamples];
-
             AudioSample prevSample = default;
+
             int currentTotalSamplePosition = 0;
             for (int i = 0; i < samples.Length; i++)
             {
@@ -53,7 +53,6 @@ namespace Point.Audio.LowLevel
                     int offset = (sample.position * packSize) - (prevSample.position * packSize);
                     float startValue = prevSample.value;
 
-                    //$"{c} {offset} :: {sample.position * packSize}, {totalSamples}".ToLog();
                     int x = 0;
                     for (int y = 0; y < offset; x++, y += packSize)
                     {
@@ -64,19 +63,12 @@ namespace Point.Audio.LowLevel
                         AudioSample newSample = new AudioSample(prevSample.position + y, target);
                         resultSamples[position] = newSample;
                     }
-
-                    //$"{currentSamplePosition} + {sample.position} - {prevSamples[c].position}".ToLog();
                     currentTotalSamplePosition += offset;
                     prevSample = sample;
                 }
                 
                 currentTotalSamplePosition -= currentTotalSamplePosition % packSize;
             }
-
-            //$"{currentSamplePosition}, {resultSamples.Length} => {totalSamples}".ToLog();
-            //Assert.AreEqual(currentSamplePosition, resultSamples.Length,
-            //    $"{packSize}, {currentSamplePosition} :: {totalSamples}\n" +
-            //    $"${currentSamplePosition} != {resultSamples.Length}");
 
             for (int i = currentTotalSamplePosition; i < totalSamples; i += packSize)
             {

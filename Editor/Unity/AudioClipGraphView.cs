@@ -72,7 +72,7 @@ namespace Point.Audio.Editor
                 root.m_VolumeSamplePositions.Remove(this);
 
                 root.Save();
-                root.UpdateAudioClip();
+                root.RepaintTexture();
 
                 e.StopImmediatePropagation();
             }
@@ -109,7 +109,7 @@ namespace Point.Audio.Editor
                 }
 
                 Save();
-                UpdateAudioClip();
+                RepaintTexture();
             }
         }
         
@@ -139,7 +139,7 @@ namespace Point.Audio.Editor
 
             volumeSamples = volumes;
 
-            UpdateAudioClip();
+            RepaintTexture();
             //m_VolumeSamplePositions = volumes.Select(CreateSamplePin).ToList();
             //for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
             //{
@@ -171,7 +171,7 @@ namespace Point.Audio.Editor
 
                 VolumeSampleFactory(Mathf.RoundToInt(targetSamplePosition), targetVolume);
                 Save();
-                UpdateAudioClip();
+                RepaintTexture();
             }
         }
         private void OnVolumeSamplePositionMoved(PinPoint<AudioSample> pin, Vector3 pos)
@@ -179,7 +179,7 @@ namespace Point.Audio.Editor
             OnVolumeSamplePositionMoving(pin, pos);
 
             Save();
-            UpdateAudioClip();
+            RepaintTexture();
         }
         private void OnVolumeSamplePositionMoving(PinPoint<AudioSample> pin, Vector3 pos)
         {
@@ -214,10 +214,12 @@ namespace Point.Audio.Editor
             return volume;
         }
 
-        private void UpdateAudioClip()
+        public override void RepaintTexture()
         {
+            base.RepaintTexture();
+
             AudioSample[] volumeSamples = this.volumeSamples;
-            
+
             if (originalClip == null)
             {
                 audioClip = null;
@@ -228,11 +230,6 @@ namespace Point.Audio.Editor
             }
 
             {
-                //for (int i = 0; i < volumeSamples.Length; i += originalClip.channels)
-                //{
-                //    VolumeSampleFactory(volumeSamples[i].position, volumeSamples[i].value);
-                //}
-
                 if (audioClip != null && audioClip != originalClip)
                 {
                     UnityEngine.Object.DestroyImmediate(audioClip);

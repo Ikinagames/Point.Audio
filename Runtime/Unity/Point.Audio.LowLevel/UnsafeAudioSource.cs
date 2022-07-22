@@ -92,7 +92,7 @@ namespace Point.Audio.LowLevel
             ref RuntimeSignalProcessData ptr = ref m_RuntimeSignalProcessData;
             ptr.currentSamplePosition = ptr.nextSamplePosition;
 
-            if (ptr.currentSamplePosition >= ptr.targetSamples)
+            if (ptr.currentSamplePosition > ptr.targetSamples)
             {
                 isPlaying = false;
             }

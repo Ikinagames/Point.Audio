@@ -96,8 +96,6 @@ namespace Point.Audio.Editor
 
                     serialized.ApplyModifiedProperties();
                 }
-
-                "123".ToLog();
             });
 
             return root;
