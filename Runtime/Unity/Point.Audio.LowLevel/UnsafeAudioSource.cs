@@ -34,67 +34,57 @@ namespace Point.Audio.LowLevel
     [RequireComponent(typeof(AudioSource))]
     internal unsafe sealed class UnsafeAudioSource : PointMonobehaviour
     {
-        public PlayableAudioClip playableAudioClip
-        {
-            set
-            {
-                isPlaying = false;
-                m_PlayableAudioClip = value;
-            }
-        }
         public AudioSource audioSource => GetComponent<AudioSource>();
-        public bool isPlaying { get; set; }
 
         private RuntimeSignalProcessData m_RuntimeSignalProcessData;
-        private IRootSignalProcessor m_PlayableAudioClip;
+        private IRootSignalProcessor m_PlayableAudioClip = new DefaultRootSignalProcessor(0);
 
         // https://forum.unity.com/threads/dsp-buffer-size-differences-why-isnt-it-a-setting-per-platform.447925/
-        public void Play()
+        public void Play(PlayableAudioClip clip)
         {
-            StartCoroutine(PlayCoroutine());
+            StartCoroutine(PlayCoroutine(clip));
         }
-        private IEnumerator PlayCoroutine()
+        private IEnumerator PlayCoroutine(PlayableAudioClip clip)
         {
             SignalProcessData currentData = SignalProcessData.Current;
+            IRootSignalProcessor root = clip;
 
             // On Initialize
             {
-                m_PlayableAudioClip.OnInitialize(currentData);
+                root.OnInitialize(currentData);
             }
 
             // Wait for can process
             {
-                while (!m_PlayableAudioClip.CanProcess())
+                while (!root.CanProcess())
                 {
                     yield return null;
                 }
             }
 
-            audioSource.clip = m_PlayableAudioClip.GetRootClip();
+            audioSource.clip = root.GetRootClip();
             m_RuntimeSignalProcessData 
-                = new RuntimeSignalProcessData(currentData, m_PlayableAudioClip.GetTargetSamples());
+                = new RuntimeSignalProcessData(currentData, root.GetTargetSamples());
 
             // Before execute process
             {
-                m_PlayableAudioClip.BeforeProcess(m_RuntimeSignalProcessData);
+                root.BeforeProcess(m_RuntimeSignalProcessData);
             }
 
             audioSource.Play();
-            isPlaying = true;
+            m_PlayableAudioClip = root;
         }
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            if (!isPlaying) return;
-
             m_PlayableAudioClip.Process(m_RuntimeSignalProcessData, data, channels);
 
             ref RuntimeSignalProcessData ptr = ref m_RuntimeSignalProcessData;
             ptr.currentSamplePosition = ptr.nextSamplePosition;
 
-            if (ptr.currentSamplePosition > ptr.targetSamples)
+            if (ptr.currentSamplePosition >= ptr.targetSamples)
             {
-                isPlaying = false;
+                m_PlayableAudioClip = new DefaultRootSignalProcessor(0);
             }
         }
     }

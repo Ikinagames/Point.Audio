@@ -1413,8 +1413,8 @@ namespace Point.Audio
                     }
 
                     LowLevel.UnsafeAudioSource unsafeAudioSource = insAudio.GetOrAddComponent<LowLevel.UnsafeAudioSource>();
-                    unsafeAudioSource.playableAudioClip = clip;
-                    unsafeAudioSource.Play();
+                    //unsafeAudioSource.playableAudioClip = clip;
+                    unsafeAudioSource.Play(clip);
 #if DEBUG_MODE
                     PointHelper.Log(Channel.Audio,
                         string.Format(c_LogFormat, "Delayed Play Execute", audioKey.ToString()));
@@ -1440,8 +1440,8 @@ namespace Point.Audio
             }
 #endif
             LowLevel.UnsafeAudioSource unsafeAudioSource = insAudio.GetOrAddComponent<LowLevel.UnsafeAudioSource>();
-            unsafeAudioSource.playableAudioClip = clip;
-            unsafeAudioSource.Play();
+            //unsafeAudioSource.playableAudioClip = clip;
+            unsafeAudioSource.Play(clip);
 #if DEBUG_MODE
             PointHelper.Log(Channel.Audio,
                 string.Format(c_LogFormat, insAudio.clip == null ? "UNKNOWN" : insAudio.clip.name, audioKey.ToString()));
