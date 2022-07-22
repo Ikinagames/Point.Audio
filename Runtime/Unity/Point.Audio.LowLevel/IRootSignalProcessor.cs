@@ -17,16 +17,13 @@
 #define DEBUG_MODE
 #endif
 
+using UnityEngine;
 
 namespace Point.Audio.LowLevel
 {
-    public interface ISignalProcessor
+    internal interface IRootSignalProcessor : ISignalProcessor
     {
-        void OnInitialize(SignalProcessData data);
-
-        bool CanProcess();
-
-        void BeforeProcess(RuntimeSignalProcessData processData);
-        void Process(RuntimeSignalProcessData processData, float[] data, int channels);
+        AudioClip GetRootClip();
+        int GetTargetSamples();
     }
 }

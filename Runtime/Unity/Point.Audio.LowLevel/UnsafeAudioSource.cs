@@ -34,75 +34,74 @@ namespace Point.Audio.LowLevel
     [RequireComponent(typeof(AudioSource))]
     internal unsafe sealed class UnsafeAudioSource : PointMonobehaviour
     {
-#if SYSTEM_BUFFER
-        private static ArrayPool<AudioSample> s_AudioSampleArrayPool;
-        static UnsafeAudioSource()
-        {
-            s_AudioSampleArrayPool = ArrayPool<AudioSample>.Create();
-        }
-#endif
-
         public PlayableAudioClip playableAudioClip
         {
             set
             {
                 isPlaying = false;
-                m_AudioClip = value;
-                m_TargetAudioClip = value.GetAudioClip();
+                m_PlayableAudioClip = value;
             }
         }
-        public AudioClip clip
-        {
-            get => m_TargetAudioClip?.Value;
-            set
-            {
-                isPlaying = false;
-                m_TargetAudioClip = value;
-            }
-        }
+        public AudioSource audioSource => GetComponent<AudioSource>();
         public bool isPlaying { get; set; }
 
-        [SerializeField] private PlayableAudioClip m_AudioClip;
-
-        private AudioSource m_AudioSource;
-        private Promise<AudioClip> m_TargetAudioClip;
-        private Promise<AudioSample[]> m_VolumeSamples;
-
-        private int m_TargetChannelSamples, m_CurrentChannelSamplePosition = 0;
-
-        private AudioSource AudioSource
-        {
-            get
-            {
-                if (m_AudioSource == null)
-                {
-                    m_AudioSource = GetComponent<AudioSource>();
-                }
-                return m_AudioSource;
-            }
-        }
-        private double m_SampleRate;
+        private RuntimeSignalProcessData m_RuntimeSignalProcessData;
+        private IRootSignalProcessor m_PlayableAudioClip;
 
         // https://forum.unity.com/threads/dsp-buffer-size-differences-why-isnt-it-a-setting-per-platform.447925/
-
+        private static int ToChannelCount(AudioSpeakerMode mode)
+        {
+            switch (mode)
+            {
+                case AudioSpeakerMode.Mono:
+                    return 1;
+                case AudioSpeakerMode.Stereo:
+                    return 2;
+                case AudioSpeakerMode.Quad:
+                    return 4;
+                case AudioSpeakerMode.Surround:
+                    return 5;
+                case AudioSpeakerMode.Mode5point1:
+                    return 6;
+                case AudioSpeakerMode.Mode7point1:
+                    return 8;
+                case AudioSpeakerMode.Prologic:
+                    return 2;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
         public void Play()
-        {            
-            m_VolumeSamples = m_AudioClip.GetVolumes();
-            
-            m_CurrentChannelSamplePosition = 0;
-
+        {
             StartCoroutine(PlayCoroutine());
         }
         private IEnumerator PlayCoroutine()
         {
-            yield return m_TargetAudioClip;
-            yield return m_VolumeSamples;
+            SignalProcessData currentData = SignalProcessData.Current;
 
-            m_TargetChannelSamples = m_VolumeSamples.Value.Length / m_AudioClip.TargetChannels;
-            m_SampleRate = UnityEngine.AudioSettings.outputSampleRate;
+            // On Initialize
+            {
+                m_PlayableAudioClip.OnInitialize(currentData);
+            }
 
-            AudioSource.clip = m_TargetAudioClip.Value;
-            AudioSource.Play();
+            // Wait for can process
+            {
+                while (!m_PlayableAudioClip.CanProcess())
+                {
+                    yield return null;
+                }
+            }
+
+            audioSource.clip = m_PlayableAudioClip.GetRootClip();
+            m_RuntimeSignalProcessData 
+                = new RuntimeSignalProcessData(currentData, m_PlayableAudioClip.GetTargetSamples());
+
+            // Before execute process
+            {
+                m_PlayableAudioClip.BeforeProcess(m_RuntimeSignalProcessData);
+            }
+
+            audioSource.Play();
             isPlaying = true;
         }
 
@@ -110,22 +109,13 @@ namespace Point.Audio.LowLevel
         {
             if (!isPlaying) return;
 
-            int 
-                dataPerChannel = data.Length / channels,
-                nextSamplePosition = clamp(m_CurrentChannelSamplePosition + dataPerChannel, 0, m_TargetChannelSamples),
-                movedSampleOffset = nextSamplePosition - m_CurrentChannelSamplePosition;
+            m_PlayableAudioClip.Process(m_RuntimeSignalProcessData, data, channels);
 
-            // Processors
+            ref RuntimeSignalProcessData ptr = ref m_RuntimeSignalProcessData;
+            ptr.currentSamplePosition = ptr.nextSamplePosition;
+
+            if (ptr.currentSamplePosition >= ptr.targetSamples)
             {
-                // Process Volume
-                DSP.Volume(data, channels, m_VolumeSamples.Value, m_AudioClip.TargetChannels, m_CurrentChannelSamplePosition, movedSampleOffset);
-            }
-
-            m_CurrentChannelSamplePosition = nextSamplePosition;
-
-            if (m_CurrentChannelSamplePosition >= m_TargetChannelSamples)
-            {
-                //$"end {m_TargetChannelSamples} >= {m_CurrentChannelSamplePosition}".ToLog();
                 isPlaying = false;
             }
         }

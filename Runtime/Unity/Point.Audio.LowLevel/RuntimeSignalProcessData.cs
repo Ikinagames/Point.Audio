@@ -17,16 +17,27 @@
 #define DEBUG_MODE
 #endif
 
+using static Unity.Mathematics.math;
 
 namespace Point.Audio.LowLevel
 {
-    public interface ISignalProcessor
+    public struct RuntimeSignalProcessData
     {
-        void OnInitialize(SignalProcessData data);
+        public readonly SignalProcessData signalProcessData;
+        public readonly int targetSamples;
+        public int currentSamplePosition;
 
-        bool CanProcess();
+        public int nextSamplePosition
+            => clamp(currentSamplePosition + signalProcessData.dspBufferSize, 0, targetSamples);
+        public int nextSamplePositionOffset
+            => nextSamplePosition - currentSamplePosition;
 
-        void BeforeProcess(RuntimeSignalProcessData processData);
-        void Process(RuntimeSignalProcessData processData, float[] data, int channels);
+        internal RuntimeSignalProcessData(SignalProcessData data, int targetSamples)
+        {
+            this = default(RuntimeSignalProcessData);
+
+            signalProcessData = data;
+            this.targetSamples = targetSamples;
+        }
     }
 }

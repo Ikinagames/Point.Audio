@@ -24,43 +24,67 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static Unity.Mathematics.math;
 
 namespace Point.Audio
 {
     [Serializable]
-    public class PlayableAudioClip : IValidation
+    public class PlayableAudioClip : IValidation, IRootSignalProcessor
     {
         [SerializeField] private AssetPathField<AudioClip> m_Clip;
 
         [SerializeField] private int m_TargetChannels;
         [SerializeField] private AudioSample[] m_Volumes = Array.Empty<AudioSample>();
 
-        private AudioSample[] m_EvaluatedVolumes;
+        private Promise<AudioClip> m_AudioClip;
+        private Promise<AudioSample[]> m_EvaluatedVolumes;
 
         public AudioKey Key => m_Clip;
         public int TargetChannels => m_TargetChannels;
 
         internal Promise<AudioClip> GetAudioClip()
         {
-            return m_Clip.Asset.LoadAsset();
+            if (m_AudioClip == null)
+            {
+                m_AudioClip = m_Clip.Asset.LoadAsset();
+            }
+            return m_AudioClip;
         }
         internal Promise<AudioSample[]> GetVolumes()
         {
             if (m_EvaluatedVolumes == null)
             {
                 Promise<AudioClip> clip = GetAudioClip();
-                Promise<AudioSample[]> result = new Promise<AudioSample[]>();
+                m_EvaluatedVolumes = new Promise<AudioSample[]>();
                 clip.OnCompleted += delegate (AudioClip clip)
                 {
-                    m_EvaluatedVolumes = DSP.Evaluate(clip, m_Volumes);
-                    result.SetValue(m_EvaluatedVolumes);
+                    AudioSample[] volumes = DSP.Evaluate(clip, m_Volumes);
+                    m_EvaluatedVolumes.SetValue(volumes);
                 };
-
-                return result;
             }
             return m_EvaluatedVolumes;
         }
 
         public bool IsValid() => !m_Clip.IsEmpty();
+
+        void ISignalProcessor.OnInitialize(SignalProcessData data)
+        {
+            GetAudioClip();
+            GetVolumes();
+        }
+        bool ISignalProcessor.CanProcess() => m_AudioClip.HasValue && m_EvaluatedVolumes.HasValue;
+        AudioClip IRootSignalProcessor.GetRootClip() => m_AudioClip.Value;
+        int IRootSignalProcessor.GetTargetSamples() => m_AudioClip.Value.samples;
+        void ISignalProcessor.BeforeProcess(RuntimeSignalProcessData processData)
+        {
+        }
+        void ISignalProcessor.Process(RuntimeSignalProcessData processData, float[] data, int channels)
+        {
+            // Processors
+            {
+                // Process Volume
+                DSP.Volume(data, channels, m_EvaluatedVolumes.Value, TargetChannels, processData.currentSamplePosition, processData.nextSamplePositionOffset);
+            }
+        }
     }
 }
