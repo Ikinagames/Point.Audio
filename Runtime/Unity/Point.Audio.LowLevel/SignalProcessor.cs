@@ -42,4 +42,30 @@ namespace Point.Audio.LowLevel
         protected virtual void BeforeProcess(in RuntimeSignalProcessData processData) { }
         protected virtual void Process(in RuntimeSignalProcessData processData, ref float[] data, in int channels) { }
     }
+    //public class DownSampler : SignalProcessor
+    //{
+    //    private const int c_RampCount = 256;
+
+    //    public float Gain { get; set; }
+    //    public int SampleCount { get; set; }
+    //    public float Mix { get; set; }
+
+    //    private float m_CurrentGain;
+    //    private int m_CurrentRampCount;
+
+    //    protected override void BeforeProcess(in RuntimeSignalProcessData processData)
+    //    {
+    //        m_CurrentGain = Gain;
+    //        m_CurrentRampCount = c_RampCount;
+    //    }
+    //    protected override void Process(in RuntimeSignalProcessData processData, ref float[] data, in int channels)
+    //    {
+    //        int normalizedCount = SampleCount * channels;
+    //        float delta = (Gain - m_CurrentGain) / m_CurrentRampCount;
+    //        for (int i = 0; i < data.Length; i+= normalizedCount)
+    //        {
+
+    //        }
+    //    }
+    //}
 }
