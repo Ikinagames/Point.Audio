@@ -49,28 +49,6 @@ namespace Point.Audio.LowLevel
         private IRootSignalProcessor m_PlayableAudioClip;
 
         // https://forum.unity.com/threads/dsp-buffer-size-differences-why-isnt-it-a-setting-per-platform.447925/
-        private static int ToChannelCount(AudioSpeakerMode mode)
-        {
-            switch (mode)
-            {
-                case AudioSpeakerMode.Mono:
-                    return 1;
-                case AudioSpeakerMode.Stereo:
-                    return 2;
-                case AudioSpeakerMode.Quad:
-                    return 4;
-                case AudioSpeakerMode.Surround:
-                    return 5;
-                case AudioSpeakerMode.Mode5point1:
-                    return 6;
-                case AudioSpeakerMode.Mode7point1:
-                    return 8;
-                case AudioSpeakerMode.Prologic:
-                    return 2;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
         public void Play()
         {
             StartCoroutine(PlayCoroutine());

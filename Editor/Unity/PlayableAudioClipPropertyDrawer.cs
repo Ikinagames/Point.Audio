@@ -41,24 +41,30 @@ namespace Point.Audio.Editor
             SerializedProperty
                 pathProp = property.FindPropertyRelative("m_Clip"),
                 volumeSamplesProp = property.FindPropertyRelative("m_Volumes");
+            string 
+                clipPath = pathProp.propertyPath,
+                volumeSamplesPath = volumeSamplesProp.propertyPath;
 
             VisualElement root = new VisualElement();
             root.styleSheets.Add(CoreGUI.VisualElement.DefaultStyleSheet);
             root.AddToClassList("content-container");
 
-            AssetPathFieldView pathFieldView = new AssetPathFieldView(pathProp)
+            AssetPathFieldView pathFieldView = new AssetPathFieldView()
             {
                 label = pathProp.displayName,
                 objectType = TypeHelper.TypeOf<AudioClip>.Type
             };
             root.Add(pathFieldView);
-            
-            string volumeSamplesPath = volumeSamplesProp.propertyPath;
+
+            AudioClip clip
+                = SerializedPropertyHelper.GetAssetPathField<AudioClip>(pathProp);
             AudioSample[] volumeSamples 
                 = SerializedPropertyHelper.ReadArray<AudioSample>(volumeSamplesProp);
 
+            pathFieldView.objectValue = clip;
+
             FoldoutView foldout = new FoldoutView("Settings");
-            AudioClipGraphView clipGraphView = new AudioClipGraphView(volumeSamples);
+            AudioClipGraphView clipGraphView = new AudioClipGraphView(clip, volumeSamples);
             clipGraphView.VolumeSampleSetter = (t) =>
             {
                 if (obj == null) return;
@@ -80,8 +86,18 @@ namespace Point.Audio.Editor
 
             pathFieldView.RegisterValueChangedCallback(t =>
             {
-                AudioClip clip = pathFieldView.objectValue as AudioClip;
+                AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(t.newValue);
                 clipGraphView.originalClip = clip;
+
+                using (SerializedObject serialized = new SerializedObject(obj))
+                {
+                    var prop = serialized.FindProperty(clipPath);
+                    SerializedPropertyHelper.SetAssetPathFieldPath(prop, t.newValue);
+
+                    serialized.ApplyModifiedProperties();
+                }
+
+                "123".ToLog();
             });
 
             return root;

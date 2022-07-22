@@ -20,6 +20,7 @@
 #define UNITYENGINE
 
 using Point.Audio.LowLevel;
+using Point.Collections;
 using Point.Collections.Editor;
 using System;
 using System.Collections.Generic;
@@ -32,21 +33,22 @@ namespace Point.Audio.Editor
 {
     public class AudioClipGraphView : AudioClipTextureView
     {
-        private struct xLineComparer : IComparer<Vector3>
+        private struct xLineComparer : IComparer<SamplePin>
         {
-            public int Compare(Vector3 x, Vector3 y)
+            public int Compare(SamplePin x, SamplePin y)
             {
-                if (x.x < y.x) return -1;
-                else if (x.x > y.x) return 1;
+                if (x.value.position < y.value.position) return -1;
+                else if (x.value.position > y.value.position) return 1;
                 else return 0;
             }
         }
         private sealed class SamplePin : PinPoint<AudioSample>, IComparable<SamplePin>
         {
-            private AudioClipGraphView root => manipulator.root as AudioClipGraphView;
+            private AudioClipGraphView root;
 
-            public SamplePin(AudioClipGraphView root, float x, float y) : base(root)
+            public SamplePin(AudioClipGraphView root, float x, float y) : base(root.contentContainer)
             {
+                this.root = root;
                 value = new AudioSample(x, y);
             }
 
@@ -75,38 +77,77 @@ namespace Point.Audio.Editor
             }
         }
 
-        private AudioClip m_ModifiedClip;
-        private List<SamplePin> m_VolumeSamplePositions;
+        private AudioClip m_OriginalClip;
+        private List<SamplePin> m_VolumeSamplePositions = new List<SamplePin>();
 
         public Action<AudioSample[]> VolumeSampleSetter;
 
         public AudioClip originalClip 
         { 
-            get => m_AudioClip;
+            get => m_OriginalClip;
             set
             {
-                m_AudioClip = value;
+                m_OriginalClip = value;
+                audioClip = value;
+
+                if (value == null)
+                {
+                    volumeSamples = null;
+                }
+                else
+                {
+                    int channel = value.channels;
+                    int length = value.samples;
+                    AudioSample[] temp = new AudioSample[2]
+                    {
+                        new AudioSample(0, 1),
+                        new AudioSample(length, 1),
+                    };
+
+                    volumeSamples = temp;
+                }
+
                 UpdateAudioClip();
             }
         }
-        public override AudioClip audioClip { get => m_ModifiedClip; set => m_ModifiedClip = value; }
+        
+        public AudioSample[] volumeSamples
+        {
+            get => m_VolumeSamplePositions == null || m_VolumeSamplePositions.Count == 0 ? Array.Empty<AudioSample>() : m_VolumeSamplePositions.Select(t => t.value).ToArray();
+            set
+            {
+                Clear();
+                if (value.IsNullOrEmpty()) return;
 
-        public AudioSample[] volumeSamples => m_VolumeSamplePositions.Select(t => t.value).ToArray();
+                m_VolumeSamplePositions = value.Select(CreateSamplePin).ToList();
+                for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+                {
+                    Add(m_VolumeSamplePositions[i]);
+                }
+            }
+        }
 
-        public AudioClipGraphView(AudioSample[] volumes) : base()
+        public AudioClipGraphView(AudioClip clip, AudioSample[] volumes) : base()
         {
             contentContainer.RegisterCallback<MouseDownEvent>(OnTextureMouseDown);
             contentContainer.generateVisualContent += GenerateVisualContent;
 
-            m_VolumeSamplePositions = volumes.Select(CreateSamplePin).ToList();
-            for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
-            {
-                Add(m_VolumeSamplePositions[i]);
-            }
+            m_OriginalClip = clip;
+            maxHeight = 1;
+
+            volumeSamples = volumes;
+
+            UpdateAudioClip();
+            //m_VolumeSamplePositions = volumes.Select(CreateSamplePin).ToList();
+            //for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+            //{
+            //    Add(m_VolumeSamplePositions[i]);
+            //}
         }
 
         public void Save()
         {
+            m_VolumeSamplePositions.Sort(new xLineComparer());
             VolumeSampleSetter?.Invoke(volumeSamples);
         }
 
@@ -115,13 +156,14 @@ namespace Point.Audio.Editor
             // right button
             if (e.button == 1)
             {
-                int sampleCount = m_ModifiedClip.samples;
+                Vector3 pos = contentContainer.WorldToLocal(e.mousePosition);
+                int sampleCount = audioClip.samples;
                 float
                     samplePerPixel = sampleCount / width;
 
                 float
-                    targetSamplePosition = e.localMousePosition.x * samplePerPixel,
-                    targetVolume = 1 - (e.localMousePosition.y / height);
+                    targetSamplePosition = Mathf.Clamp(pos.x * samplePerPixel, 0, sampleCount),
+                    targetVolume = Mathf.Clamp01(1 - (pos.y / height));
 
                 //$"{sampleCount} :: {targetSamplePosition} :: {targetVolume}".ToLog();
 
@@ -173,13 +215,13 @@ namespace Point.Audio.Editor
         private void UpdateAudioClip()
         {
             AudioSample[] volumeSamples = this.volumeSamples;
-
-            //Clear();
-            //m_VolumeSamplePositions.Clear();
-
-            if (m_AudioClip == null)
+            
+            if (originalClip == null)
             {
-                m_ModifiedClip = null;
+                audioClip = null;
+
+                Clear();
+                m_VolumeSamplePositions.Clear();
                 return;
             }
 
@@ -189,24 +231,29 @@ namespace Point.Audio.Editor
                 //    VolumeSampleFactory(volumeSamples[i].position, volumeSamples[i].value);
                 //}
 
-                AudioClip clip = AudioClip.Create(m_AudioClip.name, m_AudioClip.samples, m_AudioClip.channels, m_AudioClip.frequency, false);
+                if (audioClip != null && audioClip != originalClip)
+                {
+                    UnityEngine.Object.DestroyImmediate(audioClip);
+                }
+
+                AudioClip clip = AudioClip.Create(originalClip.name, originalClip.samples, originalClip.channels, originalClip.frequency, false);
 
                 float[] samples = new float[clip.samples * clip.channels];
-                m_AudioClip.GetData(samples, 0);
+                originalClip.GetData(samples, 0);
 
                 volumeSamples = DSP.Evaluate(clip, volumeSamples);
 
-                DSP.Volume(samples, clip.channels, volumeSamples, clip.channels);
+                DSP.Volume(samples, clip.channels, volumeSamples, clip.channels, 0, clip.samples);
                 clip.SetData(samples, 0);
 
-                m_ModifiedClip = clip;
+                audioClip = clip;
             }
         }
         private void GenerateVisualContent(MeshGenerationContext ctx)
         {
             List<Vector3> positions = new List<Vector3>();
 
-            if (m_ModifiedClip == null)
+            if (audioClip == null)
             {
                 positions.Insert(0, new Vector3(0, 0));
                 positions.Add(new Vector3(width, 0));
@@ -215,18 +262,18 @@ namespace Point.Audio.Editor
                 return;
             }
 
-            int sampleCount = m_ModifiedClip.samples;
+            int sampleCount = audioClip.samples;
             float samplePerPixel = sampleCount / width;
 
             //$"{m_VolumeSamplePositions.Count}".ToLog();
-            for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+            for (int i = 0; i < m_VolumeSamplePositions?.Count; i++)
             {
                 SamplePin target = m_VolumeSamplePositions[i];
                 float x = target.value.position / samplePerPixel;
 
                 positions.Add(new Vector3(x, height - target.CalculateHeight(height)));
             }
-            positions.Sort(new xLineComparer());
+            //positions.Sort(new xLineComparer());
 
             positions.Insert(0, new Vector3(0, height));
             positions.Add(new Vector3(width, height));
@@ -234,7 +281,7 @@ namespace Point.Audio.Editor
             CoreGUI.VisualElement.DrawCable(positions.ToArray(), 1, Color.green, ctx);
             schedule.Execute(delegate ()
             {
-                for (int i = 0; i < m_VolumeSamplePositions.Count; i++)
+                for (int i = 0; i < m_VolumeSamplePositions?.Count; i++)
                 {
                     SamplePin target = m_VolumeSamplePositions[i];
                     float
